@@ -333,4 +333,70 @@ describe('DmuxAttentionService', () => {
 
     service.stop();
   });
+
+  it('throttles repeated idle notifications from the same pane until the user interacts', async () => {
+    let now = 100000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const focusService = new MockFocusService();
+    const service = new DmuxAttentionService({
+      focusService: focusService as any,
+      idleNotificationCooldownMs: 60000,
+    });
+
+    service.start();
+
+    emitStatusUpdated({
+      paneId: 'pane-goal',
+      status: 'working',
+    });
+    emitAttentionNeeded({
+      paneId: 'pane-goal',
+      tmuxPaneId: '%41',
+      status: 'idle',
+      title: 'Goal pass one',
+      body: 'The first goal-mode pass stopped.',
+      fingerprint: 'idle:goal-pass-one',
+    });
+    await flushAsyncWork();
+
+    expect(focusService.sendAttentionNotification).toHaveBeenCalledTimes(1);
+
+    now += 1000;
+    emitStatusUpdated({
+      paneId: 'pane-goal',
+      status: 'working',
+    });
+    emitAttentionNeeded({
+      paneId: 'pane-goal',
+      tmuxPaneId: '%41',
+      status: 'idle',
+      title: 'Goal pass two',
+      body: 'Another goal-mode pass stopped.',
+      fingerprint: 'idle:goal-pass-two',
+    });
+    await flushAsyncWork();
+
+    expect(focusService.sendAttentionNotification).toHaveBeenCalledTimes(1);
+    expect(focusService.setPaneAttentionIndicator).toHaveBeenCalledWith('%41', true);
+
+    emitPaneUserInteraction({ paneId: 'pane-goal' });
+    now += 1000;
+    emitStatusUpdated({
+      paneId: 'pane-goal',
+      status: 'working',
+    });
+    emitAttentionNeeded({
+      paneId: 'pane-goal',
+      tmuxPaneId: '%41',
+      status: 'idle',
+      title: 'Goal after reply',
+      body: 'The pane stopped after the user replied.',
+      fingerprint: 'idle:goal-after-reply',
+    });
+    await flushAsyncWork();
+
+    expect(focusService.sendAttentionNotification).toHaveBeenCalledTimes(2);
+
+    service.stop();
+  });
 });

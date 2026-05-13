@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildPaneActivityFingerprint,
+  getAgentHookStatus,
   hasAgentWorkingIndicators,
   isLikelyUserTyping,
 } from '../src/utils/paneAttentionHeuristics.js';
@@ -70,5 +71,15 @@ describe('paneAttentionHeuristics', () => {
     expect(buildPaneActivityFingerprint(previous)).toBe(
       buildPaneActivityFingerprint(current)
     );
+  });
+
+  it('classifies agent lifecycle hook events before they reach notification handling', () => {
+    expect(getAgentHookStatus({ hookEventName: 'PreToolUse' })).toBe('working');
+    expect(getAgentHookStatus({ hook_event_name: 'PostToolUse' })).toBe('working');
+    expect(getAgentHookStatus({ hookEventName: 'PermissionRequest' })).toBe('waiting');
+    expect(getAgentHookStatus({ hookEventName: 'Notification' })).toBe('waiting');
+    expect(getAgentHookStatus({ hookEventName: 'Stop' })).toBe('idle');
+    expect(getAgentHookStatus({ dmuxStatus: 'working', hookEventName: 'Stop' })).toBe('working');
+    expect(getAgentHookStatus({ hookEventName: 'UnknownEvent' })).toBe(null);
   });
 });

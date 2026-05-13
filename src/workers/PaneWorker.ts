@@ -7,6 +7,7 @@ import { TmuxService } from '../services/TmuxService.js';
 import type { AgentName } from '../utils/agentLaunch.js';
 import {
   buildPaneActivityFingerprint,
+  getAgentHookStatus,
   hasAgentWorkingIndicators,
   isLikelyUserTyping,
 } from '../utils/paneAttentionHeuristics.js';
@@ -45,7 +46,7 @@ class PaneWorker {
   private statusBeforeAnalyzing: 'idle' | 'waiting' | 'working' = 'idle';
   private agentStopEventFile?: string;
   private lastAgentStopEventTimestamp = 0;
-  private lastAgentStopEventTurnId = '';
+  private lastAgentStopEventId = '';
   private tmux = TmuxService.getInstance();
 
   constructor(config: WorkerConfig) {
@@ -312,11 +313,13 @@ class PaneWorker {
 
     const timestamp = Number(event.timestamp || 0);
     const turnId = typeof event.turnId === 'string' ? event.turnId : '';
+    const sessionId = typeof event.sessionId === 'string' ? event.sessionId : '';
+    const eventId = turnId || (sessionId ? `${sessionId}:${timestamp}` : '');
     if (!timestamp || timestamp < this.lastAgentStopEventTimestamp) {
       return false;
     }
 
-    if (timestamp === this.lastAgentStopEventTimestamp && turnId === this.lastAgentStopEventTurnId) {
+    if (timestamp === this.lastAgentStopEventTimestamp && eventId === this.lastAgentStopEventId) {
       return false;
     }
 
@@ -329,26 +332,35 @@ class PaneWorker {
     }
 
     this.lastAgentStopEventTimestamp = timestamp;
-    this.lastAgentStopEventTurnId = turnId;
+    this.lastAgentStopEventId = eventId;
 
-    if (this.isGoalContinuationEvent(event, output)) {
+    const eventStatus = getAgentHookStatus(event);
+    if (!eventStatus) {
+      return false;
+    }
+
+    if (eventStatus === 'working' || this.isGoalContinuationEvent(event, output)) {
       this.markAgentActive(output, fingerprint, Date.now());
       return true;
     }
 
     this.awaitingAgentAfterUserInteraction = false;
-    this.settledStateConfirmed = true;
+    this.settledStateConfirmed = eventStatus === 'idle' || eventStatus === 'waiting';
     this.lastStaticContent = output;
     this.lastStaticFingerprint = fingerprint;
     this.captureHistory = [{ raw: output, fingerprint }];
 
     const previousStatus = this.currentStatus;
-    this.currentStatus = 'idle';
+    this.currentStatus = eventStatus;
     this.emit('status-change', {
-      status: 'idle',
+      status: eventStatus,
       previousStatus,
       captureSnapshot: output,
     });
+
+    if (eventStatus !== 'idle') {
+      return true;
+    }
 
     const payload: AgentTurnStoppedPayload = {
       captureSnapshot: output,

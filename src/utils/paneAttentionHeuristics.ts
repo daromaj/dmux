@@ -1,5 +1,7 @@
 import type { AgentName } from './agentLaunch.js';
 
+export type AgentHookStatus = 'idle' | 'waiting' | 'working';
+
 const GENERIC_PROGRESS_WORDS = [
   'working',
   'thinking',
@@ -54,6 +56,44 @@ const PROMPT_CONTINUATION_PATTERNS = [
   /^\s{2,}\S/,
   /^\s*│\s{2,}\S/,
 ];
+
+function stringField(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+export function getAgentHookStatus(event: unknown): AgentHookStatus | null {
+  if (!event || typeof event !== 'object') {
+    return null;
+  }
+
+  const record = event as Record<string, unknown>;
+  const explicitStatus = stringField(record.dmuxStatus);
+  if (explicitStatus === 'idle' || explicitStatus === 'waiting' || explicitStatus === 'working') {
+    return explicitStatus;
+  }
+
+  const hookEventName = stringField(record.hookEventName)
+    || stringField(record.hook_event_name);
+
+  if (!hookEventName) {
+    return 'idle';
+  }
+
+  switch (hookEventName) {
+    case 'Stop':
+    case 'SubagentStop':
+      return 'idle';
+    case 'Notification':
+    case 'PermissionRequest':
+      return 'waiting';
+    case 'UserPromptSubmit':
+    case 'PreToolUse':
+    case 'PostToolUse':
+      return 'working';
+    default:
+      return null;
+  }
+}
 
 function trimSurroundingEmptyLines(lines: string[]): string[] {
   let start = 0;
