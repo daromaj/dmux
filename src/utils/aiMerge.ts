@@ -36,7 +36,11 @@ export async function callOpenRouter(prompt: string, maxTokens: number = 1000, t
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return null;
 
-  const models = ['google/gemini-2.5-flash', 'x-ai/grok-4-fast:free', 'openai/gpt-4o-mini'];
+  const models = [
+    'google/gemini-2.5-flash',
+    'openai/gpt-4o-mini',
+    'openai/gpt-oss-120b:free',
+  ];
 
   for (const model of models) {
     try {

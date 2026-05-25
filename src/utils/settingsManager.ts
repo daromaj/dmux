@@ -320,7 +320,7 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   {
     key: 'defaultAgent',
     label: 'Default Agent',
-    description: 'Skip agent selection and use this agent for all new panes',
+    description: 'Preselect this agent in the chooser and use it for non-interactive pane creation',
     type: 'select',
     options: [
       { value: '', label: 'Ask each time' },

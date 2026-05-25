@@ -36,7 +36,7 @@ const en: Translations = {
     enableNotifications: 'Enable Notifications',
     enableNotificationsDescription: 'Allow dmux to show native attention notifications and same-window attention flashes',
     defaultAgent: 'Default Agent',
-    defaultAgentDescription: 'Skip agent selection and use this agent for all new panes',
+    defaultAgentDescription: 'Preselect this agent in the chooser and use it for non-interactive pane creation',
     defaultAgentAsk: 'Ask each time',
     enabledAgents: 'Enabled Agents',
     enabledAgentsDescription: 'Select which agents appear in the new pane selection list',

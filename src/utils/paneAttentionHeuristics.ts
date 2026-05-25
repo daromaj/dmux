@@ -228,6 +228,7 @@ export function hasAgentWorkingIndicators(content: string, agent?: AgentName): b
       );
     case 'opencode':
     case 'codex':
+    case 'grok':
     case 'gemini':
     case 'qwen':
     case 'cursor':

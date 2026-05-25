@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node '/Users/justinschroeder/Projects/dmux/.dmux/worktrees/feat-5.8.0/.codex/hooks/dmux-stop-hook.cjs'",
+            "command": "node '/Users/justinschroeder/Projects/dmux/.dmux/worktrees/feat-grok/.codex/hooks/dmux-stop-hook.cjs'",
             "timeout": 5,
             "statusMessage": "Notifying dmux"
           }

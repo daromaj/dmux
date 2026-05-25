@@ -27,6 +27,7 @@ import {
   installCodexPaneHooks,
 } from './codexHooks.js';
 import { installClaudePaneHooks } from './claudeHooks.js';
+import { installGrokPaneHooks } from './grokHooks.js';
 import { resolveProjectColorTheme } from './paneColors.js';
 import type { SidebarProject } from '../types.js';
 
@@ -218,6 +219,18 @@ export async function reopenWorktree(
         });
       } catch {
         // Hook installation is best effort; Claude can still resume normally.
+      }
+    }
+
+    if (agent === 'grok') {
+      try {
+        installGrokPaneHooks({
+          worktreePath,
+          dmuxPaneId,
+          tmuxPaneId: paneInfo,
+        });
+      } catch {
+        // Hook installation is best effort; Grok can still resume normally.
       }
     }
 

@@ -36,7 +36,7 @@ const ja: Translations = {
     enableNotifications: '通知を有効にする',
     enableNotificationsDescription: 'dmuxのネイティブ通知と同一ウィンドウ内の注意喚起フラッシュを許可します',
     defaultAgent: 'デフォルトエージェント',
-    defaultAgentDescription: 'エージェント選択をスキップし、すべての新しいペインにこのエージェントを使用します',
+    defaultAgentDescription: '選択画面でこのエージェントを事前選択し、非対話式のペイン作成にも使用します',
     defaultAgentAsk: '毎回確認',
     enabledAgents: '有効なエージェント',
     enabledAgentsDescription: '新しいペインの選択リストに表示するエージェントを選択してください',

@@ -18,10 +18,11 @@ process.stdin.on('end', () => {
     source: 'codex-stop-hook',
     dmuxPaneId: process.env.DMUX_PANE_ID || '',
     tmuxPaneId: process.env.DMUX_TMUX_PANE_ID || '',
-    expectedDmuxPaneId: 'dmux-1778678856262',
-    expectedTmuxPaneId: '%28',
+    expectedDmuxPaneId: 'dmux-1779734821852',
+    expectedTmuxPaneId: '%37',
     hookEventName: payload.hook_event_name || payload.hookEventName || '',
     turnId: payload.turn_id || payload.turnId || '',
+    stopHookActive: payload.stop_hook_active === true || payload.stopHookActive === true,
     lastAssistantMessage: payload.last_assistant_message || null,
     transcriptPath: payload.transcript_path || null,
     cwd: payload.cwd || process.cwd(),
@@ -37,7 +38,7 @@ process.stdin.on('end', () => {
   }
 
   try {
-    fs.writeFileSync('/Users/justinschroeder/Projects/dmux/.dmux/worktrees/feat-5.8.0/.codex/dmux/dmux-1778678856262.json', JSON.stringify(event, null, 2));
+    fs.writeFileSync('/Users/justinschroeder/Projects/dmux/.dmux/worktrees/feat-grok/.codex/dmux/dmux-1779734821852.json', JSON.stringify(event, null, 2));
   } catch (error) {
     process.exit(0);
   }

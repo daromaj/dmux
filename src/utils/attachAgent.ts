@@ -20,6 +20,7 @@ import { SettingsManager } from './settingsManager.js';
 import { LogService } from '../services/LogService.js';
 import { installCodexPaneHooks } from './codexHooks.js';
 import { installClaudePaneHooks } from './claudeHooks.js';
+import { installGrokPaneHooks } from './grokHooks.js';
 import { resolveProjectColorTheme } from './paneColors.js';
 
 export interface AttachAgentOptions {
@@ -168,6 +169,21 @@ export async function attachAgentToWorktree(
     } catch (error) {
       LogService.getInstance().warn(
         `Failed to install Claude hooks for ${slug}: ${error instanceof Error ? error.message : String(error)}`,
+        'attachAgent',
+        dmuxPaneId
+      );
+    }
+  }
+  if (agent === 'grok') {
+    try {
+      installGrokPaneHooks({
+        worktreePath: targetPane.worktreePath,
+        dmuxPaneId,
+        tmuxPaneId: paneInfo,
+      });
+    } catch (error) {
+      LogService.getInstance().warn(
+        `Failed to install Grok hooks for ${slug}: ${error instanceof Error ? error.message : String(error)}`,
         'attachAgent',
         dmuxPaneId
       );

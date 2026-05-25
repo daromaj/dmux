@@ -20,6 +20,10 @@ export function render() {
         <span>Codex</span>
       </a>
       <a href="#/agents" class="agent-cloud-item">
+        <img src="/agents/grok.svg" alt="Grok Build" class="agent-cloud-logo" />
+        <span>Grok</span>
+      </a>
+      <a href="#/agents" class="agent-cloud-item">
         <img src="/agents/cline.svg" alt="Cline" class="agent-cloud-logo" />
         <span>Cline</span>
       </a>

@@ -70,10 +70,13 @@ export function normalizePaneContentForAnalysis(
 
 export class PaneAnalyzer {
   private apiKey: string;
-  private modelStack: string[] = [
+  private preferredModelStack: string[] = [
     'google/gemini-2.5-flash',
-    'x-ai/grok-4-fast:free',
     'openai/gpt-4o-mini'
+  ];
+  private freeFallbackModelStack: string[] = [
+    'openai/gpt-oss-120b:free',
+    'nvidia/nemotron-3-super-120b-a12b:free'
   ];
 
   // Content-hash based cache to avoid repeated API calls for identical content
@@ -169,12 +172,42 @@ export class PaneAnalyzer {
     return response.json();
   }
 
+  private async raceModelStack(
+    models: readonly string[],
+    systemPrompt: string,
+    userPrompt: string,
+    maxTokens: number,
+    signal: AbortSignal
+  ): Promise<any> {
+    const logService = LogService.getInstance();
+
+    try {
+      return await Promise.any(
+        models.map(model =>
+          this.tryModel(model, systemPrompt, userPrompt, maxTokens, signal)
+            .then(data => {
+              logService.debug(`PaneAnalyzer: Model ${model} succeeded`, 'paneAnalyzer');
+              return data;
+            })
+        )
+      );
+    } catch (error) {
+      if (error instanceof AggregateError) {
+        throw error.errors[0] || new Error('All models in fallback stack failed');
+      }
+      throw error;
+    }
+  }
+
+  private formatModelError(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+  }
+
   /**
-   * Makes a request to OpenRouter API with PARALLEL model fallback
-   * Uses Promise.any to race all models - first success wins
-   *
-   * Performance improvement: Previously could take 6+ seconds if models failed sequentially.
-   * Now returns as soon as ANY model responds successfully (typically <1s).
+   * Makes a request to OpenRouter API with tiered model fallback.
+   * Preferred models race in parallel so the fastest healthy paid model wins.
+   * If they are unavailable or the key is capped, a tested free JSON-capable model
+   * gets a second chance without winning normal healthy requests by speed alone.
    */
   private async makeRequestWithFallback(
     systemPrompt: string,
@@ -186,8 +219,6 @@ export class PaneAnalyzer {
       throw new Error('API key not available');
     }
 
-    const logService = LogService.getInstance();
-
     // Create an AbortController with timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s total timeout
@@ -198,24 +229,35 @@ export class PaneAnalyzer {
       : controller.signal;
 
     try {
-      // Race all models in parallel - first success wins
-      const result = await Promise.any(
-        this.modelStack.map(model =>
-          this.tryModel(model, systemPrompt, userPrompt, maxTokens, combinedSignal)
-            .then(data => {
-              logService.debug(`PaneAnalyzer: Model ${model} succeeded`, 'paneAnalyzer');
-              return data;
-            })
-        )
-      );
+      try {
+        return await this.raceModelStack(
+          this.preferredModelStack,
+          systemPrompt,
+          userPrompt,
+          maxTokens,
+          combinedSignal
+        );
+      } catch (primaryError) {
+        LogService.getInstance().debug(
+          `PaneAnalyzer: Preferred models failed; trying free fallback (${this.formatModelError(primaryError)})`,
+          'paneAnalyzer'
+        );
 
-      return result;
-    } catch (error) {
-      if (error instanceof AggregateError) {
-        // All models failed - throw the first error for context
-        throw error.errors[0] || new Error('All models in fallback stack failed');
+        try {
+          return await this.raceModelStack(
+            this.freeFallbackModelStack,
+            systemPrompt,
+            userPrompt,
+            maxTokens,
+            combinedSignal
+          );
+        } catch (fallbackError) {
+          throw new Error(
+            `All models failed. Primary: ${this.formatModelError(primaryError)}. ` +
+            `Free fallback: ${this.formatModelError(fallbackError)}`
+          );
+        }
       }
-      throw error;
     } finally {
       clearTimeout(timeoutId);
     }

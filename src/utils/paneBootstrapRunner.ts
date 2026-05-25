@@ -35,6 +35,7 @@ import {
   installCodexPaneHooks,
 } from './codexHooks.js';
 import { installClaudePaneHooks } from './claudeHooks.js';
+import { installGrokPaneHooks } from './grokHooks.js';
 import { TmuxService } from '../services/TmuxService.js';
 import { getPaneTmuxTitle } from './paneTitle.js';
 
@@ -621,6 +622,18 @@ async function buildLaunchCommand(config: PaneBootstrapConfig): Promise<string |
     }, {
       enableGoals: shouldEnableCodexGoals(config.agent, config.goalMode),
     });
+  }
+
+  if (config.agent === 'grok') {
+    try {
+      installGrokPaneHooks({
+        worktreePath: config.worktreePath,
+        dmuxPaneId: config.pane.id,
+        tmuxPaneId: config.pane.paneId,
+      });
+    } catch {
+      // Hook installation is best effort; Grok can still run normally.
+    }
   }
 
   return launchCommand;

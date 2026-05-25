@@ -9,11 +9,13 @@ import {
   CODEX_ENABLE_HOOKS_FLAG,
   CODEX_ENABLE_GOALS_FLAG,
 } from './codexHooks.js';
+import { sendPromptViaTmux } from './agentPromptDispatch.js';
 
 export const AGENT_IDS = [
   'claude',
   'opencode',
   'codex',
+  'grok',
   'cline',
   'gemini',
   'qwen',
@@ -33,6 +35,13 @@ export interface AgentLaunchOption {
   label: string;
   agents: AgentName[];
   isPair: boolean;
+}
+
+export interface AgentLaunchInstance {
+  agent: AgentName;
+  ordinal: number;
+  totalForAgent: number;
+  slugSuffix?: string;
 }
 
 export interface AgentRegistryEntry {
@@ -127,6 +136,34 @@ export const AGENT_REGISTRY: Readonly<Record<AgentName, AgentRegistryEntry>> = {
     },
     defaultEnabled: true,
     resumeCommandTemplate: 'codex resume --last{permissions}',
+  },
+  grok: {
+    id: 'grok',
+    name: 'Grok Build',
+    shortLabel: 'gb',
+    description: 'xAI Grok Build CLI',
+    slugSuffix: 'grok-build',
+    installTestCommand: 'command -v grok 2>/dev/null || which grok 2>/dev/null',
+    commonPaths: [
+      ...homePath('.grok/bin/grok'),
+      '/usr/local/bin/grok',
+      '/opt/homebrew/bin/grok',
+      ...homePath('.local/bin/grok'),
+      ...homePath('bin/grok'),
+      ...homePath('.npm-global/bin/grok'),
+    ],
+    promptCommand: 'grok',
+    promptTransport: 'send-keys',
+    sendKeysSubmit: ['Enter'],
+    sendKeysPostPasteDelayMs: 150,
+    sendKeysReadyDelayMs: 1600,
+    permissionFlags: {
+      plan: '--permission-mode plan',
+      acceptEdits: '--permission-mode acceptEdits',
+      bypassPermissions: '--always-approve',
+    },
+    defaultEnabled: true,
+    resumeCommandTemplate: 'grok --continue{permissions}',
   },
   cline: {
     id: 'cline',
@@ -486,6 +523,38 @@ export function buildAgentLaunchOptions(
   }));
 }
 
+export function buildAgentLaunchInstances(
+  selectedAgents: readonly AgentName[]
+): AgentLaunchInstance[] {
+  const totalByAgent = new Map<AgentName, number>();
+  for (const agent of selectedAgents) {
+    totalByAgent.set(agent, (totalByAgent.get(agent) || 0) + 1);
+  }
+
+  const seenByAgent = new Map<AgentName, number>();
+  const isMultiLaunch = selectedAgents.length > 1;
+
+  return selectedAgents.map((agent) => {
+    const ordinal = (seenByAgent.get(agent) || 0) + 1;
+    seenByAgent.set(agent, ordinal);
+
+    const totalForAgent = totalByAgent.get(agent) || 1;
+    const baseSlugSuffix = getAgentSlugSuffix(agent);
+    const slugSuffix = isMultiLaunch
+      ? totalForAgent > 1
+        ? `${baseSlugSuffix}-${ordinal}`
+        : baseSlugSuffix
+      : undefined;
+
+    return {
+      agent,
+      ordinal,
+      totalForAgent,
+      slugSuffix,
+    };
+  });
+}
+
 /**
  * Resolve CLI permission flags for a given agent and dmux permissionMode.
  */
@@ -666,5 +735,50 @@ export async function launchAgentInPane(opts: {
     }
     await tmuxService.sendShellCommand(paneId, opencodeCmd);
     await tmuxService.sendTmuxKeys(paneId, 'Enter');
+  } else {
+    let launchCommand: string;
+    const promptTransport = getPromptTransport(agent);
+
+    if (hasInitialPrompt && promptTransport !== 'send-keys') {
+      let promptFilePath: string | null = null;
+      try {
+        promptFilePath = await writePromptFile(projectRoot, slug, launchPrompt);
+      } catch {
+        // Fall back to inline escaping if prompt file write fails
+      }
+
+      if (promptFilePath) {
+        const promptBootstrap = buildPromptReadAndDeleteSnippet(promptFilePath);
+        launchCommand = `${promptBootstrap}; ${buildInitialPromptCommand(
+          agent,
+          '"$DMUX_PROMPT_CONTENT"',
+          permissionMode
+        )}`;
+      } else {
+        launchCommand = buildInitialPromptCommand(
+          agent,
+          shellQuote(launchPrompt),
+          permissionMode
+        );
+      }
+    } else {
+      launchCommand = buildAgentCommand(agent, permissionMode);
+    }
+
+    await tmuxService.sendShellCommand(paneId, launchCommand);
+    await tmuxService.sendTmuxKeys(paneId, 'Enter');
+
+    if (hasInitialPrompt && promptTransport === 'send-keys') {
+      await sendPromptViaTmux({
+        paneId,
+        prompt: launchPrompt,
+        tmuxService,
+        expectedCommand: getAgentProcessName(agent),
+        prePromptKeys: getSendKeysPrePrompt(agent),
+        submitKeys: getSendKeysSubmit(agent),
+        postPasteDelayMs: getSendKeysPostPasteDelayMs(agent),
+        readyDelayMs: getSendKeysReadyDelayMs(agent),
+      });
+    }
   }
 }

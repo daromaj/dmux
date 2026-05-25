@@ -43,7 +43,7 @@ chmod +x .dmux-hooks/*</code></pre>
       <tbody>
         <tr><td><code>DMUX_PANE_SLUG</code></td><td>The slug (branch name) for the new pane</td></tr>
         <tr><td><code>DMUX_PANE_PROMPT</code></td><td>The user's prompt text</td></tr>
-        <tr><td><code>DMUX_PANE_AGENT</code></td><td>The selected agent (claude, opencode, codex)</td></tr>
+        <tr><td><code>DMUX_PANE_AGENT</code></td><td>The selected agent ID, for example <code>claude</code>, <code>opencode</code>, <code>codex</code>, or <code>grok</code></td></tr>
         <tr><td><code>DMUX_PROJECT_NAME</code></td><td>The project name</td></tr>
         <tr><td><code>DMUX_PROJECT_PATH</code></td><td>Path to the project root</td></tr>
       </tbody>

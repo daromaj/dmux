@@ -499,8 +499,8 @@ export class PopupManager {
         isAgentName(defaultAgent) &&
         availableAgents.includes(defaultAgent)
           ? [defaultAgent]
-          : []
-      const popupHeight = Math.max(12, availableAgents.length + 8)
+          : [availableAgents[0]]
+      const popupHeight = Math.max(13, availableAgents.length + 9)
 
       const result = await this.launchPopup<AgentName[]>(
         "agentChoicePopup.js",

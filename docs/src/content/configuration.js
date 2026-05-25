@@ -61,7 +61,7 @@ export function render() {
       <tbody>
         <tr><td><strong>Type</strong></td><td><code>AgentName | ''</code></td></tr>
         <tr><td><strong>Default</strong></td><td><code>''</code> (ask each time)</td></tr>
-        <tr><td><strong>Description</strong></td><td>Skip the agent selection dialog and always use this agent for new panes. Set it to any supported agent ID such as <code>claude</code>, <code>codex</code>, or <code>gemini</code>. Use an empty string to be prompted each time.</td></tr>
+        <tr><td><strong>Description</strong></td><td>Preselect this agent at <code>1x</code> in the new-pane agent chooser and use it for non-interactive pane creation. Set it to any supported agent ID such as <code>claude</code>, <code>codex</code>, <code>grok</code>, or <code>gemini</code>. Use an empty string to start from the first available agent.</td></tr>
       </tbody>
     </table>
 
@@ -150,7 +150,7 @@ export function render() {
   "enableNotifications": true,
   "permissionMode": "bypassPermissions",
   "defaultAgent": "claude",
-  "enabledAgents": ["claude", "codex", "gemini"],
+  "enabledAgents": ["claude", "codex", "grok", "gemini"],
   "enabledNotificationSounds": ["default-system-sound", "harp"],
   "useTmuxHooks": false,
   "baseBranch": "develop",
@@ -203,7 +203,7 @@ echo 'export OPENROUTER_API_KEY="sk-or-v1-..."' >> ~/.zshrc</code></pre>
       <tbody>
         <tr><td>Slug generation</td><td>gpt-4o-mini</td><td>Convert prompts to short branch names</td></tr>
         <tr><td>Commit messages</td><td>gpt-4o-mini</td><td>Generate conventional commit messages from diffs</td></tr>
-        <tr><td>Pane status</td><td>grok-4-fast (free)</td><td>Detect agent state from terminal output</td></tr>
+        <tr><td>Pane status</td><td>Gemini Flash / GPT-4o mini, with a free JSON-capable fallback</td><td>Detect agent state from terminal output</td></tr>
       </tbody>
     </table>
 
@@ -217,7 +217,7 @@ echo 'export OPENROUTER_API_KEY="sk-or-v1-..."' >> ~/.zshrc</code></pre>
 
     <div class="callout callout-tip">
       <div class="callout-title">Tip</div>
-      OpenRouter provides free credits for new accounts, and the models dmux uses (gpt-4o-mini, grok-4-fast) are very inexpensive. Even heavy usage costs only pennies per day.
+      OpenRouter provides free credits for new accounts, and the paid models dmux prefers for AI features are very inexpensive. Pane status detection also has a zero-cost fallback for capped or unavailable paid models.
     </div>
 
     <h2>Environment Variables</h2>

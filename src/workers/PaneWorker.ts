@@ -289,6 +289,10 @@ class PaneWorker {
       return path.join(this.worktreePath, '.claude', 'dmux', `${this.paneId}.json`);
     }
 
+    if (this.agent === 'grok') {
+      return path.join(this.worktreePath, '.grok', 'dmux', `${this.paneId}.json`);
+    }
+
     return undefined;
   }
 

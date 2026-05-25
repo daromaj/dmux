@@ -13,6 +13,7 @@ describe('paneAttentionHeuristics', () => {
 
   it('detects generic progress lines for non-claude agents', () => {
     expect(hasAgentWorkingIndicators('● Working... collecting files', 'codex')).toBe(true);
+    expect(hasAgentWorkingIndicators('◆ Thought for 3.8s\n⠋ analyzing files', 'grok')).toBe(true);
     expect(hasAgentWorkingIndicators('⏳ Processing repository state', 'gemini')).toBe(true);
   });
 

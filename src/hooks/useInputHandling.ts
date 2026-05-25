@@ -898,25 +898,20 @@ export function useInputHandling(params: UseInputHandlingParams) {
       if (!confirmed) return
     }
 
-    let selectedAgents: AgentName[] = []
     const targetAvailableAgents = getAvailableAgentsForProject(targetProjectRoot)
     if (targetAvailableAgents.length === 0) {
       setStatusMessage("No agents available")
       setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
       return
-    } else if (targetAvailableAgents.length === 1) {
-      selectedAgents = [targetAvailableAgents[0]]
-    } else {
-      const agents = await popupManager.launchAgentChoicePopup(targetProjectRoot)
-      if (agents === null) {
-        return
-      }
-      if (agents.length === 0) {
-        setStatusMessage("Select at least one agent")
-        setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
-        return
-      }
-      selectedAgents = agents
+    }
+    const selectedAgents = await popupManager.launchAgentChoicePopup(targetProjectRoot)
+    if (selectedAgents === null) {
+      return
+    }
+    if (selectedAgents.length === 0) {
+      setStatusMessage("Select at least one agent")
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
+      return
     }
 
     // Prompt input

@@ -49,7 +49,7 @@ describe('PopupManager launchAgentChoicePopup', () => {
     );
   });
 
-  it('passes an empty initial selection when configured default is unavailable', async () => {
+  it('uses the first available agent as the initial selection when configured default is unavailable', async () => {
     const manager = createPopupManager(['claude', 'opencode'], 'codex') as any;
     manager.checkPopupSupport = vi.fn(() => true);
     manager.launchPopup = vi.fn().mockResolvedValue({
@@ -61,7 +61,7 @@ describe('PopupManager launchAgentChoicePopup', () => {
 
     expect(manager.launchPopup).toHaveBeenCalledWith(
       'agentChoicePopup.js',
-      [JSON.stringify(['claude', 'opencode']), JSON.stringify([])],
+      [JSON.stringify(['claude', 'opencode']), JSON.stringify(['claude'])],
       expect.any(Object),
       undefined,
       undefined

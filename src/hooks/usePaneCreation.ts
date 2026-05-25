@@ -3,7 +3,7 @@ import * as os from 'os';
 import type { DmuxPane, NewPaneInput, MergeTargetReference } from '../types.js';
 import { createPane } from '../utils/paneCreation.js';
 import { LogService } from '../services/LogService.js';
-import { getAgentSlugSuffix, type AgentName } from '../utils/agentLaunch.js';
+import { buildAgentLaunchInstances, type AgentName } from '../utils/agentLaunch.js';
 import { generateSlug } from '../utils/slug.js';
 
 interface Params {
@@ -172,34 +172,32 @@ export default function usePaneCreation({
   ): Promise<DmuxPane[]> => {
     const prompt = paneInput.prompt;
     const panesForCreation = options.existingPanes ?? panes;
-    const dedupedAgents = selectedAgents.filter(
-      (agent, index) => selectedAgents.indexOf(agent) === index
-    );
+    const agentLaunches = buildAgentLaunchInstances(selectedAgents);
 
-    if (dedupedAgents.length === 0) {
+    if (agentLaunches.length === 0) {
       return [];
     }
 
-    const isMultiLaunch = dedupedAgents.length > 1;
+    const isMultiLaunch = agentLaunches.length > 1;
     const slugBase = isMultiLaunch ? await generateSlug(prompt) : undefined;
-    const parallelLimit = getParallelPaneCreationLimit(dedupedAgents.length);
+    const parallelLimit = getParallelPaneCreationLimit(agentLaunches.length);
 
     try {
       setIsCreatingPane(true);
       if (parallelLimit > 1) {
         setStatusMessage(
-          `Creating ${dedupedAgents.length} panes (${parallelLimit} parallel)...`
+          `Creating ${agentLaunches.length} panes (${parallelLimit} parallel)...`
         );
       } else {
-        setStatusMessage(`Creating ${dedupedAgents.length} pane${dedupedAgents.length === 1 ? '' : 's'}...`);
+        setStatusMessage(`Creating ${agentLaunches.length} pane${agentLaunches.length === 1 ? '' : 's'}...`);
       }
 
-      const createdByIndex: Array<DmuxPane | null> = new Array(dedupedAgents.length).fill(null);
+      const createdByIndex: Array<DmuxPane | null> = new Array(agentLaunches.length).fill(null);
 
-      const firstAgent = dedupedAgents[0];
-      const firstPane = await createPaneInternal(prompt, firstAgent, {
+      const firstLaunch = agentLaunches[0];
+      const firstPane = await createPaneInternal(prompt, firstLaunch.agent, {
         existingPanes: panesForCreation,
-        slugSuffix: isMultiLaunch ? getAgentSlugSuffix(firstAgent) : undefined,
+        slugSuffix: firstLaunch.slugSuffix,
         slugBase,
         baseBranchOverride: paneInput.baseBranch,
         branchNameOverride: paneInput.branchName,
@@ -210,25 +208,25 @@ export default function usePaneCreation({
       });
       createdByIndex[0] = firstPane;
 
-      const remainingAgents = dedupedAgents.slice(1);
-      const workerCount = Math.min(parallelLimit, remainingAgents.length);
+      const remainingLaunches = agentLaunches.slice(1);
+      const workerCount = Math.min(parallelLimit, remainingLaunches.length);
       let nextTaskIndex = 0;
       const failures: Array<{ agent: AgentName; error: unknown }> = [];
 
       const workers = Array.from({ length: workerCount }, async () => {
-        while (nextTaskIndex < remainingAgents.length) {
+        while (nextTaskIndex < remainingLaunches.length) {
           const currentTaskIndex = nextTaskIndex;
           nextTaskIndex += 1;
-          const selectedAgent = remainingAgents[currentTaskIndex];
+          const launch = remainingLaunches[currentTaskIndex];
           const agentResultIndex = currentTaskIndex + 1;
 
           try {
             const createdSoFar = createdByIndex.filter(
               (pane): pane is DmuxPane => pane !== null
             );
-            const pane = await createPaneInternal(prompt, selectedAgent, {
+            const pane = await createPaneInternal(prompt, launch.agent, {
               existingPanes: [...panesForCreation, ...createdSoFar],
-              slugSuffix: getAgentSlugSuffix(selectedAgent),
+              slugSuffix: launch.slugSuffix,
               slugBase,
               baseBranchOverride: paneInput.baseBranch,
               branchNameOverride: paneInput.branchName,
@@ -239,9 +237,9 @@ export default function usePaneCreation({
             });
             createdByIndex[agentResultIndex] = pane;
           } catch (error) {
-            failures.push({ agent: selectedAgent, error });
+            failures.push({ agent: launch.agent, error });
             LogService.getInstance().error(
-              `Failed to create pane for agent ${selectedAgent}`,
+              `Failed to create pane for agent ${launch.agent}`,
               'usePaneCreation',
               undefined,
               error instanceof Error ? error : undefined
@@ -264,7 +262,7 @@ export default function usePaneCreation({
 
       if (failures.length > 0) {
         setStatusMessage(
-          `Created ${createdPanes.length}/${dedupedAgents.length} panes (${failures.length} failed)`
+          `Created ${createdPanes.length}/${agentLaunches.length} panes (${failures.length} failed)`
         );
       } else {
         setStatusMessage(

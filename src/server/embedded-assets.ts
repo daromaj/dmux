@@ -321,15 +321,23 @@ const DmuxApp = ({ panesFile, projectName, sessionName, settingsFile, projectRoo
     const handlePaneCreationWithAgent = async (prompt, targetProjectRoot) => {
         const agents = availableAgents;
         const createPanesForAgents = async (selectedAgents) => {
-            const dedupedAgents = selectedAgents.filter((agent, index) => selectedAgents.indexOf(agent) === index);
+            const totalByAgent = new Map();
+            selectedAgents.forEach((agent) => totalByAgent.set(agent, (totalByAgent.get(agent) || 0) + 1));
+            const seenByAgent = new Map();
             let panesForCreation = panes;
-            const isMultiLaunch = dedupedAgents.length > 1;
+            const isMultiLaunch = selectedAgents.length > 1;
             const slugBase = isMultiLaunch ? await generateSlug(prompt) : undefined;
-            for (const selectedAgent of dedupedAgents) {
+            for (const selectedAgent of selectedAgents) {
+                const ordinal = (seenByAgent.get(selectedAgent) || 0) + 1;
+                seenByAgent.set(selectedAgent, ordinal);
+                const totalForAgent = totalByAgent.get(selectedAgent) || 1;
+                const baseSlugSuffix = getAgentSlugSuffix(selectedAgent);
                 const pane = await createNewPaneHook(prompt, selectedAgent, {
                     existingPanes: panesForCreation,
                     slugSuffix: isMultiLaunch
-                        ? getAgentSlugSuffix(selectedAgent)
+                        ? totalForAgent > 1
+                            ? baseSlugSuffix + "-" + ordinal
+                            : baseSlugSuffix
                         : undefined,
                     slugBase,
                     targetProjectRoot,
@@ -1236,7 +1244,7 @@ class Dmux {
             if (creation.needsAgentChoice) {
                 selectedAgent = availableAgents[0];
                 if (!selectedAgent) {
-                    throw new Error('No supported agent CLI found (claude, opencode, codex)');
+                    throw new Error('No supported agent CLI found');
                 }
                 creation = await createPane({
                     prompt,
