@@ -277,7 +277,7 @@ export async function createPane(
   });
   const slug = existingWorktree ? existingWorktree.slug : naming.slug;
   const branchName = existingWorktree ? existingWorktree.branchName : naming.branchName;
-  const noWorktree = !!process.env.DMUX_NO_WORKTREE;
+  const noWorktree = !process.env.DMUX_USE_WORKTREE;
   const effectiveBaseBranch = naming.baseBranch;
   const tmuxService = TmuxService.getInstance();
 
