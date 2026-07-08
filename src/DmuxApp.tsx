@@ -16,6 +16,8 @@ import useActionSystem from "./hooks/useActionSystem.js"
 import { useStatusMessages } from "./hooks/useStatusMessages.js"
 import { useLayoutManagement } from "./hooks/useLayoutManagement.js"
 import { useInputHandling } from "./hooks/useInputHandling.js"
+import { useQuakeAssistant } from "./hooks/useQuakeAssistant.js"
+import QuakeOverlay from "./components/QuakeOverlay.js"
 import { useDialogState } from "./hooks/useDialogState.js"
 import { useDebugInfo } from "./hooks/useDebugInfo.js"
 import { useProjectActivity } from "./hooks/useProjectActivity.js"
@@ -1390,10 +1392,27 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
 
   // Auto-show new pane dialog removed - users can press 'n' to create panes via popup
 
+  // Quake-mode assistant: drop-down chat overlay (Ctrl+`) that operates the workspace
+  const {
+    quakeOpen,
+    service: quakeService,
+    closeQuake,
+  } = useQuakeAssistant({
+    panes,
+    sessionName,
+    sessionProjectRoot,
+    controlPaneId,
+    terminalHeight,
+    settings,
+    savePanes,
+    refreshDmuxSettings,
+  })
+
   // Periodic enforcement of control pane size and content pane rebalancing (left sidebar at 40 chars)
   useLayoutManagement({
     controlPaneId,
     hasActiveDialog:
+      quakeOpen ||
       actionSystem.actionState.showConfirmDialog ||
       actionSystem.actionState.showChoiceDialog ||
       actionSystem.actionState.showInputDialog ||
@@ -1553,7 +1572,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
     runningCommand,
     isUpdating,
     isLoading,
-    ignoreInput: ignoreInput || showHooksPrompt, // Block other input when hooks prompt is shown
+    ignoreInput: ignoreInput || showHooksPrompt || quakeOpen, // Block other input when hooks prompt or quake overlay is shown
     isDevMode,
     quitConfirmMode,
     setQuitConfirmMode,
@@ -1658,6 +1677,10 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
   const contentHeight = isBottomControlPane
     ? terminalHeight
     : Math.max(terminalHeight - footerLines, 10)
+
+  if (quakeOpen) {
+    return <QuakeOverlay service={quakeService} onClose={closeQuake} />
+  }
 
   return (
     <Box key={`theme-${selectedThemeName}-${themeRefreshNonce}`} flexDirection="column" height={terminalHeight}>

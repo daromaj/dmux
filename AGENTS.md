@@ -69,6 +69,25 @@ Notification model:
 
 If focus behavior changes, update this section and keep `CLAUDE.md` as a symlink to `AGENTS.md`.
 
+## Quake-mode assistant
+
+A drop-down Ink chat overlay that talks to the app's configured LLM and operates the workspace as a
+basic agentic harness (send keystrokes to panes, read pane output, change layout/grid/color).
+
+- Toggle: `Ctrl+\`` primary; fallback chord `Ctrl+b` then `` ` ``. The binding matches multiple
+  encodings defensively (`key.ctrl && '\``, raw `\x1c`, and the chord) — Ctrl+backtick is terminal-
+  dependent, so confirm which one fires in your terminal via a raw-key log if it doesn't respond.
+- The model streams prose plus fenced command blocks: ` ```run ` (shell/tmux, executed via a shell)
+  and ` ```dmux ` (control verbs `grid`/`control`/`color`/`layout refresh`, routed in-process because
+  raw tmux geometry is stomped by the layout enforcer and settings have no file watcher).
+- Full-auto: commands run with no confirmation gate. `Esc` aborts the loop. A forensic transcript is
+  appended to `<projectRoot>/.dmux/quake-history.jsonl`.
+- Landmarks: `src/services/QuakeAssistantService.ts` (the loop), `src/components/QuakeOverlay.tsx`
+  (overlay UI), `src/hooks/useQuakeAssistant.ts` (wiring + toggle + control-pane grow/restore),
+  `src/utils/quakeSystemPrompt.ts` (the operating manual), `src/utils/aiClient.ts` (reusable
+  OpenAI-compatible streaming client). Wired into `DmuxApp.tsx`. Design spec:
+  `docs/superpowers/specs/2026-07-09-quake-mode-assistant-design.md`.
+
 ## Adding a new agent to the registry
 
 The agent registry is centralized in `src/utils/agentLaunch.ts`.
