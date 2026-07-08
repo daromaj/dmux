@@ -104,6 +104,25 @@ pane manager. So the merge/branch-oversight items are dropped rather than built.
 - [x] Worktree cleanup on close — verified working (`closeAction.ts`; skips deletion when siblings
       still share the worktree). Only relevant when `DMUX_USE_WORKTREE=1`.
 
+## Priority 6 — LLM Workspace Assistant
+
+- [ ] **Quake-mode assistant** (`Ctrl+\``) — a drop-down chat overlay toggled with the quake key,
+      talking to the model already configured in the app (`aiProvider` / `aiModel` / `aiBaseUrl` /
+      `aiApiKey`). The assistant's system prompt ships full instructions for driving the workspace:
+      how to talk to panes (send prompts / read output), how to control pane look & feel (colors,
+      layout, grid columns, control-pane position), and how to send raw keystrokes to a pane. Net
+      effect: a conversational co-pilot that can rearrange and operate the dmux workspace for you.
+      - Open questions: overlay as a tmux popup vs. an Ink modal; how the assistant issues actions
+        (structured tool-calls mapped onto the existing action registry vs. free-form tmux
+        send-keys); guardrails/confirmation before destructive control (closing panes, killing
+        sessions); where conversation history lives.
+- [ ] **`/loop` command** — bind a repeatable action to run against the LLM agent on demand/interval
+      (re-invoke the same prompt/step N times or until a condition). Overlaps with the assistant
+      above; decide whether `/loop` is a slash command inside the quake chat or a standalone control.
+- [ ] **`/new` command** — start a fresh dmux session from the assistant/command surface (parity with
+      plain `dmux` scratch-start). Sketch a slash-command palette (`/new`, `/loop`, …) that the quake
+      assistant and/or the main TUI both expose.
+
 ## Nice to Have
 
 - [ ] **`dmux --quick`** — start with no sidebar TUI, just a tmux session + keybindings
