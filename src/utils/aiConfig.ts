@@ -29,7 +29,7 @@ export interface AiConfig {
 }
 
 const OPENROUTER_DEFAULT_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const DEEPSEEK_DEFAULT_URL = 'https://api.deepseek.com/v1/chat/completions';
+const DEEPSEEK_DEFAULT_URL = 'https://api.deepseek.com/chat/completions';
 
 const OPENROUTER_DEFAULT_MODEL_STACK = [
   'google/gemini-2.5-flash',
@@ -41,7 +41,7 @@ const OPENROUTER_FREE_FALLBACK_STACK = [
   'nvidia/nemotron-3-super-120b-a12b:free',
 ];
 
-const DEEPSEEK_DEFAULT_MODEL = 'deepseek-chat';
+const DEEPSEEK_DEFAULT_MODEL = 'deepseek-v4-pro';
 
 export interface AiConfigInput {
   aiProvider?: string;
