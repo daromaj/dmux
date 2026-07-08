@@ -177,8 +177,8 @@ function cloneSettingsArrays(settings: DmuxSettings): DmuxSettings {
 }
 
 const DEFAULT_SETTINGS: DmuxSettings = {
-  // Most permissive defaults for new dmux setups.
-  permissionMode: 'bypassPermissions',
+  // Conservative defaults — user must explicitly configure permissions and agents.
+  permissionMode: '',
   enableAutopilotByDefault: true,
   enableGoalModeByDefault: false,
   enableNotifications: true,

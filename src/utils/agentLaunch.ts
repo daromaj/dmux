@@ -92,7 +92,7 @@ export const AGENT_REGISTRY: Readonly<Record<AgentName, AgentRegistryEntry>> = {
       acceptEdits: '--permission-mode acceptEdits',
       bypassPermissions: '--dangerously-skip-permissions',
     },
-    defaultEnabled: true,
+    defaultEnabled: false,
     resumeCommandTemplate: 'claude --continue{permissions}',
   },
   opencode: {
@@ -112,7 +112,7 @@ export const AGENT_REGISTRY: Readonly<Record<AgentName, AgentRegistryEntry>> = {
     promptTransport: 'option',
     promptOption: '--prompt',
     permissionFlags: {},
-    defaultEnabled: true,
+    defaultEnabled: false,
   },
   codex: {
     id: 'codex',
