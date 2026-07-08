@@ -2,12 +2,54 @@
 
 > Based on personal workflow needs. Quick hacks first, proper features later.
 
-## Inbox (unsorted)
+## Pending
 
 - [ ] **New project creates two control entries** — starting a new project shows two entries in the
       control pane (one for terminal, one for project?). Unintuitive — collapse to a single clear entry.
 
+- [ ] **Collapse / hide-unhide control pane** — a toggle that fully hides the control pane and gives
+      its space back to the content panes, then restores it. Extends the existing `[` sidebar
+      collapse (which only shrinks the left sidebar width) into a real show/hide, and must also work
+      in **bottom** mode (reclaim the bottom strip's rows). Decide: reuse `[`, add a distinct key,
+      and whether the hidden state persists across restarts.
+
+- [ ] **Quake-mode assistant** (`Ctrl+\``) — a drop-down chat overlay toggled with the quake key,
+      talking to the model already configured in the app (`aiProvider` / `aiModel` / `aiBaseUrl` /
+      `aiApiKey`). The assistant's system prompt ships full instructions for driving the workspace:
+      how to talk to panes (send prompts / read output), how to control pane look & feel (colors,
+      layout, grid columns, control-pane position), and how to send raw keystrokes to a pane. Net
+      effect: a conversational co-pilot that can rearrange and operate the dmux workspace for you.
+      - Open questions: overlay as a tmux popup vs. an Ink modal; how the assistant issues actions
+        (structured tool-calls mapped onto the existing action registry vs. free-form tmux
+        send-keys); guardrails/confirmation before destructive control (closing panes, killing
+        sessions); where conversation history lives.
+- [ ] **`/loop` command** — bind a repeatable action to run against the LLM agent on demand/interval
+      (re-invoke the same prompt/step N times or until a condition). Overlaps with the assistant
+      above; decide whether `/loop` is a slash command inside the quake chat or a standalone control.
+- [ ] **`/new` command** — start a fresh dmux session from the assistant/command surface (parity with
+      plain `dmux` scratch-start). Sketch a slash-command palette (`/new`, `/loop`, …) that the quake
+      assistant and/or the main TUI both expose.
+
+- [ ] **`dmux --quick`** — start with no sidebar TUI, just a tmux session + keybindings
+- [ ] **Session restore** — `dmux --resume` reopens last session
+- [ ] **Multi-monitor** — spawn panes in different tmux windows
+- [ ] **Log tailing** — built-in log viewer pane (tail -f with search)
+
 ## Done ✓
+
+- [x] **Bottom strip: tip restored + duplicate shortcuts removed + tight 3-row height** — the bottom
+      control pane wasted space and the rotating `Tip:` line never showed. Three problems: (1) the shortcut
+      hints rendered twice in `PanesStrip` — a static hint row (`n new agent / t terminal / p open project
+      ...`) plus the selectable action cards saying the same thing; (2) `FooterHelp` is the only component
+      that renders `Tip:`, and it's hard-excluded in bottom mode (`DmuxApp.tsx`, `!isBottomControlPane`), so
+      the tip was structurally unreachable there; (3) the pane was 4 rows but the content is only 3 lines,
+      leaving an empty row. Fix: deleted the static hint row and made the selectable action cards the single
+      row-1 shortcuts line (with `m menu / [ collapse / ? all keys` appended inline); threaded
+      `currentFooterTip` into `PanesStrip`, rendered as row 3 hugging the pane list (no gap); dropped
+      `DEFAULT_CONTROL_PANE_HEIGHT` 4 → 3 so the pane fits its content exactly. Net 3-line layout:
+      shortcuts / panes / tip, no empty rows. Trade-off: if pane cards ever wrap to a 2nd row (many panes
+      on a narrow terminal) the tip clips — acceptable for the ≤4-panes workflow; bump `controlPaneHeight`
+      in settings if needed. Verified via isolated `ink-testing-library` render + typecheck + placement tests.
 
 - [x] **Bottom control pane too tall + collapse only hit the footer** — the bottom strip ballooned to
       ~9 rows (past even `MAX_CONTROL_PANE_HEIGHT` = 8) and `[` collapse appeared to affect only part of
@@ -122,12 +164,6 @@
   - Note: this is a fixed-columns grid (up to 4 cols × N rows), not free-form per-cell placement
     with empty cells — cell assignment is via pane order. Full drag-to-arbitrary-cell is a follow-up.
 
-- [ ] **Collapse / hide-unhide control pane** — a toggle that fully hides the control pane and gives
-      its space back to the content panes, then restores it. Extends the existing `[` sidebar
-      collapse (which only shrinks the left sidebar width) into a real show/hide, and must also work
-      in **bottom** mode (reclaim the bottom strip's rows). Decide: reuse `[`, add a distinct key,
-      and whether the hidden state persists across restarts.
-
 ## Priority 2 — Pane Management
 
 - [x] **Pane reordering** — menu Move Up/Down + `Shift+↑↓` (swaps list order + tmux geometry)
@@ -162,29 +198,3 @@ pane manager. So the merge/branch-oversight items are dropped rather than built.
       running in the pane handles its own git. The upstream merge flow is simply unused in this fork.
 - [x] Worktree cleanup on close — verified working (`closeAction.ts`; skips deletion when siblings
       still share the worktree). Only relevant when `DMUX_USE_WORKTREE=1`.
-
-## Priority 6 — LLM Workspace Assistant
-
-- [ ] **Quake-mode assistant** (`Ctrl+\``) — a drop-down chat overlay toggled with the quake key,
-      talking to the model already configured in the app (`aiProvider` / `aiModel` / `aiBaseUrl` /
-      `aiApiKey`). The assistant's system prompt ships full instructions for driving the workspace:
-      how to talk to panes (send prompts / read output), how to control pane look & feel (colors,
-      layout, grid columns, control-pane position), and how to send raw keystrokes to a pane. Net
-      effect: a conversational co-pilot that can rearrange and operate the dmux workspace for you.
-      - Open questions: overlay as a tmux popup vs. an Ink modal; how the assistant issues actions
-        (structured tool-calls mapped onto the existing action registry vs. free-form tmux
-        send-keys); guardrails/confirmation before destructive control (closing panes, killing
-        sessions); where conversation history lives.
-- [ ] **`/loop` command** — bind a repeatable action to run against the LLM agent on demand/interval
-      (re-invoke the same prompt/step N times or until a condition). Overlaps with the assistant
-      above; decide whether `/loop` is a slash command inside the quake chat or a standalone control.
-- [ ] **`/new` command** — start a fresh dmux session from the assistant/command surface (parity with
-      plain `dmux` scratch-start). Sketch a slash-command palette (`/new`, `/loop`, …) that the quake
-      assistant and/or the main TUI both expose.
-
-## Nice to Have
-
-- [ ] **`dmux --quick`** — start with no sidebar TUI, just a tmux session + keybindings
-- [ ] **Session restore** — `dmux --resume` reopens last session
-- [ ] **Multi-monitor** — spawn panes in different tmux windows
-- [ ] **Log tailing** — built-in log viewer pane (tail -f with search)

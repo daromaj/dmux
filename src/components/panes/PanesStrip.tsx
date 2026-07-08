@@ -27,15 +27,20 @@ interface PanesStripProps {
   sidebarProjects: SidebarProject[]
   fallbackProjectRoot: string
   fallbackProjectName: string
+  footerTip?: string
 }
 
 const CARD_WIDTH = 40
 
 /**
  * Horizontal "control strip" layout used when the control pane is anchored to
- * the bottom. Renders pane cards in wrapping rows of `columns` and leads with a
- * prominent onboarding help line. Pane order + chunking match
- * `buildHorizontalNavigationRows`, so keyboard navigation stays consistent.
+ * the bottom. In the 4-row bottom strip the layout is intentionally tight:
+ *   row 1 = selectable action cards (new agent / terminal / project) that double
+ *           as the shortcut hints, with the remaining key hints appended inline
+ *   row 2 = the pane list (cards chunked into rows of `columns`)
+ *   row 3 = rotating Tip line, rendered directly under the pane list (no gap)
+ * Pane order + chunking match `buildHorizontalNavigationRows`, so keyboard
+ * navigation stays consistent.
  */
 const PanesStrip: React.FC<PanesStripProps> = memo(({
   panes,
@@ -49,6 +54,7 @@ const PanesStrip: React.FC<PanesStripProps> = memo(({
   sidebarProjects,
   fallbackProjectRoot,
   fallbackProjectName,
+  footerTip,
 }) => {
   const actionLayout = useMemo(
     () => buildProjectActionLayout(
@@ -119,30 +125,32 @@ const PanesStrip: React.FC<PanesStripProps> = memo(({
 
   return (
     <Box flexDirection="column">
-      {/* Onboarding help — real shortcuts, always visible in bottom mode. */}
-      <Box>
-        <Text>
-          <Text color="cyan" bold>n</Text>
-          <Text color={COLORS.border}> new agent   </Text>
-          <Text color="cyan" bold>t</Text>
-          <Text color={COLORS.border}> terminal   </Text>
-          <Text color="cyan" bold>p</Text>
-          <Text color={COLORS.border}> open project   </Text>
-          <Text color="cyan" bold>↵</Text>
-          <Text color={COLORS.border}> jump   </Text>
-          <Text color="cyan" bold>←→</Text>
-          <Text color={COLORS.border}> select   </Text>
-          <Text color="cyan" bold>m</Text>
-          <Text color={COLORS.border}> menu   </Text>
-          <Text color="cyan" bold>[</Text>
-          <Text color={COLORS.border}> collapse   </Text>
-          <Text color="cyan" bold>?</Text>
-          <Text color={COLORS.border}> all keys</Text>
-        </Text>
-      </Box>
+      {/* Row 1: selectable action cards that double as the shortcut hints, with
+          the remaining key hints appended inline. Single line — no duplicate
+          static shortcuts row (that used to repeat new agent/terminal/project). */}
+      {!isLoading && actionItems.length > 0 && (
+        <Box>
+          <Text>
+            {actionItems.map((action, index) => (
+              <React.Fragment key={`${action.projectRoot}-${action.kind}`}>
+                {index > 0 && <Text color={COLORS.border}>{"   "}</Text>}
+                {renderActionLabel(action)}
+              </React.Fragment>
+            ))}
+            <Text color={COLORS.border}>{"     "}</Text>
+            <Text color="cyan" bold>m</Text>
+            <Text color={COLORS.border}> menu   </Text>
+            <Text color="cyan" bold>[</Text>
+            <Text color={COLORS.border}> collapse   </Text>
+            <Text color="cyan" bold>?</Text>
+            <Text color={COLORS.border}> all keys</Text>
+          </Text>
+        </Box>
+      )}
 
+      {/* Row 2+: the pane list. */}
       {flatPanes.length === 0 ? (
-        <Box marginTop={1}>
+        <Box>
           <Text color={COLORS.border}>
             No panes yet — press <Text color="cyan" bold>n</Text> to launch an agent or{" "}
             <Text color="cyan" bold>t</Text> for a terminal.
@@ -177,14 +185,12 @@ const PanesStrip: React.FC<PanesStripProps> = memo(({
         ))
       )}
 
-      {!isLoading && actionItems.length > 0 && (
-        <Box flexDirection="row" marginTop={flatPanes.length > 0 ? 1 : 0}>
-          {actionItems.map((action, index) => (
-            <React.Fragment key={`${action.projectRoot}-${action.kind}`}>
-              {index > 0 && <Text color={COLORS.border}>{"   "}</Text>}
-              {renderActionLabel(action)}
-            </React.Fragment>
-          ))}
+      {/* Row 3: rotating tip, hugging the pane list directly (no gap). */}
+      {footerTip && (
+        <Box>
+          <Text dimColor wrap="truncate-end">
+            <Text color="green">Tip:</Text> {footerTip}
+          </Text>
         </Box>
       )}
     </Box>

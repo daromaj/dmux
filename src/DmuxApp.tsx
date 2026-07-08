@@ -1676,6 +1676,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
             sidebarProjects={sidebarProjects}
             fallbackProjectRoot={projectRoot || process.cwd()}
             fallbackProjectName={projectName}
+            footerTip={currentFooterTip}
           />
         ) : (
           <PanesGrid

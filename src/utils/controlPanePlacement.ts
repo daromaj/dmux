@@ -3,7 +3,8 @@
  * how thick it is.
  *
  * - `left` (default): a fixed-WIDTH sidebar on the left (thickness = columns, 40).
- * - `bottom`: a fixed-HEIGHT strip across the bottom (thickness = rows, default 12).
+ * - `bottom`: a fixed-HEIGHT strip across the bottom (thickness = rows, default 3:
+ *   one line of shortcuts + one row of pane cards + one rotating tip line).
  *
  * The pure sanitize/clamp helpers are used by `settingsManager`; the imported
  * bindings below are only referenced inside `getControlPanePlacement`, so the
@@ -17,7 +18,7 @@ import { StateManager } from '../shared/StateManager.js';
 export type ControlPanePosition = 'left' | 'bottom';
 
 export const SIDEBAR_WIDTH_DEFAULT = 40;
-export const DEFAULT_CONTROL_PANE_HEIGHT = 4;
+export const DEFAULT_CONTROL_PANE_HEIGHT = 3;
 export const MIN_CONTROL_PANE_HEIGHT = 2;
 export const MAX_CONTROL_PANE_HEIGHT = 8;
 
