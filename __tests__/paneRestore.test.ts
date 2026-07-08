@@ -32,7 +32,7 @@ describe('pane restoration', () => {
     splitPaneMock.mockReturnValue('%9');
   });
 
-  it('resumes restored worktree panes with their original agent command', async () => {
+  it('restores worktree panes with a FRESH agent session (no resume)', async () => {
     const { recreateMissingPanes } = await import('../src/hooks/usePaneLoading.js');
 
     const pane: DmuxPane = {
@@ -48,12 +48,66 @@ describe('pane restoration', () => {
 
     await recreateMissingPanes([pane], '/repo/.dmux/dmux.config.json');
 
+    // Fresh launch: `codex ...`, NOT `codex resume --last ...`.
     expect(tmuxServiceMock.sendShellCommand).toHaveBeenCalledWith(
       '%9',
       expect.stringContaining(
-        "export DMUX_PANE_ID='dmux-1'; export DMUX_TMUX_PANE_ID='%9'; codex --enable hooks resume --last --dangerously-bypass-approvals-and-sandbox"
+        "export DMUX_PANE_ID='dmux-1'; export DMUX_TMUX_PANE_ID='%9'; codex --enable hooks --dangerously-bypass-approvals-and-sandbox"
       )
     );
+    const lastCall = tmuxServiceMock.sendShellCommand.mock.calls.at(-1) as unknown[] | undefined;
+    expect(String(lastCall?.[1])).not.toContain('resume --last');
     expect(tmuxServiceMock.sendTmuxKeys).toHaveBeenCalledWith('%9', 'Enter');
+  });
+});
+
+const pane = (over: Partial<DmuxPane>): DmuxPane => ({
+  id: 'id',
+  slug: 'slug',
+  prompt: '',
+  paneId: '%1',
+  ...over,
+}) as DmuxPane;
+
+describe('shouldContinueSession', () => {
+  it('is false for a plain launch', async () => {
+    const { shouldContinueSession } = await import('../src/hooks/usePaneLoading.js');
+    expect(shouldContinueSession([])).toBe(false);
+    expect(shouldContinueSession(['--files-only'])).toBe(false);
+  });
+
+  it('is true for -c and --continue', async () => {
+    const { shouldContinueSession } = await import('../src/hooks/usePaneLoading.js');
+    expect(shouldContinueSession(['-c'])).toBe(true);
+    expect(shouldContinueSession(['--continue'])).toBe(true);
+    expect(shouldContinueSession(['--dev', '-c'])).toBe(true);
+  });
+});
+
+describe('selectMissingPanesToRecreate', () => {
+  const live = pane({ id: 'a', paneId: '%1', agent: 'claude' });
+  const deadAgent = pane({ id: 'b', paneId: '%99', agent: 'claude' });
+  const deadShell = pane({ id: 'c', paneId: '%98', type: 'shell' });
+  const panes = [live, deadAgent, deadShell];
+  const allPaneIds = ['%1'];
+
+  it('recreates nothing without continue mode (default dmux start)', async () => {
+    const { selectMissingPanesToRecreate } = await import('../src/hooks/usePaneLoading.js');
+    expect(selectMissingPanesToRecreate(panes, allPaneIds, true, false)).toEqual([]);
+  });
+
+  it('recreates only missing non-shell panes in continue mode', async () => {
+    const { selectMissingPanesToRecreate } = await import('../src/hooks/usePaneLoading.js');
+    expect(selectMissingPanesToRecreate(panes, allPaneIds, true, true)).toEqual([deadAgent]);
+  });
+
+  it('recreates nothing when not the initial load', async () => {
+    const { selectMissingPanesToRecreate } = await import('../src/hooks/usePaneLoading.js');
+    expect(selectMissingPanesToRecreate(panes, allPaneIds, false, true)).toEqual([]);
+  });
+
+  it('recreates nothing when tmux reports no panes yet', async () => {
+    const { selectMissingPanesToRecreate } = await import('../src/hooks/usePaneLoading.js');
+    expect(selectMissingPanesToRecreate(panes, [], true, true)).toEqual([]);
   });
 });

@@ -574,8 +574,17 @@ class Dmux {
         config.welcomePaneId
       );
 
-      // Only show welcome pane if there are no tracked AND no untracked panes
-      const hasAnyPanes = (config.panes?.length ?? 0) > 0 || untrackedPanes.length > 0;
+      // Only show welcome pane if there are no tracked AND no untracked panes.
+      // Continue mode (`dmux -c`) restores saved panes even when they aren't live in
+      // tmux yet; default `dmux` starts fresh, so stale saved panes (tmux was killed)
+      // must not suppress the welcome pane — count only panes still live in tmux.
+      const continueSession = process.argv
+        .slice(2)
+        .some((arg) => arg === '-c' || arg === '--continue');
+      const trackedPaneCount = continueSession
+        ? (config.panes?.length ?? 0)
+        : (config.panes?.filter((p: any) => sessionPaneIds.includes(p.paneId)).length ?? 0);
+      const hasAnyPanes = trackedPaneCount > 0 || untrackedPanes.length > 0;
 
       // Single-pane mode: user opted out of the auto welcome/placeholder pane.
       const welcomePaneDisabled = new SettingsManager(this.projectRoot)

@@ -10,7 +10,7 @@ import { TMUX_COMMAND_TIMEOUT, TMUX_RETRY_DELAY } from '../constants/timing.js';
 import { atomicWriteJson } from '../utils/atomicWrite.js';
 import { syncPaneColorThemes } from '../utils/paneColors.js';
 import {
-  buildAgentResumeOrLaunchCommand,
+  buildAgentCommand,
   shouldEnableCodexGoals,
 } from '../utils/agentLaunch.js';
 import { ensureGeminiFolderTrusted } from '../utils/geminiTrust.js';
@@ -44,6 +44,39 @@ interface PaneLoadResult {
   titleToId: Map<string, string>;
 }
 
+/**
+ * Whether dmux was launched in "continue" mode (`dmux -c` / `dmux --continue`).
+ *
+ * Default `dmux` starts fresh: saved panes that are no longer live in tmux are NOT
+ * recreated. `dmux -c` reopens the last session — live panes are reattached, and any
+ * that were lost (e.g. the tmux server was killed) are recreated with fresh agent
+ * sessions.
+ */
+export function shouldContinueSession(
+  argv: string[] = process.argv.slice(2)
+): boolean {
+  return argv.includes('-c') || argv.includes('--continue');
+}
+
+/**
+ * Decide which saved panes should be recreated on initial load. Only worktree/agent
+ * panes that are missing from tmux qualify, and ONLY when continue mode is active.
+ * Without `-c`, nothing is recreated (start-fresh behavior).
+ */
+export function selectMissingPanesToRecreate(
+  panes: DmuxPane[],
+  allPaneIds: string[],
+  isInitialLoad: boolean,
+  continueSession: boolean
+): DmuxPane[] {
+  if (!isInitialLoad || !continueSession || allPaneIds.length === 0 || panes.length === 0) {
+    return [];
+  }
+  return panes.filter(
+    (pane) => !allPaneIds.includes(pane.paneId) && pane.type !== 'shell'
+  );
+}
+
 async function restoreAgentSessionForPane(
   tmuxService: TmuxService,
   pane: DmuxPane,
@@ -58,7 +91,10 @@ async function restoreAgentSessionForPane(
   }
 
   await new Promise((resolve) => setTimeout(resolve, 200));
-  let command = buildAgentResumeOrLaunchCommand(pane.agent, pane.permissionMode);
+  // Restore panes with a FRESH agent session (no --continue/resume). dmux does not
+  // silently resume an old agent session behind the user's back; `dmux -c` recreates
+  // the pane structure and starts the agent clean.
+  let command = buildAgentCommand(pane.agent, pane.permissionMode);
 
   if (pane.agent === 'codex' && pane.worktreePath) {
     let codexHookEventFile: string | undefined;
@@ -429,14 +465,25 @@ export async function loadAndProcessPanes(
     }
   }
 
-  // Only attempt to recreate missing panes on initial load (only worktree panes, not shell)
-  const missingPanes = (allPaneIds.length > 0 && reboundPanes.length > 0 && isInitialLoad)
-    ? reboundPanes.filter(pane =>
-        !allPaneIds.includes(pane.paneId) && pane.type !== 'shell'
-      )
-    : [];
+  // Continue mode (`dmux -c`) gates whether saved panes get restored at all.
+  const continueSession = shouldContinueSession();
 
-  // Recreate missing panes (only on initial load)
+  // Only recreate missing worktree/agent panes when the user asked to continue.
+  const missingPanes = selectMissingPanesToRecreate(
+    reboundPanes,
+    allPaneIds,
+    isInitialLoad,
+    continueSession
+  );
+
+  // Default `dmux` (no -c): start fresh. Drop saved panes that are no longer live in
+  // tmux so they don't linger with dead IDs. The on-disk config is left untouched here,
+  // so a later `dmux -c` can still restore them.
+  if (isInitialLoad && !continueSession && allPaneIds.length > 0) {
+    reboundPanes = reboundPanes.filter((pane) => allPaneIds.includes(pane.paneId));
+  }
+
+  // Recreate missing panes (only on initial load, only in continue mode)
   await recreateMissingPanes(missingPanes, panesFile);
 
   // Re-fetch pane IDs after recreation

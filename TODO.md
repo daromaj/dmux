@@ -4,6 +4,13 @@
 
 ## Done ✓
 
+- [x] **Startup no longer auto-resumes agents** — plain `dmux` starts fresh (single pane); it will
+      not silently recreate saved panes and relaunch `claude --continue` in some old worktree dir.
+      `dmux -c` (continue) reopens the last session: live tmux panes reattach; panes lost to a killed
+      tmux server are recreated with **fresh** agent sessions (no resume). Gated in
+      `usePaneLoading.ts` (`shouldContinueSession` / `selectMissingPanesToRecreate`) + welcome-pane
+      logic in `index.ts`.
+
 - [x] Configurable AI provider (env vars: `DMUX_AI_PROVIDER`, `DMUX_AI_MODEL`, `DMUX_AI_BASE_URL`, `DMUX_AI_API_KEY`)
 - [x] DeepSeek provider preset (`deepseek-v4-pro` model, `api.deepseek.com` endpoint)
 - [x] Settings UI for AI config (`aiProvider`, `aiModel`, `aiBaseUrl`)
