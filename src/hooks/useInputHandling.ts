@@ -494,15 +494,23 @@ export function useInputHandling(params: UseInputHandlingParams) {
       }
 
       // Ask which command to run in the new pane for the selected project.
+      // Favourite commands are user-configurable via settings (favoriteCommands);
+      // fall back to sensible defaults when none are set.
       const projectName = path.basename(selected)
+      const favoriteCommands = new SettingsManager(selected).getSettings().favoriteCommands
+      const favorites = Array.isArray(favoriteCommands) && favoriteCommands.length > 0
+        ? favoriteCommands
+        : ["cc", "cc -c", "pi", "pi -c"]
       const command = await popupManager.launchChoicePopup(
         "Open With",
         `Command to run in ${projectName}`,
         [
           { id: "shell", label: "Shell", description: "Plain terminal, no command" },
-          { id: "cc", label: "cc", description: "Claude Code (interactive)" },
-          { id: "ccc", label: "ccc", description: "Claude Code (cc -c, continue session)" },
-          { id: "pi", label: "pi", description: "pi CLI agent" },
+          ...favorites.map((cmd) => ({
+            id: cmd,
+            label: cmd,
+            description: `Run "${cmd}" after the terminal starts`,
+          })),
         ],
       )
 

@@ -44,7 +44,10 @@
 ## Priority 3 — Agent Integration
 
 - [x] **pi CLI** as first-class agent (registered + default-enabled)
-- [ ] **Custom agent commands** — define arbitrary launch commands per agent
+- [x] **Favourite startup commands** — `favoriteCommands` setting (default `cc`/`cc -c`/`pi`/`pi -c`); the
+      `p` project-open picker offers them after Shell, runs the chosen one in the fresh terminal. Edit the list
+      in `.dmux/settings.json` (layered global/project). Was described as "custom agent commands"; the real need
+      was a per-project favourites list, not a full agent-registry rewrite.
 - [x] **Per-pane agent override** — menu `🔀 Change Agent` relaunches pane with a new agent
 - [x] **Goal mode** per-pane toggle from sidebar (menu action `🎯 Toggle Goal Mode`)
 - [x] **`p` + command** — after selecting project, pick command (shell / cc / ccc / pi)

@@ -551,6 +551,52 @@ describe('SettingsManager defaults', () => {
     expect(manager.getEffectiveScope('branchPrefix')).toBe('team');
   });
 
+  it('provides default favouriteCommands and allows project override', async () => {
+    vi.mock('fs', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('fs')>();
+      return {
+        ...actual,
+        existsSync: vi.fn(() => false),
+        readFileSync: vi.fn(),
+        writeFileSync: vi.fn(),
+        mkdirSync: vi.fn(),
+      };
+    });
+
+    const { SettingsManager } = await import('../src/utils/settingsManager.js');
+    const manager = new SettingsManager('/tmp/test-project');
+
+    expect(manager.getSettings().favoriteCommands).toEqual(['cc', 'cc -c', 'pi', 'pi -c']);
+
+    manager.updateSetting('favoriteCommands', ['cc -c', 'pi -c'], 'project');
+    expect(manager.getSettings().favoriteCommands).toEqual(['cc -c', 'pi -c']);
+  });
+
+  it('sanitizes favouriteCommands loaded from disk (trim, drop empties/non-strings, dedup)', async () => {
+    vi.doMock('fs', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('fs')>();
+      return {
+        ...actual,
+        existsSync: vi.fn((path: string) => path.endsWith('/.dmux/settings.json')),
+        readFileSync: vi.fn((path: string) => {
+          if (path.endsWith('/.dmux/settings.json')) {
+            return JSON.stringify({
+              favoriteCommands: ['  cc -c  ', 'cc -c', '', 42, 'pi', 'pi'],
+            });
+          }
+          throw new Error(`Unexpected path: ${path}`);
+        }),
+        writeFileSync: vi.fn(),
+        mkdirSync: vi.fn(),
+      };
+    });
+
+    const { SettingsManager } = await import('../src/utils/settingsManager.js');
+    const manager = new SettingsManager('/tmp/test-project');
+
+    expect(manager.getSettings().favoriteCommands).toEqual(['cc -c', 'pi']);
+  });
+
   it('ignores malformed team defaults files', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 

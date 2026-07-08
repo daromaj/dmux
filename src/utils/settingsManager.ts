@@ -157,6 +157,18 @@ function sanitizeLoadedSettings(value: unknown): DmuxSettings {
     sanitized.gridColumns = parsed.gridColumns;
   }
 
+  if (Array.isArray(parsed.favoriteCommands)) {
+    const cleaned = parsed.favoriteCommands
+      .filter((cmd): cmd is string => typeof cmd === 'string')
+      .map((cmd) => cmd.trim())
+      .filter((cmd) => cmd.length > 0)
+      .slice(0, 20);
+    // De-duplicate while preserving order.
+    sanitized.favoriteCommands = cleaned.filter(
+      (cmd, index) => cleaned.indexOf(cmd) === index
+    );
+  }
+
   if (
     typeof parsed.aiProvider === 'string'
     && ['openrouter', 'deepseek', 'custom'].includes(parsed.aiProvider)
@@ -186,6 +198,10 @@ function cloneSettingsArrays(settings: DmuxSettings): DmuxSettings {
     cloned.enabledNotificationSounds = [...cloned.enabledNotificationSounds];
   }
 
+  if (Array.isArray(cloned.favoriteCommands)) {
+    cloned.favoriteCommands = [...cloned.favoriteCommands];
+  }
+
   return cloned;
 }
 
@@ -203,6 +219,7 @@ const DEFAULT_SETTINGS: DmuxSettings = {
   showFooterTips: true,
   disableWelcomePane: false,
   gridColumns: 0,
+  favoriteCommands: ['cc', 'cc -c', 'pi', 'pi -c'],
   language: 'en',
   colorTheme: DEFAULT_DMUX_THEME,
 };

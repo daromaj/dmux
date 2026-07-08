@@ -145,6 +145,8 @@ export interface DmuxSettings {
   maxPaneWidth?: number;
   // Virtual grid: fixed number of columns for content panes (0/undefined = auto-adaptive)
   gridColumns?: number;
+  // Favourite startup commands offered in the project-open picker (e.g. ["cc", "cc -c", "pi"])
+  favoriteCommands?: string[];
   // Display language ('en' for English, 'ja' for Japanese)
   language?: 'en' | 'ja';
   // AI provider: 'openrouter' (default), 'deepseek', or 'custom'
