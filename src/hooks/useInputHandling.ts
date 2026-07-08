@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react"
+import fs from "fs/promises"
+import os from "os"
 import path from "path"
 import { useInput } from "ink"
 import type { DmuxPane, NewPaneInput, SidebarProject } from "../types.js"
@@ -398,6 +400,66 @@ export function useInputHandling(params: UseInputHandlingParams) {
       setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_LONG)
     } finally {
       setIsCreatingPane(false)
+    }
+  }
+
+  /**
+   * Scan ~/git for projects, sorted by most recently modified,
+   * present them in a choice popup, and open a terminal pane.
+   */
+  const handleProjectQuickOpen = async () => {
+    try {
+      setStatusMessage("Scanning projects...")
+      const gitDir = path.join(os.homedir(), "git")
+      const entries = await fs.readdir(gitDir, { withFileTypes: true })
+
+      const projects: { name: string; fullPath: string; mtime: number }[] = []
+      for (const entry of entries) {
+        if (!entry.isDirectory() || entry.name.startsWith(".")) continue
+        const fullPath = path.join(gitDir, entry.name)
+        try {
+          const stat = await fs.stat(fullPath)
+          // Check if it's a git repo
+          try {
+            await fs.access(path.join(fullPath, ".git"))
+          } catch {
+            continue // skip non-git dirs
+          }
+          projects.push({ name: entry.name, fullPath, mtime: stat.mtimeMs })
+        } catch {
+          continue
+        }
+      }
+
+      if (projects.length === 0) {
+        setStatusMessage("No git projects found in ~/git")
+        setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_LONG)
+        return
+      }
+
+      // Sort by most recently modified
+      projects.sort((a, b) => b.mtime - a.mtime)
+
+      const selected = await popupManager.launchChoicePopup(
+        "Open Project",
+        `Projects in ~/git (${projects.length} found)`,
+        projects.map((p) => ({
+          id: p.fullPath,
+          label: p.name,
+          description: p.fullPath,
+        })),
+      )
+
+      if (!selected) {
+        setStatusMessage("")
+        return
+      }
+
+      // Open a terminal pane in the selected project
+      await handleCreateTerminalPane(selected)
+    } catch (error: any) {
+      setStatusMessage(`Failed: ${error.message}`)
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_LONG)
     }
   }
 
@@ -1482,11 +1544,19 @@ export function useInputHandling(params: UseInputHandlingParams) {
     } else if (
       !isLoading &&
       (
-        input === "p" ||
-        input === "N"
+        input === "p"
       )
     ) {
-      // Add a project to the sidebar ([p], with Shift+N fallback)
+      // Quick-open project from ~/git (sorted by most recently modified)
+      await handleProjectQuickOpen()
+      return
+    } else if (
+      !isLoading &&
+      (
+        input === "P"
+      )
+    ) {
+      // Add a project to the sidebar (Shift+P)
       await handleAddProjectToSidebar()
       return
     } else if (!isLoading && input === "R") {
