@@ -424,6 +424,12 @@ export const enforceControlPaneSize = async (
   const tmuxService = TmuxService.getInstance();
 
   try {
+    // Respect sidebar collapse — don't fight the user
+    const collapsed = tmuxService.getPaneOptionSync(controlPaneId, '@dmux_sidebar_collapsed');
+    if (collapsed === '1' && !options?.forceLayout) {
+      return;
+    }
+
     const contentPanes = getContentPaneIds(controlPaneId);
     // logService.debug(`enforceControlPaneSize called: ${contentPanes.length} content panes`, 'Layout');
 

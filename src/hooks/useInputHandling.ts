@@ -403,6 +403,32 @@ export function useInputHandling(params: UseInputHandlingParams) {
     }
   }
 
+  const sidebarCollapsedRef = useRef(false)
+
+  /**
+   * Toggle sidebar collapse/expand using '[' key.
+   */
+  const handleToggleSidebar = async () => {
+    if (!controlPaneId) return
+    try {
+      const tmuxService = TmuxService.getInstance()
+      sidebarCollapsedRef.current = !sidebarCollapsedRef.current
+      if (sidebarCollapsedRef.current) {
+        await tmuxService.resizePane(controlPaneId, { width: 1 })
+        tmuxService.setPaneOptionSync(controlPaneId, '@dmux_sidebar_collapsed', '1')
+        setStatusMessage("Sidebar collapsed ([ to expand)")
+      } else {
+        tmuxService.setPaneOptionSync(controlPaneId, '@dmux_sidebar_collapsed', '0')
+        await enforceControlPaneSize(controlPaneId, SIDEBAR_WIDTH, { forceLayout: true })
+        setStatusMessage("Sidebar expanded")
+      }
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
+    } catch (error: any) {
+      setStatusMessage(`Failed: ${error.message}`)
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_LONG)
+    }
+  }
+
   /**
    * Scan ~/git for projects, sorted by most recently modified,
    * present them in a choice popup, and open a terminal pane.
@@ -1480,6 +1506,10 @@ export function useInputHandling(params: UseInputHandlingParams) {
           setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_LONG)
         }
       }
+    } else if (input === "[") {
+      // Toggle sidebar collapse/expand
+      await handleToggleSidebar()
+      return
     } else if (input === "l") {
       // Open logs popup
       await popupManager.launchLogsPopup(getActiveProjectRoot())
