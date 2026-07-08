@@ -4,12 +4,16 @@
 
 ## Inbox (unsorted)
 
-- [ ] **Single pane maximized** — when only a single content pane exists it should fill the whole
-      working area (no wasted empty grid space next to it).
 - [ ] **New project creates two control entries** — starting a new project shows two entries in the
       control pane (one for terminal, one for project?). Unintuitive — collapse to a single clear entry.
 
 ## Done ✓
+
+- [x] **Single pane maximized** — a lone content pane now fills the whole working area instead of being
+      capped at `MAX_COMFORTABLE_WIDTH` (~100 cols). Root cause: `LayoutCalculator.buildLayoutForCols`
+      sized `windowWidth = min(reserved + cols*MAX_COMFORTABLE_WIDTH, terminalWidth)`, so with one pane
+      the window shrank to ~100 cols and left the rest of the terminal empty. Special-cased
+      `numContentPanes === 1` to use the full terminal width.
 
 - [x] **New-pane action order: terminal → project → agent** — `[t] terminal` is now the default/first
       action (initial selection lands on it), `[p] project` is a new card that opens the quick-open

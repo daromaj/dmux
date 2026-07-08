@@ -295,6 +295,19 @@ describe('layout calculation', () => {
       expect(layout.paneDistribution).toEqual([]);
     });
 
+    it('maximizes a single content pane to the full working area', () => {
+      // A lone pane must NOT be capped at MAX_COMFORTABLE_WIDTH — it fills the
+      // whole terminal (minus the reserved sidebar) instead of shrinking the window.
+      const layout = calculateOptimalLayout(1, 500, 60, DEFAULT_LAYOUT_CONFIG);
+
+      expect(layout.cols).toBe(1);
+      expect(layout.rows).toBe(1);
+      expect(layout.windowWidth).toBe(500);
+      expect(layout.actualPaneWidth).toBeGreaterThan(
+        DEFAULT_LAYOUT_CONFIG.MAX_COMFORTABLE_WIDTH
+      );
+    });
+
     it('allows single-row layout when max pane width is reduced below default min', () => {
       const config = {
         ...DEFAULT_LAYOUT_CONFIG,

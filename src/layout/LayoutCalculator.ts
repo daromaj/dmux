@@ -188,8 +188,13 @@ export class LayoutCalculator {
       return null;
     }
 
+    // A single content pane fills the whole working area. Capping it at the
+    // comfortable reading width would shrink the window to ~MAX_COMFORTABLE_WIDTH
+    // and leave the rest of the terminal empty, which reads as "not maximized".
     const idealMaxWidth =
-      reservedWidth + cols * MAX_COMFORTABLE_WIDTH + columnBorders;
+      numContentPanes === 1
+        ? terminalWidth
+        : reservedWidth + cols * MAX_COMFORTABLE_WIDTH + columnBorders;
     const windowWidth = Math.min(idealMaxWidth, terminalWidth);
 
     const effectiveContentWidth = windowWidth - reservedWidth - columnBorders;
