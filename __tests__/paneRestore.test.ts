@@ -84,6 +84,30 @@ describe('shouldContinueSession', () => {
   });
 });
 
+describe('selectStalePanesToDrop', () => {
+  const live = pane({ id: 'a', paneId: '%1', agent: 'claude' });
+  const deadAgent = pane({ id: 'b', paneId: '%99', agent: 'claude', worktreePath: '/wt/b' });
+  const deadShell = pane({ id: 'c', paneId: '%98', type: 'shell' });
+  const panes = [live, deadAgent, deadShell];
+  const allPaneIds = ['%1'];
+
+  it('fresh start drops every non-live pane (so it cannot be reloaded/recreated)', async () => {
+    const { selectStalePanesToDrop } = await import('../src/hooks/usePaneLoading.js');
+    expect(selectStalePanesToDrop(panes, allPaneIds, false)).toEqual([deadAgent, deadShell]);
+  });
+
+  it('continue mode drops only dead shells, keeps dead worktree panes for restore', async () => {
+    const { selectStalePanesToDrop } = await import('../src/hooks/usePaneLoading.js');
+    expect(selectStalePanesToDrop(panes, allPaneIds, true)).toEqual([deadShell]);
+  });
+
+  it('never drops a live pane', async () => {
+    const { selectStalePanesToDrop } = await import('../src/hooks/usePaneLoading.js');
+    expect(selectStalePanesToDrop(panes, allPaneIds, false)).not.toContain(live);
+    expect(selectStalePanesToDrop(panes, allPaneIds, true)).not.toContain(live);
+  });
+});
+
 describe('selectMissingPanesToRecreate', () => {
   const live = pane({ id: 'a', paneId: '%1', agent: 'claude' });
   const deadAgent = pane({ id: 'b', paneId: '%99', agent: 'claude' });

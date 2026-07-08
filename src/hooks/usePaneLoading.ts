@@ -59,6 +59,27 @@ export function shouldContinueSession(
 }
 
 /**
+ * Decide which saved panes are stale and must be dropped from config on initial load.
+ *
+ * - A pane is stale only if it is not live in tmux.
+ * - In continue mode (`-c`), only shell panes are dropped (they can't be recreated);
+ *   worktree/agent panes are kept so they can be restored.
+ * - In fresh mode (plain `dmux`), ALL non-live panes are dropped — this is what stops a
+ *   later poll from reloading them and recreating them in an old worktree dir.
+ */
+export function selectStalePanesToDrop(
+  panes: DmuxPane[],
+  allPaneIds: string[],
+  continueSession: boolean
+): DmuxPane[] {
+  return panes.filter(
+    (pane) =>
+      !allPaneIds.includes(pane.paneId) &&
+      (!continueSession || pane.type === 'shell')
+  );
+}
+
+/**
  * Decide which saved panes should be recreated on initial load. Only worktree/agent
  * panes that are missing from tmux qualify, and ONLY when continue mode is active.
  * Without `-c`, nothing is recreated (start-fresh behavior).
@@ -420,24 +441,28 @@ export async function loadAndProcessPanes(
     currentWindowPaneIds
   );
 
-  // CRITICAL FIX: On initial load, immediately filter out shell panes with stale IDs
-  // Shell panes cannot be recreated (no worktreePath), so keeping them causes:
-  // 1. Hang when trying to send keys to non-existent panes
-  // 2. Hang when trying to get pane status/content
-  // 3. "Invalid layout" errors when applying layouts with stale pane IDs
-  if (isInitialLoad && allPaneIds.length > 0) {
-    const staleShellPanes = reboundPanes.filter(
-      p => p.type === 'shell' && !allPaneIds.includes(p.paneId)
-    );
+  // Continue mode (`dmux -c`) gates whether saved panes get restored at all.
+  const continueSession = shouldContinueSession();
 
-    if (staleShellPanes.length > 0) {
+  // On initial load, drop stale panes and PERSIST the cleaned config so a later poll
+  // cycle can't reload them and resurrect them.
+  //
+  // - Always: stale shell panes (no worktreePath, cannot be recreated) — keeping them
+  //   with dead IDs causes hangs and "Invalid layout" errors.
+  // - Fresh start (no -c): ALSO drop stale worktree/agent panes. `dmux` starts from
+  //   scratch, so a saved worktree pane that isn't live must not be recreated. Removing
+  //   it from config on disk is what stops the polling recreation path from bringing it
+  //   back (e.g. after a click triggers a sync). `dmux -c` keeps them so they restore.
+  if (isInitialLoad && allPaneIds.length > 0) {
+    const stalePanes = selectStalePanesToDrop(reboundPanes, allPaneIds, continueSession);
+    const staleIds = new Set(stalePanes.map(p => p.id));
+
+    if (stalePanes.length > 0) {
       LogService.getInstance().info(
-        `Removing ${staleShellPanes.length} stale shell pane(s) on startup: ${staleShellPanes.map(p => p.slug).join(', ')}`,
+        `Removing ${stalePanes.length} stale pane(s) on startup${continueSession ? ' (shells only, -c)' : ' (fresh start)'}: ${stalePanes.map(p => p.slug).join(', ')}`,
         'usePaneLoading'
       );
-      reboundPanes = reboundPanes.filter(
-        p => !(p.type === 'shell' && !allPaneIds.includes(p.paneId))
-      );
+      reboundPanes = reboundPanes.filter(p => !staleIds.has(p.id));
 
       // Save the cleaned config immediately to prevent these panes from reappearing
       try {
@@ -455,7 +480,7 @@ export async function loadAndProcessPanes(
         );
         config.lastUpdated = new Date().toISOString();
         await atomicWriteJson(panesFile, config);
-        LogService.getInstance().debug('Saved cleaned config after removing stale shell panes', 'usePaneLoading');
+        LogService.getInstance().debug('Saved cleaned config after removing stale panes', 'usePaneLoading');
       } catch (saveError) {
         LogService.getInstance().debug(
           `Failed to save cleaned config: ${saveError}`,
@@ -465,9 +490,6 @@ export async function loadAndProcessPanes(
     }
   }
 
-  // Continue mode (`dmux -c`) gates whether saved panes get restored at all.
-  const continueSession = shouldContinueSession();
-
   // Only recreate missing worktree/agent panes when the user asked to continue.
   const missingPanes = selectMissingPanesToRecreate(
     reboundPanes,
@@ -475,13 +497,6 @@ export async function loadAndProcessPanes(
     isInitialLoad,
     continueSession
   );
-
-  // Default `dmux` (no -c): start fresh. Drop saved panes that are no longer live in
-  // tmux so they don't linger with dead IDs. The on-disk config is left untouched here,
-  // so a later `dmux -c` can still restore them.
-  if (isInitialLoad && !continueSession && allPaneIds.length > 0) {
-    reboundPanes = reboundPanes.filter((pane) => allPaneIds.includes(pane.paneId));
-  }
 
   // Recreate missing panes (only on initial load, only in continue mode)
   await recreateMissingPanes(missingPanes, panesFile);
