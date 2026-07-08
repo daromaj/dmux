@@ -59,11 +59,16 @@
 - [x] **Configurable tmux prefix** — N/A: dmux uses no-prefix `M-` bindings, never hardcodes `C-b`
 - [x] **Pane colors** — menu `🎨 Set Pane Color` (manual override persists)
 
-## Priority 5 — Git / Worktree (opt-in)
+## Priority 5 — Git / Worktree
 
-- [ ] Worktree mode (`DMUX_USE_WORKTREE=1`) properly documented
-- [ ] Merge without worktree — detect branch from pane cwd, merge manually
-- [ ] Worktree cleanup on close (already exists, verify)
+Decision: **dmux does not manage git.** Agents own their branches/worktrees/merges; dmux is just a
+pane manager. So the merge/branch-oversight items are dropped rather than built.
+
+- [x] Worktree mode (`DMUX_USE_WORKTREE=1`) documented — README "Worktrees (opt-in)" section
+- [~] ~~Merge without worktree~~ — **won't do.** dmux shouldn't orchestrate merges at all; the agent
+      running in the pane handles its own git. The upstream merge flow is simply unused in this fork.
+- [x] Worktree cleanup on close — verified working (`closeAction.ts`; skips deletion when siblings
+      still share the worktree). Only relevant when `DMUX_USE_WORKTREE=1`.
 
 ## Nice to Have
 

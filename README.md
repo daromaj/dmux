@@ -2,24 +2,28 @@
   <img src="./dmux.png" alt="dmux logo" width="400" />
 </p>
 
-<h3 align="center">Parallel agents with tmux and worktrees</h3>
+<h3 align="center">Parallel AI agents in tmux panes</h3>
 
 <p align="center">
-  Manage multiple AI coding agents in isolated git worktrees.<br/>
-  Branch, develop, and merge &mdash; all in parallel.
+  A personal, heavily-customized fork of dmux tuned to one specific workflow.
 </p>
 
-<p align="center">
-  <a href="https://dmux.ai"><strong>Documentation</strong></a> &nbsp;&middot;&nbsp;
-  <a href="https://dmux.ai#getting-started"><strong>Getting Started</strong></a> &nbsp;&middot;&nbsp;
-  <a href="https://github.com/formkit/dmux/issues"><strong>Issues</strong></a>
-</p>
+---
 
-<p align="center">
-  <strong>Language:</strong>
-  <a href="./README.md">English</a> |
-  <a href="./README.ja.md">日本語</a>
-</p>
+> ### ⚠️ This is a personal fork
+>
+> This is **my** fork of [dmux](https://github.com/formkit/dmux), bent hard toward how I
+> personally work. It is not the upstream project, is not a drop-in for it, and I make no
+> promise to keep it compatible or to accept issues/PRs.
+>
+> **Full credit to the dmux team** — the original is genuinely great work, and everything here is
+> built on top of their foundation. If you want the polished, supported, general-purpose tool,
+> use the original: **[formkit/dmux](https://github.com/formkit/dmux)** · **[dmux.ai](https://dmux.ai)**.
+>
+> **The big difference:** this fork does **not** manage git for you. No forced worktrees, no branch
+> creation, no merge orchestration. Panes just open in the project directory and launch an agent —
+> the agent handles its own branches, commits, and merges. Worktrees are strictly opt-in
+> (`DMUX_USE_WORKTREE=1`) and off by default.
 
 ---
 
@@ -27,8 +31,14 @@
 
 ## Install
 
+This fork isn't published to npm under `dmux` — run it from source (see [CONTRIBUTING.md](./CONTRIBUTING.md)):
+
 ```bash
-npm install -g dmux
+git clone https://github.com/daromaj/dmux
+cd dmux
+pnpm install
+pnpm run build
+npm link   # exposes `dmux` on your PATH
 ```
 
 ## Quick Start
@@ -38,48 +48,51 @@ cd /path/to/your/project
 dmux
 ```
 
-Press `n` to create a new pane, type a prompt, pick one or more agents (or none for a plain terminal), and dmux handles the rest &mdash; worktree, branch, and agent launch.
+Press `n` for an agent pane or `t` for a plain terminal. The pane opens **in the project directory** and launches the agent — no worktree, no branch juggling. What the agent does with git is entirely up to the agent.
 
 ## What it does
 
-dmux creates a tmux pane for each task. Every pane gets its own git worktree and branch so agents work in complete isolation. When a task is done, open the pane menu with `m` and choose Merge to bring it back into your main branch, or Create GitHub PR to push the branch and file a pull request.
+dmux is a tmux + Ink TUI that opens a pane per task and launches an AI agent in it. It's a **pane manager**, not a git wrapper: branches, commits, and merges are the agent's job, not dmux's.
 
-- **Worktree isolation** &mdash; each pane is a full working copy, no conflicts between agents
-- **Agent support** &mdash; Claude Code, Codex, OpenCode, Cline CLI, Gemini CLI, Qwen CLI, Amp CLI, pi CLI, Cursor CLI, Copilot CLI, and Crush CLI
+- **No git oversight** &mdash; panes run in the project dir; the agent owns its own branches/commits/merges
+- **Agent support** &mdash; Claude Code, Codex, Grok, OpenCode, Cline CLI, Gemini CLI, Qwen CLI, Amp CLI, pi CLI, Cursor CLI, Copilot CLI, and Crush CLI
+- **Configurable AI provider** &mdash; point branch-name/commit AI helpers at any provider (`DMUX_AI_PROVIDER`, `DMUX_AI_MODEL`, `DMUX_AI_BASE_URL`, `DMUX_AI_API_KEY`); DeepSeek preset included
+- **Favourite startup commands** &mdash; per-project list of commands (`cc`, `cc -c`, `pi`, …) offered when opening a pane
+- **Virtual grid layout** &mdash; fix content panes to a column count (`g`: auto/1/2/3/4) or let it adapt
+- **Pane management** &mdash; reorder, resize, per-pane agent override, and manual pane colors from the sidebar
+- **Quick project open** &mdash; `p` jumps to any repo under `~/git` (MRU-sorted) and starts a chosen command
 - **Goal launches** &mdash; optionally start supported agents in goal mode from the initial prompt
 - **Multi-select launches** &mdash; choose any combination of enabled agents per prompt
-- **AI naming** &mdash; branches and commit messages generated automatically
-- **Smart merging** &mdash; auto-commit, merge, and clean up in one step
-- **macOS notifications** &mdash; background panes can send native attention alerts when they settle and need you, with a global off switch
-- **Built-in file browser** &mdash; inspect a pane's worktree, search files, and preview code or diffs without leaving dmux
-- **Pane visibility controls** &mdash; hide individual panes, isolate one project, or restore everything later without stopping work
+- **macOS notifications** &mdash; background panes send native attention alerts when they settle and need you, with a global off switch
+- **Built-in file browser** &mdash; inspect a pane's directory, search files, and preview code or diffs without leaving dmux
+- **Pane visibility controls** &mdash; hide individual panes, isolate one project, single-pane mode, or restore everything later
 - **Multi-project** &mdash; add multiple repos to the same session
-- **Lifecycle hooks** &mdash; run scripts on worktree create, pre-merge, post-merge, and more
+- **Lifecycle hooks** &mdash; run scripts on pane/worktree events
 
-## Git Branch Controls
+## Worktrees (opt-in)
 
-dmux can use default branch behavior or let you override branch details when creating a pane.
-
-- Keep the default flow for fast creation, where dmux automatically picks the worktree and git branch names.
-- Optionally choose a different base branch per pane.
-- Optionally provide an explicit branch/worktree name (useful for issue-tracker ticket naming).
-- Multi-agent launches still use shared naming with agent-specific suffixes.
+Worktrees are off by default. Set `DMUX_USE_WORKTREE=1` to restore the upstream behavior where each new pane gets its own git worktree and branch. Without it, panes share the project directory and dmux does nothing to your git state.
 
 ## Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
-| `n` | New pane (worktree + agent) |
+| `n` | New agent pane |
 | `t` | New terminal pane |
+| `p` | Quick-open a project from `~/git` (pick a command) |
 | `j` / `Enter` | Jump to pane |
 | `m` | Open pane menu |
-| `f` | Browse files in selected pane's worktree |
+| `f` | Browse files in the selected pane's directory |
+| `g` | Cycle virtual grid columns (auto/1/2/3/4) |
+| `[` | Collapse/expand the sidebar |
+| `Shift+↑↓` | Reorder selected pane |
+| `Ctrl+↑↓←→` | Resize selected pane |
 | `x` | Close pane |
 | `h` | Hide/show selected pane |
 | `H` | Hide/show all other panes |
-| `p` | New pane in another project |
 | `P` | Show only the selected project's panes, then show all |
 | `s` | Settings |
+| `?` | All shortcuts |
 | `q` | Quit |
 
 ## Requirements
@@ -92,11 +105,15 @@ dmux can use default branch behavior or let you override branch details when cre
 
 ## Documentation
 
-Full documentation is available at **[dmux.ai](https://dmux.ai)**, including setup guides, configuration, and hooks.
+The upstream project's docs at **[dmux.ai](https://dmux.ai)** cover the core concepts, but they describe the original worktree-centric behavior and won't reflect this fork's changes. Fork-specific behavior and maintainer notes live in **[AGENTS.md](./AGENTS.md)**.
 
 ## Contributing
 
-See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for the recommended local "dmux-on-dmux" development loop, hook setup, and PR workflow.
+This is a personal fork, so I'm not really soliciting contributions. If you want to hack on it locally, **[CONTRIBUTING.md](./CONTRIBUTING.md)** documents the "dmux-on-dmux" development loop. For the maintained, general-purpose tool, contribute to the original at **[formkit/dmux](https://github.com/formkit/dmux)**.
+
+## Credits
+
+Built on top of **[dmux](https://github.com/formkit/dmux)** by the FormKit team. All the hard foundational work is theirs; this fork just reshapes it for one person's workflow.
 
 ## License
 
