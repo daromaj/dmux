@@ -83,6 +83,10 @@ export async function createWelcomePane(
             tmuxService.swapPaneSync(controlPaneId, bottomPane.paneId);
           }
         }
+        // Pin the strip to an exact height. main-horizontal / main-pane-height
+        // does NOT reliably clamp the control pane (client vs window height
+        // mismatch lets it balloon well past thickness), so pin it explicitly.
+        tmuxService.resizePaneSync(controlPaneId, { height: placement.thickness });
       } else {
         execSync(`tmux set-window-option main-pane-width ${SIDEBAR_WIDTH}`, { stdio: 'pipe' });
         execSync(`tmux select-layout main-vertical`, { stdio: 'pipe' });

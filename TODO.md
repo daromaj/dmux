@@ -9,6 +9,18 @@
 
 ## Done ✓
 
+- [x] **Bottom control pane too tall + collapse only hit the footer** — the bottom strip ballooned to
+      ~9 rows (past even `MAX_CONTROL_PANE_HEIGHT` = 8) and `[` collapse appeared to affect only part of
+      it. Root cause: no path pinned the strip to `thickness`. `main-horizontal` + `main-pane-height`
+      can't clamp the control pane reliably (manual-mode `client_height` vs `window_height` mismatch), so
+      it absorbed whatever rows were left over, and the Ink strip content sat at the top of the oversized
+      pane with dead space below. Fix: after every bottom-mode layout+swap, explicitly
+      `resize-pane -y <thickness>` on the control pane. Applied at all four bottom paths — `welcomePane.ts`
+      (create), `index.ts` (welcome-exists), `TmuxLayoutApplier.ensureControlAtBottom` (general/grid) and
+      `applyMainVerticalFallback`, plus `tmux.ts` enforce welcome-branch (which also now sizes content on
+      top + swaps control to the bottom instead of pinning the top pane). Verified in real tmux: welcome-
+      only = 4 rows bottom, stays 4 on content change, `[` collapse → 1 row (whole pane), `[` expand → 4.
+
 - [x] **Single pane maximized** — a lone content pane now fills the whole working area instead of being
       capped at `MAX_COMFORTABLE_WIDTH` (~100 cols). Root cause: `LayoutCalculator.buildLayoutForCols`
       sized `windowWidth = min(reserved + cols*MAX_COMFORTABLE_WIDTH, terminalWidth)`, so with one pane
@@ -42,7 +54,7 @@
 
 - [x] **Bottom control pane — now the DEFAULT and actually rendering** — `controlPanePosition`
       (`'left' | 'bottom'`) now defaults to **`'bottom'`** (was `'left'`), plus `controlPaneHeight`
-      (rows, default 12, clamped 6..24). In bottom mode the control pane is a full-width strip anchored
+      (rows, default 4, clamped 2..8). In bottom mode the control pane is a full-width strip anchored
       at the bottom with content panes tiling above it. Threaded a position axis through the custom
       layout-string machinery (`generateSidebarGridLayout` bottom branch, `LayoutConfig.CONTROL_POSITION/
       CONTROL_HEIGHT`, `LayoutCalculator` reserves height, `SpacerManager`, `TmuxLayoutApplier`) via a

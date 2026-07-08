@@ -490,8 +490,21 @@ export const enforceControlPaneSize = async (
 
           // Anchor the control pane along its edge with a fixed thickness.
           if (isBottom) {
-            tmuxService.setWindowOptionSync('main-pane-height', String(placement.thickness));
+            // main-horizontal makes the main pane (index 0 = control) the LARGE
+            // top pane, so size the main pane to the content height, then swap
+            // the control pane down into the thin bottom strip and pin it.
+            const contentHeight = Math.max(1, windowHeight - placement.thickness);
+            tmuxService.setWindowOptionSync('main-pane-height', String(contentHeight));
             await tmuxService.selectLayout('main-horizontal');
+            const positions = tmuxService.getPanePositionsSync();
+            if (positions.length >= 2) {
+              const bottomPane = positions.reduce((lowest, p) => (p.top > lowest.top ? p : lowest));
+              if (bottomPane.paneId && bottomPane.paneId !== controlPaneId) {
+                tmuxService.swapPaneSync(controlPaneId, bottomPane.paneId);
+              }
+            }
+            // Pin the strip to an exact height (main-horizontal won't clamp it).
+            tmuxService.resizePaneSync(controlPaneId, { height: placement.thickness });
           } else {
             tmuxService.setWindowOptionSync('main-pane-width', String(width));
             await tmuxService.selectLayout('main-vertical');

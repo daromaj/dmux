@@ -109,7 +109,7 @@ export class TmuxLayoutApplier {
         if (!success) {
           // LogService.getInstance().debug('Layout application failed, using fallback', 'Layout');
           // Fallback to main-vertical if custom layout fails
-          this.applyMainVerticalFallback();
+          this.applyMainVerticalFallback(controlPaneId);
         } else if (this.config.CONTROL_POSITION === 'bottom') {
           // tmux select-layout assigns pane-index order to cells in listing
           // order, ignoring the pane-ids written in the string, so the control
@@ -120,7 +120,7 @@ export class TmuxLayoutApplier {
       } else {
         // Empty layout string - fallback to main-vertical
         // LogService.getInstance().debug('Empty layout string, using main-vertical fallback', 'Layout');
-        this.applyMainVerticalFallback();
+        this.applyMainVerticalFallback(controlPaneId);
       }
     } catch (error) {
       // Fallback: just resize sidebar
@@ -154,6 +154,10 @@ export class TmuxLayoutApplier {
       if (bottomPane.paneId && bottomPane.paneId !== controlPaneId) {
         this.tmuxService.swapPaneSync(controlPaneId, bottomPane.paneId);
       }
+      // Pin the strip to an exact height so it never balloons past thickness.
+      this.tmuxService.resizePaneSync(controlPaneId, {
+        height: this.config.CONTROL_HEIGHT,
+      });
     } catch (error) {
       LogService.getInstance().warn(
         `Could not move control pane to bottom strip: ${error}`,
@@ -188,13 +192,15 @@ export class TmuxLayoutApplier {
    * Applies main-vertical layout as fallback
    * Used when custom layout string generation or application fails
    */
-  private applyMainVerticalFallback(): void {
+  private applyMainVerticalFallback(controlPaneId: string): void {
     try {
       if (this.config.CONTROL_POSITION === 'bottom') {
-        // Bottom mode: main-horizontal puts the "main" pane on top and the rest
-        // below; pin the main-pane height so the control strip stays thin.
-        this.tmuxService.setWindowOptionSync('main-pane-height', String(this.config.CONTROL_HEIGHT));
+        // Bottom mode: main-horizontal puts the "main" pane (index 0 = control)
+        // on top. Apply the layout, then swap the control pane into the bottom
+        // strip and pin it to an exact height (main-pane-height alone does not
+        // reliably clamp the strip).
         this.tmuxService.selectLayoutSync('main-horizontal');
+        this.ensureControlAtBottom(controlPaneId);
       } else {
         this.tmuxService.setWindowOptionSync('main-pane-width', String(this.config.SIDEBAR_WIDTH));
         this.tmuxService.selectLayoutSync('main-vertical');

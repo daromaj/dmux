@@ -654,6 +654,8 @@ class Dmux {
                 tmuxService.swapPaneSync(controlPaneId, bottomPane.paneId);
               }
             }
+            // Pin the strip to an exact height (main-horizontal won't clamp it).
+            tmuxService.resizePaneSync(controlPaneId, { height: welcomePlacement.thickness });
           } else {
             execSync(`tmux set-window-option window-size latest \\; set-window-option main-pane-width ${SIDEBAR_WIDTH} \\; select-layout main-vertical`, { stdio: 'pipe' });
           }
