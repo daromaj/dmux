@@ -208,6 +208,10 @@ class Dmux {
     const inTmux = process.env.TMUX !== undefined;
     const isDev = process.env.DMUX_DEV === 'true';
     const isDevWatch = process.env.DMUX_DEV_WATCH === 'true';
+    // `dmux` starts from scratch; `dmux -c` / `--continue` reopens the last session.
+    const continueSession = process.argv
+      .slice(2)
+      .some((arg) => arg === '-c' || arg === '--continue');
     const currentTmuxSessionName = inTmux
       ? this.getCurrentTmuxSessionName()
       : null;
@@ -287,6 +291,18 @@ class Dmux {
         sessionExists = false;
       }
 
+      // Plain `dmux` starts from scratch: discard any existing session (with its old
+      // panes/agents) and create a fresh one. `dmux -c` skips this and reattaches so the
+      // previous session — including live panes and their state — is preserved.
+      if (sessionExists && !continueSession && !isDev) {
+        try {
+          execSync(`tmux kill-session -t ${this.sessionName}`, { stdio: 'pipe' });
+        } catch {
+          // Best effort — if the kill fails we still fall through and attach.
+        }
+        sessionExists = false;
+      }
+
       if (sessionExists) {
         ensureTmuxRuntimeCompatibility(this.sessionName);
         this.setSessionPathEnvironment(this.sessionName);
@@ -316,7 +332,11 @@ class Dmux {
         if (isDev) {
           dmuxCommand = buildDevWatchCommand(devDirectory);
         } else {
-          dmuxCommand = buildDmuxCommand([], this.projectRoot);
+          // Propagate continue mode so the control pane restores the last session.
+          dmuxCommand = buildDmuxCommand(
+            continueSession ? ['-c'] : [],
+            this.projectRoot
+          );
         }
 
         startDetachedTmuxSession({
@@ -578,9 +598,6 @@ class Dmux {
       // Continue mode (`dmux -c`) restores saved panes even when they aren't live in
       // tmux yet; default `dmux` starts fresh, so stale saved panes (tmux was killed)
       // must not suppress the welcome pane — count only panes still live in tmux.
-      const continueSession = process.argv
-        .slice(2)
-        .some((arg) => arg === '-c' || arg === '--continue');
       const trackedPaneCount = continueSession
         ? (config.panes?.length ?? 0)
         : (config.panes?.filter((p: any) => sessionPaneIds.includes(p.paneId)).length ?? 0);

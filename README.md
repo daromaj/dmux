@@ -45,8 +45,11 @@ npm link   # exposes `dmux` on your PATH
 
 ```bash
 cd /path/to/your/project
-dmux
+dmux        # start fresh — a clean single pane
+dmux -c     # continue — reopen your last session
 ```
+
+`dmux` always starts from scratch: if an old session for this project is still around, it's torn down and replaced with a clean one. `dmux -c` (continue) reopens the last session instead — live panes reattach; panes lost to a killed tmux server come back with fresh agent sessions.
 
 Press `n` for an agent pane or `t` for a plain terminal. The pane opens **in the project directory** and launches the agent — no worktree, no branch juggling. What the agent does with git is entirely up to the agent.
 
