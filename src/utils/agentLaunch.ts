@@ -279,7 +279,7 @@ export const AGENT_REGISTRY: Readonly<Record<AgentName, AgentRegistryEntry>> = {
     permissionFlags: {
       plan: '--tools read,grep,find,ls',
     },
-    defaultEnabled: false,
+    defaultEnabled: true,
     resumeCommandTemplate: 'pi --continue{permissions}',
   },
   cursor: {

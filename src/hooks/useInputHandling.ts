@@ -235,7 +235,10 @@ export function useInputHandling(params: UseInputHandlingParams) {
     }
   }
 
-  const handleCreateTerminalPane = async (targetProjectRoot: string) => {
+  const handleCreateTerminalPane = async (
+    targetProjectRoot: string,
+    startupCommand?: string
+  ) => {
     try {
       setIsCreatingPane(true)
       setStatusMessage("Creating terminal pane...")
@@ -245,6 +248,12 @@ export function useInputHandling(params: UseInputHandlingParams) {
 
       // Wait for pane creation to settle
       await new Promise((resolve) => setTimeout(resolve, ANIMATION_DELAY))
+
+      // Optionally run a startup command (e.g. cc, ccc, pi) in the fresh shell.
+      if (startupCommand) {
+        await tmuxService.sendShellCommand(newPaneId, startupCommand)
+        await tmuxService.sendTmuxKeys(newPaneId, "Enter")
+      }
 
       // Persist shell pane immediately with project metadata so grouping is stable.
       const shellPane = await createShellPane(
@@ -481,8 +490,27 @@ export function useInputHandling(params: UseInputHandlingParams) {
         return
       }
 
-      // Open a terminal pane in the selected project
-      await handleCreateTerminalPane(selected)
+      // Ask which command to run in the new pane for the selected project.
+      const projectName = path.basename(selected)
+      const command = await popupManager.launchChoicePopup(
+        "Open With",
+        `Command to run in ${projectName}`,
+        [
+          { id: "shell", label: "Shell", description: "Plain terminal, no command" },
+          { id: "cc", label: "cc", description: "Claude Code (interactive)" },
+          { id: "ccc", label: "ccc", description: "Claude Code (cc -c, continue session)" },
+          { id: "pi", label: "pi", description: "pi CLI agent" },
+        ],
+      )
+
+      if (!command) {
+        setStatusMessage("")
+        return
+      }
+
+      // "shell" => plain terminal; anything else runs as a startup command.
+      const startupCommand = command === "shell" ? undefined : command
+      await handleCreateTerminalPane(selected, startupCommand)
     } catch (error: any) {
       setStatusMessage(`Failed: ${error.message}`)
       setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_LONG)

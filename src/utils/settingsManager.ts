@@ -113,6 +113,10 @@ function sanitizeLoadedSettings(value: unknown): DmuxSettings {
     sanitized.showFooterTips = parsed.showFooterTips;
   }
 
+  if (typeof parsed.disableWelcomePane === 'boolean') {
+    sanitized.disableWelcomePane = parsed.disableWelcomePane;
+  }
+
   if (typeof parsed.colorTheme === 'string' && isDmuxThemeName(parsed.colorTheme)) {
     sanitized.colorTheme = parsed.colorTheme;
   }
@@ -188,6 +192,7 @@ const DEFAULT_SETTINGS: DmuxSettings = {
   enabledAgents: getDefaultEnabledAgents(),
   enabledNotificationSounds: getDefaultNotificationSoundSelection(),
   showFooterTips: true,
+  disableWelcomePane: false,
   language: 'en',
   colorTheme: DEFAULT_DMUX_THEME,
 };
@@ -375,6 +380,12 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
     key: 'showFooterTips',
     label: 'Show Footer Tips',
     description: 'Rotate short dmux tips in the footer. Disable this if you prefer a quieter sidebar.',
+    type: 'boolean',
+  },
+  {
+    key: 'disableWelcomePane',
+    label: 'Single-Pane Mode',
+    description: 'Do not auto-create the welcome/placeholder pane on startup. dmux opens with just the sidebar.',
     type: 'boolean',
   },
   {

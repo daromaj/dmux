@@ -577,7 +577,19 @@ class Dmux {
       // Only show welcome pane if there are no tracked AND no untracked panes
       const hasAnyPanes = (config.panes?.length ?? 0) > 0 || untrackedPanes.length > 0;
 
-      if (controlPaneId && !hasAnyPanes) {
+      // Single-pane mode: user opted out of the auto welcome/placeholder pane.
+      const welcomePaneDisabled = new SettingsManager(this.projectRoot)
+        .getSettings().disableWelcomePane === true;
+
+      if (welcomePaneDisabled) {
+        // Clean up any welcome pane that lingered from before the setting was enabled.
+        if (hasValidWelcomePane && config.welcomePaneId) {
+          await destroyWelcomePane(config.welcomePaneId);
+          config.welcomePaneId = undefined;
+          config.lastUpdated = new Date().toISOString();
+          await fs.writeFile(this.panesFile, JSON.stringify(config, null, 2));
+        }
+      } else if (controlPaneId && !hasAnyPanes) {
         if (!hasValidWelcomePane) {
           // Create new welcome pane
           const welcomePaneId = await createWelcomePane(controlPaneId, this.projectRoot);

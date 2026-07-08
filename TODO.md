@@ -10,6 +10,15 @@
 - [x] `DMUX_USE_WORKTREE=1` opt-in — no worktrees by default
 - [x] Safe defaults — no auto-agent-selection, `permissionMode` defaults to ask
 - [x] Live dev via `npm link` in `~/git/dmux`
+- [x] `p` shortcut — quick-open project from ~/git (MRU-sorted), opens terminal pane
+- [x] `[` shortcut — toggle sidebar collapse/expand
+- [x] `ccc` alias — `cc -c` (non-interactive Claude)
+- [x] **Goal mode per-pane toggle** — menu action (`🎯 Toggle Goal Mode`), shown on agent panes; applies on next launch
+- [x] **`p` + command** — after selecting project, pick command (shell / cc / ccc / pi)
+- [x] **Footer key hints** — compact shortcut line in sidebar footer for discoverability
+- [x] **Single-pane mode** — `disableWelcomePane` setting; no auto welcome pane on startup
+- [x] **pi CLI first-class** — registered + now default-enabled in the agent picker
+- [x] Verified: pane rename works without worktree; worktree cleanup on close works; config schema exists; tmux prefix is a non-issue (dmux uses no-prefix `M-` bindings, never hardcodes `C-b`)
 
 ## Priority 1 — Layout Control
 
@@ -24,21 +33,22 @@
 ## Priority 2 — Pane Management
 
 - [ ] **Pane reordering** (swap positions in dmux list → affects layout)
-- [ ] **Pane renaming** from sidebar (already exists in menu, ensure it works without worktree)
+- [x] **Pane renaming** from sidebar (verified: works without worktree via menu → Rename)
 - [ ] **Resize panes** via dmux shortcuts (not raw tmux `C-b Alt+arrows`)
 
 ## Priority 3 — Agent Integration
 
-- [ ] **pi CLI** as first-class agent (already supported upstream? verify)
+- [x] **pi CLI** as first-class agent (registered + default-enabled)
 - [ ] **Custom agent commands** — define arbitrary launch commands per agent
 - [ ] **Per-pane agent override** — change agent for existing pane
-- [ ] **Goal mode** per-pane toggle from sidebar
+- [x] **Goal mode** per-pane toggle from sidebar (menu action `🎯 Toggle Goal Mode`)
+- [x] **`p` + command** — after selecting project, pick command (shell / cc / ccc / pi)
 
 ## Priority 4 — Terminal Quality of Life
 
-- [ ] **Single-pane mode** — start dmux with just one terminal, no auto-welcome-pane
-- [ ] **Better shortcut discoverability** — show key hints in sidebar footer
-- [ ] **Configurable tmux prefix** (some users remap `C-b` to `C-a`)
+- [x] **Single-pane mode** — `disableWelcomePane` setting suppresses the auto welcome pane
+- [x] **Better shortcut discoverability** — key hints shown in sidebar footer
+- [x] **Configurable tmux prefix** — N/A: dmux uses no-prefix `M-` bindings, never hardcodes `C-b`
 - [ ] **Pane colors** — assign colors to panes for visual distinction
 
 ## Priority 5 — Git / Worktree (opt-in)

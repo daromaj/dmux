@@ -124,6 +124,8 @@ export interface DmuxSettings {
   enabledNotificationSounds?: NotificationSoundId[];
   // Rotate short dmux tips in the footer
   showFooterTips?: boolean;
+  // Single-pane mode: suppress the auto-created welcome/placeholder pane on startup
+  disableWelcomePane?: boolean;
   // Accent color theme used across the TUI and welcome pane
   colorTheme?: DmuxThemeName;
   // Tmux hooks for event-driven updates (low CPU)

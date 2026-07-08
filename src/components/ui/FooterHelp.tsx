@@ -133,6 +133,16 @@ const FooterHelp: React.FC<FooterHelpProps> = memo(({
         )}
       </Box>
 
+      {/* Compact shortcut hints for discoverability */}
+      <Text>
+        <Text color="cyan">[n]</Text><Text dimColor> new  </Text>
+        <Text color="cyan">[t]</Text><Text dimColor> term  </Text>
+        <Text color="cyan">[p]</Text><Text dimColor> open  </Text>
+        <Text color="cyan">[j]</Text><Text dimColor> view  </Text>
+        <Text color="cyan">[x]</Text><Text dimColor> close  </Text>
+        <Text color="cyan">[?]</Text><Text dimColor> help</Text>
+      </Text>
+
       {/* Keyboard shortcuts */}
       <Text dimColor>
         Press <Text color="cyan">[?]</Text> for keyboard shortcuts

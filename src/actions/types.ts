@@ -126,6 +126,7 @@ export enum PaneAction {
   COPY_PATH = 'copy_path',
   OPEN_IN_EDITOR = 'open_in_editor',
   TOGGLE_AUTOPILOT = 'toggle_autopilot',
+  TOGGLE_GOAL_MODE = 'toggle_goal_mode',
   ATTACH_AGENT = 'attach_agent',
   CREATE_CHILD_WORKTREE = 'create_child_worktree',
   OPEN_TERMINAL_IN_WORKTREE = 'open_terminal_in_worktree',
@@ -148,6 +149,7 @@ export interface ActionMetadata extends MenuActionMetadata {
   id: PaneAction;
   requires?: {
     worktree?: boolean;
+    agent?: boolean;
     testCommand?: boolean;
     devCommand?: boolean;
     runningProcess?: boolean;
@@ -266,6 +268,13 @@ export const ACTION_REGISTRY: Record<PaneAction, ActionMetadata> = {
     icon: '🤖',
     requires: { worktree: true },
   },
+  [PaneAction.TOGGLE_GOAL_MODE]: {
+    id: PaneAction.TOGGLE_GOAL_MODE,
+    label: 'Toggle Goal Mode',
+    description: 'Enable/disable session goal command on next agent launch',
+    icon: '🎯',
+    requires: { agent: true },
+  },
   [PaneAction.CREATE_CHILD_WORKTREE]: {
     id: PaneAction.CREATE_CHILD_WORKTREE,
     label: 'Create Child Worktree',
@@ -319,9 +328,10 @@ export function getAvailableActions(
     if (action.id === PaneAction.SET_SOURCE && !isDevMode) return false;
     if (!action.requires) return true;
 
-    const { worktree, testCommand, devCommand, runningProcess } = action.requires;
+    const { worktree, agent, testCommand, devCommand, runningProcess } = action.requires;
 
     if (worktree && !pane.worktreePath) return false;
+    if (agent && !pane.agent) return false;
     if (testCommand && !projectSettings?.testCommand) return false;
     if (devCommand && !projectSettings?.devCommand) return false;
     if (runningProcess && !pane.testWindowId && !pane.devWindowId) return false;

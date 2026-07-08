@@ -16,4 +16,5 @@ export {
   copyPath,
   openInEditor,
   toggleAutopilot,
+  toggleGoalMode,
 } from './implementations/index.js';

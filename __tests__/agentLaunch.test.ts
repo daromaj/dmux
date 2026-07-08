@@ -37,7 +37,7 @@ describe('agent launch utils', () => {
   });
 
   it('returns default-enabled registry agents', () => {
-    expect(getDefaultEnabledAgents()).toEqual(['claude', 'opencode', 'codex', 'grok']);
+    expect(getDefaultEnabledAgents()).toEqual(['codex', 'grok', 'pi']);
   });
 
   it('reports native goal-mode support for Claude and Codex only', () => {
