@@ -133,6 +133,12 @@ const PanesGrid: React.FC<PanesGridProps> = memo(({
           : <Text color={color} bold={isSelected}>terminal</Text>
       }
 
+      if (action.kind === "project") {
+        return showHotkey
+          ? <Text color={color} bold={isSelected}><Text color="cyan">[p]</Text>roject</Text>
+          : <Text color={color} bold={isSelected}>project</Text>
+      }
+
       return showHotkey
         ? <Text color={color} bold={isSelected}><Text color="cyan">[R]</Text>emove</Text>
         : <Text color={color} bold={isSelected}>remove</Text>
@@ -218,8 +224,8 @@ const PanesGrid: React.FC<PanesGridProps> = memo(({
           {!isLoading && actionLayout.multiProjectMode && (() => {
             const groupActions = actionsByProject.get(group.projectRoot)
             const actions = [
-              groupActions?.newAgent,
               groupActions?.terminal,
+              groupActions?.newAgent,
               groupActions?.removeProject,
             ].filter((action): action is ProjectActionItem => !!action)
 
@@ -240,7 +246,10 @@ const PanesGrid: React.FC<PanesGridProps> = memo(({
 
       {!isLoading && !actionLayout.multiProjectMode && (() => {
         const actions = actionLayout.actionItems.filter(
-          (item) => item.kind === "new-agent" || item.kind === "terminal"
+          (item) =>
+            item.kind === "new-agent" ||
+            item.kind === "terminal" ||
+            item.kind === "project"
         )
 
         if (actions.length === 0) {

@@ -408,8 +408,10 @@ describe('layout calculation', () => {
       );
       // Control strip still at the bottom.
       expect(layout).toContain('200x12,0,48,0');
-      // Root window dimensions preserved.
-      expect(layout).toContain('200x60,0,0{');
+      // Root is a top-bottom split (content stacked above the control strip),
+      // so tmux requires square brackets — `{` (left-right) is rejected with a
+      // "size mismatch" and the strip never renders.
+      expect(layout).toContain('200x60,0,0[');
       // No pane extends into the control strip: max content Y+height must be ≤ 47.
       // Last row's Y should be below the first rows but above the strip border.
       expect(layout).toMatch(/^[0-9a-f]{4},/);

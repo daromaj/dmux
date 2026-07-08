@@ -5,14 +5,14 @@ import {
   type PaneProjectGroup,
 } from './paneGrouping.js';
 
-export type ProjectActionKind = 'new-agent' | 'terminal' | 'remove-project';
+export type ProjectActionKind = 'new-agent' | 'terminal' | 'project' | 'remove-project';
 
 export interface ProjectActionItem {
   index: number;
   projectRoot: string;
   projectName: string;
   kind: ProjectActionKind;
-  hotkey: 'n' | 't' | 'R' | null;
+  hotkey: 'n' | 't' | 'p' | 'R' | null;
 }
 
 export interface ProjectActionLayout {
@@ -54,20 +54,30 @@ export function buildProjectActionLayout(
   const actionItems: ProjectActionItem[] = [];
 
   if (!multiProjectMode) {
+    // Order matters: terminal is the default/first action, then project
+    // (opens the quick-open chooser), then new-agent. The initial selection
+    // (index === panes.length) therefore lands on terminal.
     const baseIndex = panes.length;
     actionItems.push({
       index: baseIndex,
       projectRoot: fallbackProjectRoot,
       projectName: fallbackProjectName,
-      kind: 'new-agent',
-      hotkey: 'n',
+      kind: 'terminal',
+      hotkey: 't',
     });
     actionItems.push({
       index: baseIndex + 1,
       projectRoot: fallbackProjectRoot,
       projectName: fallbackProjectName,
-      kind: 'terminal',
-      hotkey: 't',
+      kind: 'project',
+      hotkey: 'p',
+    });
+    actionItems.push({
+      index: baseIndex + 2,
+      projectRoot: fallbackProjectRoot,
+      projectName: fallbackProjectName,
+      kind: 'new-agent',
+      hotkey: 'n',
     });
   } else {
     let index = panes.length;
@@ -77,16 +87,16 @@ export function buildProjectActionLayout(
         index,
         projectRoot: group.projectRoot,
         projectName: group.projectName,
-        kind: 'new-agent',
-        hotkey: 'n',
+        kind: 'terminal',
+        hotkey: 't',
       });
       index += 1;
       actionItems.push({
         index,
         projectRoot: group.projectRoot,
         projectName: group.projectName,
-        kind: 'terminal',
-        hotkey: 't',
+        kind: 'new-agent',
+        hotkey: 'n',
       });
       index += 1;
       if (!isMainProject && group.panes.length === 0) {
@@ -173,21 +183,23 @@ export function resolveSelectionAfterPaneClose(
     };
   }
 
-  const newAgentAction = nextLayout.actionItems.find(
+  // Terminal is the default action, so prefer landing selection there after a
+  // close (same project first, then any terminal action).
+  const terminalAction = nextLayout.actionItems.find(
     (action) =>
-      action.kind === 'new-agent' &&
+      action.kind === 'terminal' &&
       sameRoot(action.projectRoot, closingProjectRoot)
   );
 
-  if (newAgentAction) {
+  if (terminalAction) {
     return {
-      selectedIndex: newAgentAction.index,
-      action: newAgentAction,
+      selectedIndex: terminalAction.index,
+      action: terminalAction,
     };
   }
 
   const fallbackAction = nextLayout.actionItems.find(
-    (action) => action.kind === 'new-agent'
+    (action) => action.kind === 'terminal'
   );
 
   if (fallbackAction) {
@@ -215,6 +227,7 @@ export function buildVisualNavigationRows(
     {
       newAgent?: ProjectActionItem;
       terminal?: ProjectActionItem;
+      project?: ProjectActionItem;
       removeProject?: ProjectActionItem;
     }
   >();
@@ -225,6 +238,8 @@ export function buildVisualNavigationRows(
       entry.newAgent = action;
     } else if (action.kind === 'terminal') {
       entry.terminal = action;
+    } else if (action.kind === 'project') {
+      entry.project = action;
     } else {
       entry.removeProject = action;
     }
@@ -238,10 +253,11 @@ export function buildVisualNavigationRows(
       }
     }
 
-    const first = layout.actionItems[0];
-    const second = layout.actionItems[1];
-    if (first && second) {
-      rows.push([first.index, second.index]);
+    // One row holding every shared action card, in registered order
+    // (terminal, project, new-agent).
+    const actionRow = layout.actionItems.map((action) => action.index);
+    if (actionRow.length > 0) {
+      rows.push(actionRow);
     }
 
     return rows;
@@ -254,8 +270,8 @@ export function buildVisualNavigationRows(
 
     const groupActions = actionByProject.get(group.projectRoot);
     const actionRow = [
-      groupActions?.newAgent?.index,
       groupActions?.terminal?.index,
+      groupActions?.newAgent?.index,
       groupActions?.removeProject?.index,
     ].filter((value): value is number => value !== undefined);
 
@@ -293,7 +309,12 @@ export function buildHorizontalNavigationRows(
   }
 
   const actionRow = layout.actionItems
-    .filter((action) => action.kind === 'new-agent' || action.kind === 'terminal')
+    .filter(
+      (action) =>
+        action.kind === 'new-agent' ||
+        action.kind === 'terminal' ||
+        action.kind === 'project'
+    )
     .map((action) => action.index);
   if (actionRow.length > 0) {
     rows.push(actionRow);

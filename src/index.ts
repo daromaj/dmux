@@ -641,7 +641,19 @@ class Dmux {
           // Batch layout commands into a single tmux call for better performance.
           const welcomePlacement = getControlPanePlacement(this.projectRoot);
           if (welcomePlacement.position === 'bottom') {
-            execSync(`tmux set-window-option window-size latest \\; set-window-option main-pane-height ${welcomePlacement.thickness} \\; select-layout main-horizontal`, { stdio: 'pipe' });
+            // main-horizontal makes the main pane (index 0 = control) the LARGE
+            // top pane, so size the main pane to the content height, then swap
+            // the control pane down into the thin bottom strip.
+            const termHeight = tmuxService.getTerminalDimensionsSync().height;
+            const contentHeight = Math.max(1, termHeight - welcomePlacement.thickness);
+            execSync(`tmux set-window-option window-size latest \\; set-window-option main-pane-height ${contentHeight} \\; select-layout main-horizontal`, { stdio: 'pipe' });
+            const positions = tmuxService.getPanePositionsSync();
+            if (positions.length >= 2) {
+              const bottomPane = positions.reduce((lowest, p) => (p.top > lowest.top ? p : lowest));
+              if (bottomPane.paneId && bottomPane.paneId !== controlPaneId) {
+                tmuxService.swapPaneSync(controlPaneId, bottomPane.paneId);
+              }
+            }
           } else {
             execSync(`tmux set-window-option window-size latest \\; set-window-option main-pane-width ${SIDEBAR_WIDTH} \\; select-layout main-vertical`, { stdio: 'pipe' });
           }

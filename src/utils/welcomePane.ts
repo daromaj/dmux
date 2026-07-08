@@ -69,8 +69,20 @@ export async function createWelcomePane(
       // Apply the edge-anchored layout FIRST (this locks the control-pane thickness)
       const placement = getControlPanePlacement(cwd);
       if (placement.position === 'bottom') {
-        execSync(`tmux set-window-option main-pane-height ${placement.thickness}`, { stdio: 'pipe' });
+        // Bottom mode: the control strip is pinned at the bottom and the welcome
+        // pane fills the top. main-horizontal makes the main pane (index 0 =
+        // control) the LARGE top pane, so size the main pane to the content
+        // height, then swap the control pane down into the thin bottom strip.
+        const contentHeight = Math.max(1, dimensions.height - placement.thickness);
+        execSync(`tmux set-window-option main-pane-height ${contentHeight}`, { stdio: 'pipe' });
         execSync(`tmux select-layout main-horizontal`, { stdio: 'pipe' });
+        const positions = tmuxService.getPanePositionsSync();
+        if (positions.length >= 2) {
+          const bottomPane = positions.reduce((lowest, p) => (p.top > lowest.top ? p : lowest));
+          if (bottomPane.paneId && bottomPane.paneId !== controlPaneId) {
+            tmuxService.swapPaneSync(controlPaneId, bottomPane.paneId);
+          }
+        }
       } else {
         execSync(`tmux set-window-option main-pane-width ${SIDEBAR_WIDTH}`, { stdio: 'pipe' });
         execSync(`tmux select-layout main-vertical`, { stdio: 'pipe' });

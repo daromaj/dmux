@@ -2,13 +2,31 @@
 
 > Based on personal workflow needs. Quick hacks first, proper features later.
 
+## Inbox (unsorted)
+
+- [ ] **Single pane maximized** — when only a single content pane exists it should fill the whole
+      working area (no wasted empty grid space next to it).
+- [ ] **New project creates two control entries** — starting a new project shows two entries in the
+      control pane (one for terminal, one for project?). Unintuitive — collapse to a single clear entry.
+
 ## Done ✓
+
+- [x] **New-pane action order: terminal → project → agent** — `[t] terminal` is now the default/first
+      action (initial selection lands on it), `[p] project` is a new card that opens the quick-open
+      project chooser, and `[n]ew agent` moves last. Threaded a new `'project'` action kind through
+      `buildProjectActionLayout` (single-project row order), the visual/horizontal navigation-row
+      builders, `PanesGrid` + `PanesStrip` rendering, and the Enter/hotkey dispatch in
+      `useInputHandling`. Post-close selection and `selectProjectAction` now prefer the terminal action.
 
 - [x] **Double Ctrl+C closes the whole session** — a second Ctrl+C in the control pane now tears down
       the entire dmux tmux session (every pane), instead of only exiting the control-pane TUI and
       leaving the other panes running. `q` stays the soft quit (exits the TUI, keeps the session so
       `dmux -c` can resume). New `TmuxService.killSessionSync()` + `killSessionExit()` in DmuxApp,
       wired to the second Ctrl+C; the confirm prompt now says it closes all panes.
+      **Race fix:** `killSessionExit()` now kills the session BEFORE `exit()` — previously a post-`exit()`
+      `setTimeout` did the kill, but Ink's `waitUntilExit().then(process.exit(0))` in `index.ts`
+      preempted it, so only the control pane closed and left the shell prompt fighting the leftover pane.
+      Killing first sends SIGHUP to every pane (including this one); `exit()` is now a not-in-tmux fallback.
 
 - [x] **Project chooser fix** — the `p` quick-open list (and every other choice popup) now
       windows to fit the popup height instead of rendering all options. With ~30+ git projects the
@@ -18,16 +36,23 @@
       Also fixed the "order is wrong" complaint: sort projects by `.git` mtime (max of dir + .git),
       which tracks real git activity — plain dir mtime never bumps on nested-file edits.
 
-- [x] **Bottom control pane** — opt-in `controlPanePosition: 'left' | 'bottom'` setting (default
-      `left`) plus `controlPaneHeight` (rows, default 12, clamped 6..24). In bottom mode the control
-      pane becomes a full-width strip anchored at the bottom and content panes tile above it across the
-      full terminal width. Threaded a position axis through the existing custom-layout-string machinery
-      (`generateSidebarGridLayout` bottom branch, `LayoutConfig.CONTROL_POSITION/CONTROL_HEIGHT`,
-      `LayoutCalculator` reserves height, `SpacerManager`, `TmuxLayoutApplier`) via a shared
-      `getControlPanePlacement()` helper, so all enforce paths pick it up centrally. UI reflow: a
-      horizontal wrapping pane list (`PanesStrip`) with a prominent onboarding help line and grid-shaped
-      ←/→/↑↓ navigation. Design spec: `docs/superpowers/specs/2026-07-08-bottom-control-pane-design.md`.
-      Note: web-server embedded layout path stays left-only; unit-tested but not yet driven in a live TUI.
+- [x] **Bottom control pane — now the DEFAULT and actually rendering** — `controlPanePosition`
+      (`'left' | 'bottom'`) now defaults to **`'bottom'`** (was `'left'`), plus `controlPaneHeight`
+      (rows, default 12, clamped 6..24). In bottom mode the control pane is a full-width strip anchored
+      at the bottom with content panes tiling above it. Threaded a position axis through the custom
+      layout-string machinery (`generateSidebarGridLayout` bottom branch, `LayoutConfig.CONTROL_POSITION/
+      CONTROL_HEIGHT`, `LayoutCalculator` reserves height, `SpacerManager`, `TmuxLayoutApplier`) via a
+      shared `getControlPanePlacement()` helper. UI reflow: horizontal wrapping pane list (`PanesStrip`)
+      with onboarding help line + grid-shaped ←/→/↑↓ nav.
+      **Two display bugs fixed:** (1) the root container used `{}` (left-right) for vertically-stacked
+      content+control, which tmux rejects with "size mismatch" — switched to `[]` (top-bottom);
+      (2) tmux `select-layout` maps pane-index order onto cells in *listing* order, so the control pane
+      (index 0) always landed in the top cell — added `TmuxService.swapPaneSync` + `ensureControlAtBottom()`
+      to swap the control pane into the bottom strip after every bottom-mode apply (`TmuxLayoutApplier`,
+      plus the welcome-pane paths in `welcomePane.ts` and `index.ts`). Verified in real tmux across 1–4
+      content panes and repeated enforces (control stays pinned bottom, no oscillation).
+      Design spec: `docs/superpowers/specs/2026-07-08-bottom-control-pane-design.md`.
+      Note: web-server embedded layout path stays left-only.
 
 - [x] **`dmux` = scratch, `dmux -c` = continue** — plain `dmux` always starts from a clean single
       pane. If a previous project session is still alive in tmux, plain `dmux` **kills it** and creates

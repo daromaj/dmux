@@ -236,7 +236,7 @@ const DEFAULT_SETTINGS: DmuxSettings = {
   showFooterTips: true,
   disableWelcomePane: false,
   gridColumns: 0,
-  controlPanePosition: 'left',
+  controlPanePosition: 'bottom',
   controlPaneHeight: DEFAULT_CONTROL_PANE_HEIGHT,
   favoriteCommands: ['cc', 'cc -c', 'pi', 'pi -c'],
   language: 'en',

@@ -110,6 +110,12 @@ export class TmuxLayoutApplier {
           // LogService.getInstance().debug('Layout application failed, using fallback', 'Layout');
           // Fallback to main-vertical if custom layout fails
           this.applyMainVerticalFallback();
+        } else if (this.config.CONTROL_POSITION === 'bottom') {
+          // tmux select-layout assigns pane-index order to cells in listing
+          // order, ignoring the pane-ids written in the string, so the control
+          // pane (index 0) lands in the FIRST/top cell instead of the bottom
+          // strip. Swap it into the bottom strip cell to correct this.
+          this.ensureControlAtBottom(controlPaneId);
         }
       } else {
         // Empty layout string - fallback to main-vertical
@@ -119,6 +125,40 @@ export class TmuxLayoutApplier {
     } catch (error) {
       // Fallback: just resize sidebar
       this.resizeControlPane(controlPaneId);
+    }
+  }
+
+  /**
+   * Ensures the control pane occupies the bottom strip cell in bottom mode.
+   *
+   * tmux `select-layout` maps pane-index order onto cells in the layout
+   * string's listing order, ignoring the pane-ids written into the string.
+   * The control pane is pane-index 0 (created first), so it always lands in
+   * the first-listed (topmost) cell. We correct this by finding the pane that
+   * currently occupies the bottom strip and swapping the control pane into it.
+   *
+   * This is stable across repeated enforcement: after the swap the control
+   * pane holds the highest pane-index slot, so subsequent select-layout calls
+   * keep placing it in the bottom strip — no oscillation.
+   */
+  private ensureControlAtBottom(controlPaneId: string): void {
+    try {
+      const positions = this.tmuxService.getPanePositionsSync();
+      if (positions.length < 2) return;
+
+      // The bottom strip is the pane with the greatest `top` coordinate.
+      const bottomPane = positions.reduce((lowest, p) =>
+        p.top > lowest.top ? p : lowest
+      );
+
+      if (bottomPane.paneId && bottomPane.paneId !== controlPaneId) {
+        this.tmuxService.swapPaneSync(controlPaneId, bottomPane.paneId);
+      }
+    } catch (error) {
+      LogService.getInstance().warn(
+        `Could not move control pane to bottom strip: ${error}`,
+        'Layout'
+      );
     }
   }
 

@@ -1493,20 +1493,21 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
 
     process.stdout.write("\x1b[2J\x1b[3J\x1b[H")
 
-    // Unmount the Ink tree first so it doesn't fight the terminal on the way out.
-    exit()
+    // Kill the session BEFORE unmounting Ink. Calling exit() first would trigger
+    // index.ts's `waitUntilExit().then(() => process.exit(0))`, which preempts
+    // any deferred kill and leaves the other panes alive. Killing the session
+    // while still inside tmux sends SIGHUP to every pane — including this one —
+    // so the whole dmux comes down and nothing after this needs to run.
+    if (process.env.TMUX && sessionName) {
+      try {
+        TmuxService.getInstance().killSessionSync(sessionName)
+      } catch {}
+    }
 
-    setTimeout(() => {
-      if (process.env.TMUX && sessionName) {
-        try {
-          // Killing the session terminates this pane's process too, so nothing
-          // after this runs when it succeeds.
-          TmuxService.getInstance().killSessionSync(sessionName)
-        } catch {}
-      }
-      // Fallback (not inside tmux, or the kill failed): just exit this process.
-      process.exit(0)
-    }, 100)
+    // Fallback: not inside tmux (or the kill somehow didn't take us down).
+    // Unmount Ink cleanly, then force-exit this process.
+    exit()
+    process.exit(0)
   }
 
   // Handle tmux hooks prompt input

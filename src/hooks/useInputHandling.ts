@@ -295,7 +295,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
     )
     const selectedAction = actionLayout.actionItems.find(
       (action) =>
-        action.kind === "new-agent" &&
+        action.kind === "terminal" &&
         sameSidebarProjectRoot(action.projectRoot, targetProjectRoot)
     )
     if (selectedAction) {
@@ -1864,6 +1864,8 @@ export function useInputHandling(params: UseInputHandlingParams) {
         await handleCreateAgentPane(selectedAction.projectRoot)
       } else if (selectedAction.kind === "terminal") {
         await handleCreateTerminalPane(selectedAction.projectRoot)
+      } else if (selectedAction.kind === "project") {
+        await handleProjectQuickOpen()
       } else if (selectedAction.kind === "remove-project") {
         await handleRemoveProjectFromSidebar(selectedAction.projectRoot)
       }

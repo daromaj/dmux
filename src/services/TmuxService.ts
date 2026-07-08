@@ -896,6 +896,23 @@ export class TmuxService {
   }
 
   /**
+   * Synchronous pane swap. Keeps each pane's process; only their geometry/index
+   * slots are exchanged. Returns true on success, false on failure.
+   */
+  swapPaneSync(srcPaneId: string, dstPaneId: string): boolean {
+    try {
+      this.execute(`tmux swap-pane -s '${srcPaneId}' -t '${dstPaneId}'`);
+      return true;
+    } catch (error) {
+      this.logger.warn(
+        `Failed to swap panes ${srcPaneId} <-> ${dstPaneId}`,
+        'TmuxService'
+      );
+      return false;
+    }
+  }
+
+  /**
    * Resize a pane by a delta in a direction (U/D/L/R).
    * Manual resizes hold until the next auto-layout enforcement.
    */

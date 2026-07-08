@@ -348,9 +348,13 @@ export const generateSidebarGridLayout = (
 
   if (isBottom) {
     // Full-width control strip anchored at the bottom, below a 1-row border.
+    // content (top) and control (bottom) are stacked vertically, so the root is a
+    // top-bottom split — square brackets []. Using {} (left-right) makes tmux
+    // reject the layout with "size mismatch" and the strip never appears.
     const control = `${windowWidth}x${controlHeight},0,${contentAreaHeight + 1},${sidebarId}`;
-    layoutWithoutChecksum = `${windowWidth}x${windowHeight},0,0{${contentArea},${control}}`;
+    layoutWithoutChecksum = `${windowWidth}x${windowHeight},0,0[${contentArea},${control}]`;
   } else {
+    // sidebar (left) and content (right) sit side by side → left-right split {}.
     const sidebar = `${sidebarWidth}x${windowHeight},0,0,${sidebarId}`;
     layoutWithoutChecksum = `${windowWidth}x${windowHeight},0,0{${sidebar},${contentArea}}`;
   }

@@ -86,7 +86,10 @@ const PanesStrip: React.FC<PanesStripProps> = memo(({
   }, [flatPanes, cols])
 
   const actionItems = actionLayout.actionItems.filter(
-    (action) => action.kind === "new-agent" || action.kind === "terminal"
+    (action) =>
+      action.kind === "new-agent" ||
+      action.kind === "terminal" ||
+      action.kind === "project"
   )
 
   const renderActionLabel = (action: ProjectActionItem) => {
@@ -97,6 +100,13 @@ const PanesStrip: React.FC<PanesStripProps> = memo(({
       return (
         <Text color={color} bold={isSelected}>
           <Text color="cyan">[n]</Text>ew agent
+        </Text>
+      )
+    }
+    if (action.kind === "project") {
+      return (
+        <Text color={color} bold={isSelected}>
+          <Text color="cyan">[p]</Text>roject
         </Text>
       )
     }

@@ -71,12 +71,12 @@ describe('projectActions', () => {
     ];
     const layout = buildProjectActionLayout(panes, [], '/repo', 'repo');
 
-    // 5 panes chunked by 2 → [[0,1],[2,3],[4]], then the new-agent/terminal row.
+    // 5 panes chunked by 2 → [[0,1],[2,3],[4]], then the terminal/project/agent row.
     expect(buildHorizontalNavigationRows(layout, 2)).toEqual([
       [0, 1],
       [2, 3],
       [4],
-      [5, 6],
+      [5, 6, 7],
     ]);
 
     // Single column degrades to one pane per row.
@@ -86,13 +86,26 @@ describe('projectActions', () => {
       [2],
       [3],
       [4],
-      [5, 6],
+      [5, 6, 7],
     ]);
   });
 
   it('emits only the action row when there are no panes (horizontal layout)', () => {
     const layout = buildProjectActionLayout([], [], '/repo', 'repo');
-    expect(buildHorizontalNavigationRows(layout, 3)).toEqual([[0, 1]]);
+    // terminal (0), project (1), new-agent (2)
+    expect(buildHorizontalNavigationRows(layout, 3)).toEqual([[0, 1, 2]]);
+  });
+
+  it('orders single-project action cards as terminal, project, new-agent', () => {
+    const layout = buildProjectActionLayout([], [], '/repo', 'repo');
+    expect(layout.actionItems.map((a) => a.kind)).toEqual([
+      'terminal',
+      'project',
+      'new-agent',
+    ]);
+    // terminal is the first (default) action at index === panes.length
+    expect(layout.actionItems[0]).toMatchObject({ index: 0, kind: 'terminal', hotkey: 't' });
+    expect(layout.actionItems[1]).toMatchObject({ index: 1, kind: 'project', hotkey: 'p' });
   });
 
   it('selects the next pane down in the same project after closing a pane', () => {
@@ -119,7 +132,7 @@ describe('projectActions', () => {
     expect(selection?.pane?.slug).toBe('aux-two');
   });
 
-  it('selects the project new-agent action when closing the last pane in that project', () => {
+  it('selects the project terminal action when closing the last pane in that project', () => {
     const panes: DmuxPane[] = [
       pane('dmux-1', 'main-pane', '/repo-main'),
       pane('dmux-2', 'aux-one', '/repo-aux'),
@@ -138,7 +151,7 @@ describe('projectActions', () => {
     );
 
     expect(selection?.pane).toBeUndefined();
-    expect(selection?.action?.kind).toBe('new-agent');
+    expect(selection?.action?.kind).toBe('terminal');
     expect(selection?.action?.projectRoot).toBe('/repo-aux');
     expect(selection?.selectedIndex).toBe(3);
   });
