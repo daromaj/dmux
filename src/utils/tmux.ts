@@ -2,6 +2,7 @@ import type { PanePosition } from '../types.js';
 import { LogService } from '../services/LogService.js';
 import { TmuxService } from '../services/TmuxService.js';
 import { recalculateAndApplyLayout } from './layoutManager.js';
+import { getControlPanePlacement } from './controlPanePlacement.js';
 import { execSync } from 'child_process';
 
 // Layout configuration - adjust these to change layout behavior
@@ -159,7 +160,9 @@ export const generateSidebarGridLayout = (
   windowWidth: number,
   windowHeight: number,
   columns: number,
-  maxComfortableWidth: number = MAX_COMFORTABLE_WIDTH
+  maxComfortableWidth: number = MAX_COMFORTABLE_WIDTH,
+  position: 'left' | 'bottom' = 'left',
+  controlHeight: number = 0
 ): string => {
   // Calculate grid dimensions for content panes
   const numContentPanes = contentPanes.length;
@@ -168,10 +171,16 @@ export const generateSidebarGridLayout = (
   const cols = columns;
   const rows = Math.ceil(numContentPanes / cols);
 
-  // Content area dimensions
-  // Account for borders: horizontal split adds 1 char, vertical splits add 1 char per row
-  const contentWidth = windowWidth - sidebarWidth - 1; // -1 for border between sidebar and content
-  const contentStartX = sidebarWidth + 1; // +1 to account for border
+  const isBottom = position === 'bottom';
+
+  // Content area dimensions.
+  // 'left':   content grid sits to the RIGHT of a fixed-width sidebar (full height).
+  // 'bottom': content grid sits ABOVE a full-width control strip (full width).
+  // Account for borders: each split adds 1 char/row between regions.
+  const contentWidth = isBottom ? windowWidth : windowWidth - sidebarWidth - 1;
+  const contentStartX = isBottom ? 0 : sidebarWidth + 1;
+  // Height available to the content grid (bottom mode reserves the strip + 1 border row).
+  const contentAreaHeight = isBottom ? windowHeight - controlHeight - 1 : windowHeight;
 
   // For width, account for borders between columns
   const bordersWidth = cols - 1;
@@ -191,9 +200,9 @@ export const generateSidebarGridLayout = (
   })();
 
   // For height, account for borders between rows
-  // If we have 2 rows with 1 border, total consumed = row1 + 1 + row2 = windowHeight
+  // If we have 2 rows with 1 border, total consumed = row1 + 1 + row2 = contentAreaHeight
   const bordersHeight = rows - 1; // Number of borders between rows
-  const availableHeight = windowHeight - bordersHeight;
+  const availableHeight = contentAreaHeight - bordersHeight;
   const paneHeight = Math.floor(availableHeight / rows);
 
   // Extract numeric ID from controlPaneId (e.g., %1 -> 1)
@@ -218,8 +227,8 @@ export const generateSidebarGridLayout = (
     // Last row gets remainder to account for rounding
     let rowHeight: number;
     if (row === rows - 1) {
-      // Last row: use all remaining height
-      rowHeight = windowHeight - currentY;
+      // Last row: use all remaining height in the content area
+      rowHeight = contentAreaHeight - currentY;
     } else {
       rowHeight = paneHeight;
     }
@@ -316,27 +325,34 @@ export const generateSidebarGridLayout = (
     }
   }
 
-  // Build root container
-  const sidebar = `${sidebarWidth}x${windowHeight},0,0,${sidebarId}`;
+  // Build root container.
+  // 'left':   root = {sidebar (full-height, left), contentArea (right)}
+  // 'bottom': root = {contentArea (full-width, top), control (full-width strip, bottom)}
   let layoutWithoutChecksum: string;
 
-  if (gridRows.length > 1) {
-    // Multiple rows: wrap in vertical split container
-    const contentArea = `${contentWidth}x${windowHeight},${contentStartX},0[${gridRows.join(',')}]`;
-    layoutWithoutChecksum = `${windowWidth}x${windowHeight},0,0{${sidebar},${contentArea}}`;
-  } else if (gridRows.length === 1) {
-    // Single row: keep the container structure to maintain binary splits
-    // tmux only supports 2 children per split, so we need {sidebar, content_container}
-    const row = gridRows[0];
-
-    // Adjust the container's X position from 0 to contentStartX
-    const contentArea = row.replace(/^(\d+x\d+),0,/, `$1,${contentStartX},`);
-    layoutWithoutChecksum = `${windowWidth}x${windowHeight},0,0{${sidebar},${contentArea}}`;
-
-    // LogService.getInstance().debug(`Single row layout: {sidebar, content}`, 'Layout');
-  } else {
+  if (gridRows.length === 0) {
     // No content panes
     return '';
+  }
+
+  // The content grid, as a single child of the root container.
+  let contentArea: string;
+  if (gridRows.length > 1) {
+    // Multiple rows: wrap in a vertical split container spanning the content area
+    contentArea = `${contentWidth}x${contentAreaHeight},${contentStartX},0[${gridRows.join(',')}]`;
+  } else {
+    // Single row: reuse the row string directly (keeps tmux binary-split structure),
+    // adjusting its X position to the content start.
+    contentArea = gridRows[0].replace(/^(\d+x\d+),0,/, `$1,${contentStartX},`);
+  }
+
+  if (isBottom) {
+    // Full-width control strip anchored at the bottom, below a 1-row border.
+    const control = `${windowWidth}x${controlHeight},0,${contentAreaHeight + 1},${sidebarId}`;
+    layoutWithoutChecksum = `${windowWidth}x${windowHeight},0,0{${contentArea},${control}}`;
+  } else {
+    const sidebar = `${sidebarWidth}x${windowHeight},0,0,${sidebarId}`;
+    layoutWithoutChecksum = `${windowWidth}x${windowHeight},0,0{${sidebar},${contentArea}}`;
   }
 
   // Calculate checksum and prepend to layout string
@@ -430,14 +446,20 @@ export const enforceControlPaneSize = async (
       return;
     }
 
+    const placement = getControlPanePlacement();
+    const isBottom = placement.position === 'bottom';
+
     const contentPanes = getContentPaneIds(controlPaneId);
     // logService.debug(`enforceControlPaneSize called: ${contentPanes.length} content panes`, 'Layout');
 
     // If we only have the control pane, nothing to enforce
     if (contentPanes.length === 0) {
-      // Just resize the sidebar
+      // Just resize the control pane along its anchored dimension
       try {
-        await tmuxService.resizePane(controlPaneId, { width });
+        await tmuxService.resizePane(
+          controlPaneId,
+          isBottom ? { height: placement.thickness } : { width }
+        );
       } catch {
         // Ignore errors
       }
@@ -462,9 +484,14 @@ export const enforceControlPaneSize = async (
           tmuxService.setWindowOptionSync('window-size', 'manual');
           await tmuxService.resizeWindow({ width: termDims.width, height: windowHeight });
 
-          // Apply main-vertical layout with fixed sidebar width
-          tmuxService.setWindowOptionSync('main-pane-width', String(width));
-          await tmuxService.selectLayout('main-vertical');
+          // Anchor the control pane along its edge with a fixed thickness.
+          if (isBottom) {
+            tmuxService.setWindowOptionSync('main-pane-height', String(placement.thickness));
+            await tmuxService.selectLayout('main-horizontal');
+          } else {
+            tmuxService.setWindowOptionSync('main-pane-width', String(width));
+            await tmuxService.selectLayout('main-vertical');
+          }
           await tmuxService.refreshClient();
           return;
         }

@@ -348,4 +348,116 @@ describe('layout calculation', () => {
       expect(forced.cols).toBe(auto.cols);
     });
   });
+
+  describe('generateSidebarGridLayout - bottom control pane', () => {
+    // Bottom mode: control strip full-width at the bottom, content grid full-width above.
+    // W=200, H=60, controlHeight=12 → contentAreaHeight = 60 - 12 - 1 = 47.
+    it('anchors a full-width control strip at the bottom', () => {
+      const layout = generateSidebarGridLayout(
+        '%0',
+        ['%1', '%2'],
+        40, // sidebarWidth — ignored in bottom mode
+        200,
+        60,
+        2,
+        80,
+        'bottom',
+        12
+      );
+
+      // Control leaf: full window width × controlHeight, at (0, contentAreaHeight + 1) = (0, 48).
+      expect(layout).toContain('200x12,0,48,0');
+      // Content area: full window width × contentAreaHeight, anchored top-left.
+      expect(layout).toContain('200x47,0,0');
+      // No left-anchored sidebar leaf (that would be `40x60,0,0`).
+      expect(layout).not.toContain('40x60,0,0');
+      // Valid 4-hex checksum.
+      expect(layout).toMatch(/^[0-9a-f]{4},/);
+    });
+
+    it('gives content panes the full window width (no sidebar reservation)', () => {
+      const layout = generateSidebarGridLayout(
+        '%0',
+        ['%1', '%2'],
+        40,
+        200,
+        60,
+        2,
+        80,
+        'bottom',
+        12
+      );
+      // 2 cols across full 200 width: borders=1, even=99, remainder=1 → first pane 100 wide.
+      expect(layout).toContain('100x47,0,0,1');
+      // Second pane starts at X = 0 + 100 + 1 = 101.
+      expect(layout).toContain('99x47,101,0,2');
+    });
+
+    it('stacks multiple rows within the reserved content area height', () => {
+      // 3 panes, 1 column → 3 rows stacked in contentAreaHeight = 47.
+      const layout = generateSidebarGridLayout(
+        '%0',
+        ['%1', '%2', '%3'],
+        40,
+        200,
+        60,
+        1,
+        80,
+        'bottom',
+        12
+      );
+      // Control strip still at the bottom.
+      expect(layout).toContain('200x12,0,48,0');
+      // Root window dimensions preserved.
+      expect(layout).toContain('200x60,0,0{');
+      // No pane extends into the control strip: max content Y+height must be ≤ 47.
+      // Last row's Y should be below the first rows but above the strip border.
+      expect(layout).toMatch(/^[0-9a-f]{4},/);
+    });
+
+    it('is deterministic and differs from the left-mode layout', () => {
+      const panes = ['%1', '%2'];
+      const left = generateSidebarGridLayout('%0', panes, 40, 200, 60, 2, 80, 'left', 0);
+      const bottom = generateSidebarGridLayout('%0', panes, 40, 200, 60, 2, 80, 'bottom', 12);
+      const bottomAgain = generateSidebarGridLayout('%0', panes, 40, 200, 60, 2, 80, 'bottom', 12);
+      expect(bottom).toBe(bottomAgain);
+      expect(bottom).not.toBe(left);
+      // Left mode keeps the 40-wide sidebar; bottom mode does not.
+      expect(left).toContain('40x60,0,0');
+      expect(bottom).not.toContain('40x60,0,0');
+    });
+  });
+
+  describe('calculateOptimalLayout - bottom control pane', () => {
+    const bottomConfig = {
+      ...DEFAULT_LAYOUT_CONFIG,
+      CONTROL_POSITION: 'bottom' as const,
+      CONTROL_HEIGHT: 12,
+    };
+
+    it('gives content panes the full width (wider than left mode)', () => {
+      const bottom = calculateOptimalLayout(2, 200, 60, bottomConfig);
+      const left = calculateOptimalLayout(2, 200, 60, DEFAULT_LAYOUT_CONFIG);
+      // Same column choice, but bottom reclaims the 40-col sidebar for content width.
+      expect(bottom.actualPaneWidth).toBeGreaterThan(left.actualPaneWidth);
+    });
+
+    it('reserves height for the control strip when choosing rows', () => {
+      // Height only tall enough for two stacked rows in left mode, but the bottom
+      // strip (12 + 1 border) eats into it, forcing a wider/shorter arrangement.
+      const bottom = calculateOptimalLayout(2, 240, 45, bottomConfig);
+      // 2 panes: with reserved height 13, one row (2 cols) is favored over 2 rows.
+      expect(bottom.cols).toBe(2);
+      expect(bottom.rows).toBe(1);
+    });
+
+    it('still honors a forced column count in bottom mode', () => {
+      const layout = calculateOptimalLayout(4, 300, 60, {
+        ...bottomConfig,
+        GRID_COLUMNS: 2,
+      });
+      expect(layout.cols).toBe(2);
+      expect(layout.rows).toBe(2);
+    });
+  });
 });

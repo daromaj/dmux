@@ -42,17 +42,33 @@ export class LayoutCalculator {
    * @param terminalHeight - Total terminal height in cells
    * @returns Optimal layout configuration
    */
+  /**
+   * Width reserved by a left-anchored control pane (0 when the control pane is
+   * at the bottom, where the content grid spans the full terminal width).
+   */
+  private reservedWidth(): number {
+    return this.config.CONTROL_POSITION === 'bottom' ? 0 : this.config.SIDEBAR_WIDTH;
+  }
+
+  /**
+   * Height reserved by a bottom-anchored control pane, including the 1-row
+   * border between the content grid and the strip (0 in 'left' mode).
+   */
+  private reservedHeight(): number {
+    return this.config.CONTROL_POSITION === 'bottom' ? this.config.CONTROL_HEIGHT + 1 : 0;
+  }
+
   calculateOptimalLayout(
     numContentPanes: number,
     terminalWidth: number,
     terminalHeight: number
   ): LayoutConfiguration {
     const {
-      SIDEBAR_WIDTH,
       MIN_COMFORTABLE_WIDTH,
       MAX_COMFORTABLE_WIDTH,
-      MIN_COMFORTABLE_HEIGHT,
     } = this.config;
+    const reservedWidth = this.reservedWidth();
+    const reservedHeight = this.reservedHeight();
     // If users lower MAX below the default MIN (e.g. max=40), use the lower value
     // for feasibility checks so those narrower-but-intentional layouts are considered.
     const minFeasiblePaneWidth = Math.max(
@@ -107,7 +123,8 @@ export class LayoutCalculator {
 
       const rows = Math.ceil(numContentPanes / cols);
       const rowBorders = rows - 1;
-      const availableHeight = terminalHeight - rowBorders;
+      const contentHeight = terminalHeight - reservedHeight;
+      const availableHeight = contentHeight - rowBorders;
       const paneHeight = Math.floor(availableHeight / rows);
 
       // Score this layout (higher is better)
@@ -117,7 +134,7 @@ export class LayoutCalculator {
         rows,
         built.actualPaneWidth,
         paneHeight,
-        terminalHeight
+        contentHeight
       );
 
       // Update best if this score is higher, OR if tied but with fewer columns (more width per pane)
@@ -140,7 +157,7 @@ export class LayoutCalculator {
       rows: numContentPanes,
       windowWidth: terminalWidth,
       paneDistribution: [numContentPanes],
-      actualPaneWidth: terminalWidth - SIDEBAR_WIDTH,
+      actualPaneWidth: terminalWidth - reservedWidth,
     };
   }
 
@@ -155,25 +172,27 @@ export class LayoutCalculator {
     terminalHeight: number,
     minFeasiblePaneWidth: number
   ): LayoutConfiguration | null {
-    const { SIDEBAR_WIDTH, MAX_COMFORTABLE_WIDTH, MIN_COMFORTABLE_HEIGHT } = this.config;
+    const { MAX_COMFORTABLE_WIDTH, MIN_COMFORTABLE_HEIGHT } = this.config;
+    const reservedWidth = this.reservedWidth();
+    const reservedHeight = this.reservedHeight();
 
     const rows = Math.ceil(numContentPanes / cols);
     const columnBorders = cols - 1; // Vertical borders between columns
     const rowBorders = rows - 1; // Horizontal borders between rows
 
     const minRequiredWidth =
-      SIDEBAR_WIDTH + cols * minFeasiblePaneWidth + columnBorders;
-    const minRequiredHeight = rows * MIN_COMFORTABLE_HEIGHT + rowBorders;
+      reservedWidth + cols * minFeasiblePaneWidth + columnBorders;
+    const minRequiredHeight = reservedHeight + rows * MIN_COMFORTABLE_HEIGHT + rowBorders;
 
     if (minRequiredWidth > terminalWidth || minRequiredHeight > terminalHeight) {
       return null;
     }
 
     const idealMaxWidth =
-      SIDEBAR_WIDTH + cols * MAX_COMFORTABLE_WIDTH + columnBorders;
+      reservedWidth + cols * MAX_COMFORTABLE_WIDTH + columnBorders;
     const windowWidth = Math.min(idealMaxWidth, terminalWidth);
 
-    const effectiveContentWidth = windowWidth - SIDEBAR_WIDTH - columnBorders;
+    const effectiveContentWidth = windowWidth - reservedWidth - columnBorders;
     const actualPaneWidth = effectiveContentWidth / cols;
 
     return {

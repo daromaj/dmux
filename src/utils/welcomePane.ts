@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { LogService } from '../services/LogService.js';
 import { TmuxService } from '../services/TmuxService.js';
 import { SIDEBAR_WIDTH } from './layoutManager.js';
+import { getControlPanePlacement } from './controlPanePlacement.js';
 import type { DmuxConfig, DmuxThemeName } from '../types.js';
 import {
   applyDmuxTheme,
@@ -65,9 +66,15 @@ export async function createWelcomePane(
     try {
       const dimensions = await tmuxService.getTerminalDimensions();
 
-      // Apply main-vertical layout FIRST (this locks sidebar width)
-      execSync(`tmux set-window-option main-pane-width ${SIDEBAR_WIDTH}`, { stdio: 'pipe' });
-      execSync(`tmux select-layout main-vertical`, { stdio: 'pipe' });
+      // Apply the edge-anchored layout FIRST (this locks the control-pane thickness)
+      const placement = getControlPanePlacement(cwd);
+      if (placement.position === 'bottom') {
+        execSync(`tmux set-window-option main-pane-height ${placement.thickness}`, { stdio: 'pipe' });
+        execSync(`tmux select-layout main-horizontal`, { stdio: 'pipe' });
+      } else {
+        execSync(`tmux set-window-option main-pane-width ${SIDEBAR_WIDTH}`, { stdio: 'pipe' });
+        execSync(`tmux select-layout main-vertical`, { stdio: 'pipe' });
+      }
 
       // Refresh to apply layout changes
       await tmuxService.refreshClient();

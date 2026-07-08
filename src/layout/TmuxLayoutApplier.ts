@@ -95,7 +95,9 @@ export class TmuxLayoutApplier {
         layout.windowWidth,
         terminalHeight,
         layout.cols,
-        this.config.MAX_COMFORTABLE_WIDTH
+        this.config.MAX_COMFORTABLE_WIDTH,
+        this.config.CONTROL_POSITION,
+        this.config.CONTROL_HEIGHT
       );
 
       if (layoutString) {
@@ -126,9 +128,12 @@ export class TmuxLayoutApplier {
    */
   private resizeControlPane(controlPaneId: string): void {
     try {
-      this.tmuxService.resizePaneSync(controlPaneId, {
-        width: this.config.SIDEBAR_WIDTH
-      });
+      this.tmuxService.resizePaneSync(
+        controlPaneId,
+        this.config.CONTROL_POSITION === 'bottom'
+          ? { height: this.config.CONTROL_HEIGHT }
+          : { width: this.config.SIDEBAR_WIDTH }
+      );
     } catch (error) {
       LogService.getInstance().error(
         'Error resizing control pane',
@@ -145,11 +150,18 @@ export class TmuxLayoutApplier {
    */
   private applyMainVerticalFallback(): void {
     try {
-      this.tmuxService.setWindowOptionSync('main-pane-width', String(this.config.SIDEBAR_WIDTH));
-      this.tmuxService.selectLayoutSync('main-vertical');
-      // LogService.getInstance().debug('Fell back to main-vertical layout', 'Layout');
+      if (this.config.CONTROL_POSITION === 'bottom') {
+        // Bottom mode: main-horizontal puts the "main" pane on top and the rest
+        // below; pin the main-pane height so the control strip stays thin.
+        this.tmuxService.setWindowOptionSync('main-pane-height', String(this.config.CONTROL_HEIGHT));
+        this.tmuxService.selectLayoutSync('main-horizontal');
+      } else {
+        this.tmuxService.setWindowOptionSync('main-pane-width', String(this.config.SIDEBAR_WIDTH));
+        this.tmuxService.selectLayoutSync('main-vertical');
+      }
+      // LogService.getInstance().debug('Fell back to edge-anchored layout', 'Layout');
     } catch (error) {
-      LogService.getInstance().error(`Main-vertical fallback failed: ${error}`, 'Layout');
+      LogService.getInstance().error(`Edge-anchored fallback failed: ${error}`, 'Layout');
     }
   }
 

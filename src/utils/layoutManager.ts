@@ -12,6 +12,11 @@ import {
 } from '../constants/layout.js';
 import { SettingsManager } from './settingsManager.js';
 import { StateManager } from '../shared/StateManager.js';
+import {
+  getControlPanePlacement,
+  DEFAULT_CONTROL_PANE_HEIGHT,
+  type ControlPanePosition,
+} from './controlPanePlacement.js';
 
 // Import new focused classes
 import { LayoutCalculator, type LayoutConfiguration } from '../layout/LayoutCalculator.js';
@@ -23,11 +28,13 @@ import { TmuxLayoutApplier } from '../layout/TmuxLayoutApplier.js';
  * These can be overridden via settings or environment
  */
 export interface LayoutConfig {
-  SIDEBAR_WIDTH: number; // Fixed sidebar width (default: 40)
+  SIDEBAR_WIDTH: number; // Fixed sidebar width (default: 40) — used in 'left' mode
   MIN_COMFORTABLE_WIDTH: number; // Min pane width before creating rows (default: 60)
   MAX_COMFORTABLE_WIDTH: number; // Max pane width for readability (default: 100)
   MIN_COMFORTABLE_HEIGHT: number; // Min pane height (default: 15)
   GRID_COLUMNS?: number; // Manual grid column override (virtual grid); 0/undefined = auto
+  CONTROL_POSITION: ControlPanePosition; // Where the control pane is anchored (default: 'left')
+  CONTROL_HEIGHT: number; // Rows reserved for the control strip in 'bottom' mode
 }
 
 export const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
@@ -36,6 +43,8 @@ export const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
   MAX_COMFORTABLE_WIDTH: DEFAULT_MAX_PANE_WIDTH,
   MIN_COMFORTABLE_HEIGHT: 15,
   GRID_COLUMNS: 0,
+  CONTROL_POSITION: 'left',
+  CONTROL_HEIGHT: DEFAULT_CONTROL_PANE_HEIGHT,
 };
 
 // Export individual constants for convenience (allows direct imports)
@@ -96,6 +105,7 @@ function resolveLayoutConfig(config?: LayoutConfig): LayoutConfig {
     const minPaneWidth = clampMinPaneWidth(settings.minPaneWidth);
     const maxPaneWidth = clampMaxPaneWidth(settings.maxPaneWidth);
     const gridColumns = clampGridColumns(settings.gridColumns);
+    const placement = getControlPanePlacement(stateProjectRoot || process.cwd());
     let normalizedMinPaneWidth = minPaneWidth;
     let normalizedMaxPaneWidth = maxPaneWidth;
     if (normalizedMinPaneWidth > normalizedMaxPaneWidth) {
@@ -105,16 +115,22 @@ function resolveLayoutConfig(config?: LayoutConfig): LayoutConfig {
     if (
       normalizedMinPaneWidth === DEFAULT_LAYOUT_CONFIG.MIN_COMFORTABLE_WIDTH &&
       normalizedMaxPaneWidth === DEFAULT_LAYOUT_CONFIG.MAX_COMFORTABLE_WIDTH &&
-      gridColumns === 0
+      gridColumns === 0 &&
+      placement.position === 'left'
     ) {
       return DEFAULT_LAYOUT_CONFIG;
     }
 
     return {
       ...DEFAULT_LAYOUT_CONFIG,
+      SIDEBAR_WIDTH:
+        placement.position === 'left' ? placement.thickness : DEFAULT_LAYOUT_CONFIG.SIDEBAR_WIDTH,
       MIN_COMFORTABLE_WIDTH: normalizedMinPaneWidth,
       MAX_COMFORTABLE_WIDTH: normalizedMaxPaneWidth,
       GRID_COLUMNS: gridColumns,
+      CONTROL_POSITION: placement.position,
+      CONTROL_HEIGHT:
+        placement.position === 'bottom' ? placement.thickness : DEFAULT_CONTROL_PANE_HEIGHT,
     };
   } catch {
     return DEFAULT_LAYOUT_CONFIG;

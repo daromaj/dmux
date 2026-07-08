@@ -145,6 +145,11 @@ export interface DmuxSettings {
   maxPaneWidth?: number;
   // Virtual grid: fixed number of columns for content panes (0/undefined = auto-adaptive)
   gridColumns?: number;
+  // Where the control pane (sidebar) is anchored: 'left' (fixed-width sidebar, default)
+  // or 'bottom' (full-width fixed-height strip across the bottom)
+  controlPanePosition?: 'left' | 'bottom';
+  // Control pane thickness in rows when controlPanePosition is 'bottom' (clamped 6..24)
+  controlPaneHeight?: number;
   // Favourite startup commands offered in the project-open picker (e.g. ["cc", "cc -c", "pi"])
   favoriteCommands?: string[];
   // Display language ('en' for English, 'ja' for Japanese)

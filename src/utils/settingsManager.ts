@@ -30,6 +30,12 @@ import {
   DMUX_THEME_NAMES,
   isDmuxThemeName,
 } from '../theme/themePalette.js';
+import {
+  clampControlPaneHeight,
+  DEFAULT_CONTROL_PANE_HEIGHT,
+  MIN_CONTROL_PANE_HEIGHT,
+  MAX_CONTROL_PANE_HEIGHT,
+} from './controlPanePlacement.js';
 
 const GLOBAL_SETTINGS_PATH = join(homedir(), '.dmux.global.json');
 const TEAM_DEFAULTS_FILENAME = '.dmux.defaults.json';
@@ -157,6 +163,17 @@ function sanitizeLoadedSettings(value: unknown): DmuxSettings {
     sanitized.gridColumns = parsed.gridColumns;
   }
 
+  if (parsed.controlPanePosition === 'left' || parsed.controlPanePosition === 'bottom') {
+    sanitized.controlPanePosition = parsed.controlPanePosition;
+  }
+
+  if (
+    typeof parsed.controlPaneHeight === 'number' &&
+    Number.isFinite(parsed.controlPaneHeight)
+  ) {
+    sanitized.controlPaneHeight = clampControlPaneHeight(parsed.controlPaneHeight);
+  }
+
   if (Array.isArray(parsed.favoriteCommands)) {
     const cleaned = parsed.favoriteCommands
       .filter((cmd): cmd is string => typeof cmd === 'string')
@@ -219,6 +236,8 @@ const DEFAULT_SETTINGS: DmuxSettings = {
   showFooterTips: true,
   disableWelcomePane: false,
   gridColumns: 0,
+  controlPanePosition: 'left',
+  controlPaneHeight: DEFAULT_CONTROL_PANE_HEIGHT,
   favoriteCommands: ['cc', 'cc -c', 'pi', 'pi -c'],
   language: 'en',
   colorTheme: DEFAULT_DMUX_THEME,
@@ -426,6 +445,30 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
       { value: '2', label: '2 columns' },
       { value: '3', label: '3 columns' },
       { value: '4', label: '4 columns' },
+    ],
+  },
+  {
+    key: 'controlPanePosition',
+    label: 'Control Pane Position',
+    description:
+      'Where the dmux control pane sits: a fixed-width sidebar on the left (default), or a full-width strip across the bottom.',
+    type: 'select',
+    options: [
+      { value: 'left', label: 'Left sidebar (default)' },
+      { value: 'bottom', label: 'Bottom strip' },
+    ],
+  },
+  {
+    key: 'controlPaneHeight',
+    label: 'Control Pane Height',
+    description: 'Rows reserved for the control pane when positioned at the bottom.',
+    type: 'select',
+    options: [
+      { value: '8', label: '8 rows' },
+      { value: '10', label: '10 rows' },
+      { value: '12', label: '12 rows (default)' },
+      { value: '16', label: '16 rows' },
+      { value: '20', label: '20 rows' },
     ],
   },
   {
@@ -724,6 +767,28 @@ export class SettingsManager {
         numericValue > 4
       ) {
         throw new Error('Invalid gridColumns: expected an integer between 0 and 4');
+      }
+      value = numericValue as DmuxSettings[K];
+    }
+
+    if (key === 'controlPanePosition') {
+      if (value !== 'left' && value !== 'bottom') {
+        throw new Error("Invalid controlPanePosition: expected 'left' or 'bottom'");
+      }
+    }
+
+    // The height select UI hands back a string; store it as a clamped number.
+    if (key === 'controlPaneHeight') {
+      const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
+      if (
+        typeof numericValue !== 'number' ||
+        !Number.isInteger(numericValue) ||
+        numericValue < MIN_CONTROL_PANE_HEIGHT ||
+        numericValue > MAX_CONTROL_PANE_HEIGHT
+      ) {
+        throw new Error(
+          `Invalid controlPaneHeight: expected an integer between ${MIN_CONTROL_PANE_HEIGHT} and ${MAX_CONTROL_PANE_HEIGHT}`
+        );
       }
       value = numericValue as DmuxSettings[K];
     }

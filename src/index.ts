@@ -22,6 +22,7 @@ import {
   destroyWelcomePane,
 } from './utils/welcomePane.js';
 import { SIDEBAR_WIDTH } from './utils/layoutManager.js';
+import { getControlPanePlacement } from './utils/controlPanePlacement.js';
 import { validateSystemRequirements, printValidationResults } from './utils/systemCheck.js';
 import { getUntrackedPanes } from './utils/shellPaneDetection.js';
 import { runFirstRunOnboardingIfNeeded } from './utils/onboarding.js';
@@ -425,14 +426,20 @@ class Dmux {
         }
       }
 
+      const placement = getControlPanePlacement(this.projectRoot);
       controlPaneId = nextControlPaneId;
       config.controlPaneId = nextControlPaneId;
       config.controlPaneSize = SIDEBAR_WIDTH;
 
-      // If this is initial load or control pane changed, resize the sidebar
+      // If this is initial load or control pane changed, resize the control pane
       if (needsUpdate) {
-        // Resize control pane to sidebar width
-        await tmuxService.resizePane(controlPaneId, { width: SIDEBAR_WIDTH });
+        // Resize control pane along its anchored edge
+        await tmuxService.resizePane(
+          controlPaneId,
+          placement.position === 'bottom'
+            ? { height: placement.thickness }
+            : { width: SIDEBAR_WIDTH }
+        );
         // Refresh client
         await tmuxService.refreshClient();
         // Save updated config
@@ -629,10 +636,15 @@ class Dmux {
           // Welcome pane exists from previous session - fix the layout
           LogService.getInstance().debug('Welcome pane exists, applying correct layout', 'Setup');
 
-          // Apply correct layout: sidebar (40) | welcome pane (rest)
-          // Use "latest" mode so window auto-follows terminal size
-          // Batch layout commands into single tmux call for better performance
-          execSync(`tmux set-window-option window-size latest \\; set-window-option main-pane-width ${SIDEBAR_WIDTH} \\; select-layout main-vertical`, { stdio: 'pipe' });
+          // Apply correct layout anchoring the control pane along its edge.
+          // Use "latest" mode so window auto-follows terminal size.
+          // Batch layout commands into a single tmux call for better performance.
+          const welcomePlacement = getControlPanePlacement(this.projectRoot);
+          if (welcomePlacement.position === 'bottom') {
+            execSync(`tmux set-window-option window-size latest \\; set-window-option main-pane-height ${welcomePlacement.thickness} \\; select-layout main-horizontal`, { stdio: 'pipe' });
+          } else {
+            execSync(`tmux set-window-option window-size latest \\; set-window-option main-pane-width ${SIDEBAR_WIDTH} \\; select-layout main-vertical`, { stdio: 'pipe' });
+          }
           await tmuxService.refreshClient();
         }
       } else if (hasValidWelcomePane && hasAnyPanes) {

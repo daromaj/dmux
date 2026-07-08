@@ -159,8 +159,12 @@ export class SpacerManager {
     // If last row is full, no spacer needed
     if (panesInLastRow === cols) return false;
 
-    // Calculate available width for the last row
-    const contentWidth = windowWidth - this.config.SIDEBAR_WIDTH - 1;
+    // Calculate available width for the last row.
+    // In 'bottom' mode the content grid spans the full window width (no left sidebar).
+    const contentWidth =
+      this.config.CONTROL_POSITION === 'bottom'
+        ? windowWidth
+        : windowWidth - this.config.SIDEBAR_WIDTH - 1;
     const bordersInLastRow = panesInLastRow - 1;
     const availableWidth = contentWidth - bordersInLastRow;
 
