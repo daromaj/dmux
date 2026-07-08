@@ -82,11 +82,13 @@ describe('PopupManager launchChoicePopup', () => {
       'choicePopup.js',
       [],
       expect.any(Object),
-      {
+      expect.objectContaining({
         title: 'Choose Option',
         message: 'Pick one',
         options: [{ id: 'cancel', label: 'Cancel' }],
-      },
+        // maxVisible is now included so the popup can window long lists.
+        maxVisible: expect.any(Number),
+      }),
       undefined
     );
   });

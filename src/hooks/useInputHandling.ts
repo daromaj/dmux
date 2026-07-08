@@ -457,13 +457,19 @@ export function useInputHandling(params: UseInputHandlingParams) {
         const fullPath = path.join(gitDir, entry.name)
         try {
           const stat = await fs.stat(fullPath)
-          // Check if it's a git repo
+          // Must be a git repo. Use the .git mtime as the recency signal —
+          // it bumps on commits/staging/checkouts/fetches, whereas the project
+          // root dir mtime only changes when top-level entries change (editing
+          // nested files never touches it), which sorts active projects wrong.
+          let gitMtime: number
           try {
-            await fs.access(path.join(fullPath, ".git"))
+            const gitStat = await fs.stat(path.join(fullPath, ".git"))
+            gitMtime = gitStat.mtimeMs
           } catch {
             continue // skip non-git dirs
           }
-          projects.push({ name: entry.name, fullPath, mtime: stat.mtimeMs })
+          const mtime = Math.max(stat.mtimeMs, gitMtime)
+          projects.push({ name: entry.name, fullPath, mtime })
         } catch {
           continue
         }

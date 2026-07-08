@@ -1041,6 +1041,19 @@ export class PopupManager {
         Math.min(maxHeight, messageLines + optionLines + 6)
       )
 
+      // How many options fit in the (clamped) popup height. Without this the
+      // list renders in full and a long option set — e.g. dozens of ~/git
+      // projects — overflows the box, pushing the highlighted row off-screen so
+      // arrow keys appear dead. The popup windows the list to this count.
+      const CHROME_ROWS = 6 // title / footer / borders — mirrors the +6 above
+      const INDICATOR_ROWS = 2 // "↑ more" / "↓ more" lines
+      const perOptionRows = options.some((option) => option.description) ? 3 : 2
+      const availableOptionRows = Math.max(
+        1,
+        calculatedHeight - messageLines - CHROME_ROWS - INDICATOR_ROWS
+      )
+      const maxVisible = Math.max(1, Math.floor(availableOptionRows / perOptionRows))
+
       const result = await this.launchPopup<string>(
         "choicePopup.js",
         [],
@@ -1049,7 +1062,7 @@ export class PopupManager {
           height: calculatedHeight,
           title: title || "Choose Option",
         },
-        { title, message, options },
+        { title, message, options, maxVisible },
         projectRoot
       )
 

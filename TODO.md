@@ -4,6 +4,14 @@
 
 ## Done ✓
 
+- [x] **Project chooser fix** — the `p` quick-open list (and every other choice popup) now
+      windows to fit the popup height instead of rendering all options. With ~30+ git projects the
+      list overflowed the fixed-height tmux popup, so the highlighted row scrolled off-screen and
+      arrows looked dead. Added `computeScrollWindow` (keeps selection centered, `↑/↓ more`
+      indicators) in `choicePopup.tsx`, sized by a height-derived `maxVisible` from `PopupManager`.
+      Also fixed the "order is wrong" complaint: sort projects by `.git` mtime (max of dir + .git),
+      which tracks real git activity — plain dir mtime never bumps on nested-file edits.
+
 - [x] **Bottom control pane** — opt-in `controlPanePosition: 'left' | 'bottom'` setting (default
       `left`) plus `controlPaneHeight` (rows, default 12, clamped 6..24). In bottom mode the control
       pane becomes a full-width strip anchored at the bottom and content panes tile above it across the
@@ -54,6 +62,12 @@
   - [x] `Ctrl+b` arrows still focus panes (unchanged)
   - Note: this is a fixed-columns grid (up to 4 cols × N rows), not free-form per-cell placement
     with empty cells — cell assignment is via pane order. Full drag-to-arbitrary-cell is a follow-up.
+
+- [ ] **Collapse / hide-unhide control pane** — a toggle that fully hides the control pane and gives
+      its space back to the content panes, then restores it. Extends the existing `[` sidebar
+      collapse (which only shrinks the left sidebar width) into a real show/hide, and must also work
+      in **bottom** mode (reclaim the bottom strip's rows). Decide: reuse `[`, add a distinct key,
+      and whether the hidden state persists across restarts.
 
 ## Priority 2 — Pane Management
 

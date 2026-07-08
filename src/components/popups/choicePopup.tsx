@@ -10,6 +10,7 @@ import { render, Box, Text, useInput, useApp } from 'ink';
 import * as fs from 'fs';
 import { PopupContainer, PopupWrapper, writeSuccessAndExit } from './shared/index.js';
 import { PopupFooters, POPUP_CONFIG } from './config.js';
+import { computeScrollWindow } from '../../utils/scrollWindow.js';
 
 interface ChoiceOption {
   id: string;
@@ -24,6 +25,7 @@ interface ChoicePopupProps {
   title: string;
   message: string;
   options: ChoiceOption[];
+  maxVisible?: number;
 }
 
 const ChoicePopupApp: React.FC<ChoicePopupProps> = ({
@@ -31,11 +33,21 @@ const ChoicePopupApp: React.FC<ChoicePopupProps> = ({
   title,
   message,
   options,
+  maxVisible,
 }) => {
   // Find default option or start at 0
   const defaultIndex = options.findIndex(o => o.default) || 0;
   const [selectedIndex, setSelectedIndex] = useState(Math.max(0, defaultIndex));
   const { exit } = useApp();
+
+  // Window the list so a long option set (e.g. the ~/git project chooser)
+  // never overflows the fixed-height popup — otherwise the highlighted row
+  // scrolls off-screen and arrow navigation looks broken.
+  const visibleCount = Math.max(1, maxVisible || options.length);
+  const { start, end } = computeScrollWindow(selectedIndex, options.length, visibleCount);
+  const visibleOptions = options.slice(start, end);
+  const moreAbove = start > 0;
+  const moreBelow = end < options.length;
 
   useInput((input, key) => {
     if (key.upArrow) {
@@ -63,12 +75,17 @@ const ChoicePopupApp: React.FC<ChoicePopupProps> = ({
           </Box>
         )}
 
-        {/* Options */}
+        {/* Options — windowed to fit the popup height */}
         <Box flexDirection="column">
-          {options.map((option, index) => {
+          {moreAbove && (
+            <Text dimColor>↑ {start} more</Text>
+          )}
+          {visibleOptions.map((option, idx) => {
+            const index = start + idx;
             const isSelected = index === selectedIndex;
+            const isLastVisible = idx === visibleOptions.length - 1;
             return (
-              <Box key={option.id} marginBottom={index < options.length - 1 ? 1 : 0}>
+              <Box key={option.id} marginBottom={isLastVisible ? 0 : 1}>
                 <Box flexDirection="column">
                   <Text
                     color={isSelected ? POPUP_CONFIG.titleColor : option.danger ? POPUP_CONFIG.errorColor : 'white'}
@@ -86,6 +103,9 @@ const ChoicePopupApp: React.FC<ChoicePopupProps> = ({
               </Box>
             );
           })}
+          {moreBelow && (
+            <Text dimColor>↓ {options.length - end} more</Text>
+          )}
         </Box>
       </PopupContainer>
     </PopupWrapper>
@@ -106,6 +126,7 @@ function main() {
     title: string;
     message: string;
     options: ChoiceOption[];
+    maxVisible?: number;
   };
 
   try {
@@ -122,6 +143,7 @@ function main() {
       title={data.title}
       message={data.message}
       options={data.options}
+      maxVisible={data.maxVisible}
     />
   );
 }
