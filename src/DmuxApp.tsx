@@ -1483,6 +1483,32 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
     }, 100)
   }
 
+  // Hard-quit: tear down the whole dmux session, closing every pane. Unlike
+  // cleanExit (which leaves the session alive so `dmux -c` can resume it), this
+  // kills the tmux session outright. Wired to a double Ctrl+C.
+  const killSessionExit = () => {
+    if (!claimProcessShutdown("app-kill-session")) {
+      return
+    }
+
+    process.stdout.write("\x1b[2J\x1b[3J\x1b[H")
+
+    // Unmount the Ink tree first so it doesn't fight the terminal on the way out.
+    exit()
+
+    setTimeout(() => {
+      if (process.env.TMUX && sessionName) {
+        try {
+          // Killing the session terminates this pane's process too, so nothing
+          // after this runs when it succeeds.
+          TmuxService.getInstance().killSessionSync(sessionName)
+        } catch {}
+      }
+      // Fallback (not inside tmux, or the kill failed): just exit this process.
+      process.exit(0)
+    }, 100)
+  }
+
   // Handle tmux hooks prompt input
   useInput(
     (input, key) => {
@@ -1558,6 +1584,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
     saveSidebarProjects,
     loadPanes,
     cleanExit,
+    killSessionExit,
     getAvailableAgentsForProject,
     panesFile,
     projectRoot: sessionProjectRoot,

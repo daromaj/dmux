@@ -1207,6 +1207,19 @@ export class TmuxService {
   }
 
   /**
+   * Kill an entire tmux session (DESTRUCTIVE — closes every pane in it).
+   * Sync so it can run inside a final shutdown path. Best-effort: a missing
+   * session is treated as already gone.
+   */
+  killSessionSync(sessionName: string): void {
+    try {
+      this.execute(`tmux kill-session -t ${sessionName}`, { silent: true });
+    } catch {
+      // Session may already be gone — nothing to do.
+    }
+  }
+
+  /**
    * Get tmux version string
    */
   getVersionSync(): string {

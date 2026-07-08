@@ -4,6 +4,12 @@
 
 ## Done ✓
 
+- [x] **Double Ctrl+C closes the whole session** — a second Ctrl+C in the control pane now tears down
+      the entire dmux tmux session (every pane), instead of only exiting the control-pane TUI and
+      leaving the other panes running. `q` stays the soft quit (exits the TUI, keeps the session so
+      `dmux -c` can resume). New `TmuxService.killSessionSync()` + `killSessionExit()` in DmuxApp,
+      wired to the second Ctrl+C; the confirm prompt now says it closes all panes.
+
 - [x] **Project chooser fix** — the `p` quick-open list (and every other choice popup) now
       windows to fit the popup height instead of rendering all options. With ~30+ git projects the
       list overflowed the fixed-height tmux popup, so the highlighted row scrolled off-screen and

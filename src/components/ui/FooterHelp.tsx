@@ -31,9 +31,12 @@ const FooterHelp: React.FC<FooterHelpProps> = memo(({
 
   if (quitConfirmMode) {
     return (
-      <Box marginTop={1}>
+      <Box marginTop={1} flexDirection="column">
         <Text color="yellow" bold>
-          Press Ctrl+C again to exit
+          Ctrl+C again closes dmux (ALL panes)
+        </Text>
+        <Text dimColor>
+          q quits but keeps the session — resume with dmux -c
         </Text>
       </Box>
     );

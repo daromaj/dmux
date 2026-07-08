@@ -132,6 +132,7 @@ interface UseInputHandlingParams {
   saveSidebarProjects: (projects: SidebarProject[]) => Promise<SidebarProject[]>
   loadPanes: () => Promise<void>
   cleanExit: () => void
+  killSessionExit: () => void
 
   // Agent info
   getAvailableAgentsForProject: (projectRoot?: string) => AgentName[]
@@ -192,6 +193,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
     saveSidebarProjects,
     loadPanes,
     cleanExit,
+    killSessionExit,
     getAvailableAgentsForProject,
     panesFile,
     projectRoot,
@@ -1494,8 +1496,10 @@ export function useInputHandling(params: UseInputHandlingParams) {
     // Handle Ctrl+C for quit confirmation (must be first, before any other checks)
     if (key.ctrl && input === "c") {
       if (quitConfirmMode) {
-        // Second Ctrl+C - actually quit
-        cleanExit()
+        // Second Ctrl+C - tear down the whole session (closes every pane).
+        // This is the hard quit; `q` remains the soft quit that leaves the
+        // session alive for `dmux -c` to resume.
+        killSessionExit()
       } else {
         // First Ctrl+C - show confirmation
         setQuitConfirmMode(true)
