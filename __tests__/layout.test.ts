@@ -310,4 +310,42 @@ describe('layout calculation', () => {
       expect(layout.actualPaneWidth).toBeLessThanOrEqual(40);
     });
   });
+
+  describe('calculateOptimalLayout - virtual grid (forced columns)', () => {
+    it('honors a forced 2-column grid when it fits', () => {
+      const config = { ...DEFAULT_LAYOUT_CONFIG, GRID_COLUMNS: 2 };
+      // 4 panes that auto would place as 2x2 anyway, but force 2 explicitly.
+      const layout = calculateOptimalLayout(4, 300, 60, config);
+      expect(layout.cols).toBe(2);
+      expect(layout.rows).toBe(2);
+      expect(layout.paneDistribution).toEqual([2, 2]);
+    });
+
+    it('forces a single column even in a wide terminal', () => {
+      const config = { ...DEFAULT_LAYOUT_CONFIG, GRID_COLUMNS: 1 };
+      const layout = calculateOptimalLayout(3, 400, 60, config);
+      expect(layout.cols).toBe(1);
+      expect(layout.rows).toBe(3);
+    });
+
+    it('clamps forced columns to the pane count', () => {
+      const config = { ...DEFAULT_LAYOUT_CONFIG, GRID_COLUMNS: 4 };
+      const layout = calculateOptimalLayout(2, 400, 60, config);
+      expect(layout.cols).toBe(2);
+    });
+
+    it('falls back to auto layout when the forced grid does not fit', () => {
+      const config = { ...DEFAULT_LAYOUT_CONFIG, GRID_COLUMNS: 4 };
+      // Narrow terminal: 4 columns cannot fit at min width, so it should not force 4.
+      const layout = calculateOptimalLayout(4, 120, 60, config);
+      expect(layout.cols).toBeLessThan(4);
+    });
+
+    it('ignores the forced grid when GRID_COLUMNS is 0 (auto)', () => {
+      const config = { ...DEFAULT_LAYOUT_CONFIG, GRID_COLUMNS: 0 };
+      const forced = calculateOptimalLayout(4, 300, 60, config);
+      const auto = calculateOptimalLayout(4, 300, 60, DEFAULT_LAYOUT_CONFIG);
+      expect(forced.cols).toBe(auto.cols);
+    });
+  });
 });

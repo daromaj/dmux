@@ -149,6 +149,15 @@ function sanitizeLoadedSettings(value: unknown): DmuxSettings {
   }
 
   if (
+    typeof parsed.gridColumns === 'number' &&
+    Number.isInteger(parsed.gridColumns) &&
+    parsed.gridColumns >= 0 &&
+    parsed.gridColumns <= 4
+  ) {
+    sanitized.gridColumns = parsed.gridColumns;
+  }
+
+  if (
     typeof parsed.aiProvider === 'string'
     && ['openrouter', 'deepseek', 'custom'].includes(parsed.aiProvider)
   ) {
@@ -193,6 +202,7 @@ const DEFAULT_SETTINGS: DmuxSettings = {
   enabledNotificationSounds: getDefaultNotificationSoundSelection(),
   showFooterTips: true,
   disableWelcomePane: false,
+  gridColumns: 0,
   language: 'en',
   colorTheme: DEFAULT_DMUX_THEME,
 };
@@ -387,6 +397,19 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
     label: 'Single-Pane Mode',
     description: 'Do not auto-create the welcome/placeholder pane on startup. dmux opens with just the sidebar.',
     type: 'boolean',
+  },
+  {
+    key: 'gridColumns',
+    label: 'Grid Columns',
+    description: 'Fix the number of columns for content panes (virtual grid). Auto adapts to pane count.',
+    type: 'select',
+    options: [
+      { value: '0', label: 'Auto (adaptive)' },
+      { value: '1', label: '1 column' },
+      { value: '2', label: '2 columns' },
+      { value: '3', label: '3 columns' },
+      { value: '4', label: '4 columns' },
+    ],
   },
   {
     key: 'colorTheme',
@@ -673,6 +696,19 @@ export class SettingsManager {
       throw new Error(
         `Invalid maxPaneWidth: expected an integer between ${MIN_MAX_PANE_WIDTH} and ${MAX_MAX_PANE_WIDTH}`
       );
+    }
+    // The grid-columns select UI hands back a string; store it as a number.
+    if (key === 'gridColumns') {
+      const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
+      if (
+        typeof numericValue !== 'number' ||
+        !Number.isInteger(numericValue) ||
+        numericValue < 0 ||
+        numericValue > 4
+      ) {
+        throw new Error('Invalid gridColumns: expected an integer between 0 and 4');
+      }
+      value = numericValue as DmuxSettings[K];
     }
 
     // Pane width settings are always stored globally, regardless of requested scope.

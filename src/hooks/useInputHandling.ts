@@ -811,6 +811,39 @@ export function useInputHandling(params: UseInputHandlingParams) {
     }
   }
 
+  // Virtual grid: pin the number of columns for content panes (0 = auto-adaptive).
+  const handleGridColumnsChange = async () => {
+    const activeProjectRoot = getActiveProjectRoot()
+    const current = new SettingsManager(activeProjectRoot).getSettings().gridColumns ?? 0
+    const choices = [0, 1, 2, 3, 4].map((n) => ({
+      id: String(n),
+      label: n === 0 ? "Auto (adaptive)" : `${n} column${n > 1 ? "s" : ""}`,
+      description: n === current ? "Current" : undefined,
+    }))
+    const chosen = await popupManager.launchChoicePopup(
+      "Grid Columns",
+      "Fixed content-pane columns (virtual grid)",
+      choices
+    )
+    if (chosen === null || chosen === undefined) return
+
+    try {
+      new SettingsManager(activeProjectRoot).updateSetting(
+        "gridColumns",
+        parseInt(chosen, 10) as any,
+        "global"
+      )
+      refreshDmuxSettings(activeProjectRoot)
+      queueLayoutRefresh()
+      const label = chosen === "0" ? "auto" : `${chosen} column${chosen === "1" ? "" : "s"}`
+      setStatusMessage(`Grid: ${label}`)
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
+    } catch (error: any) {
+      setStatusMessage(`Failed to set grid: ${error?.message || String(error)}`)
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_LONG)
+    }
+  }
+
   const syncWelcomePaneForPanes = async (
     nextPanes: DmuxPane[],
     targetProjectRoot: string = getActiveProjectRoot()
@@ -1710,6 +1743,10 @@ export function useInputHandling(params: UseInputHandlingParams) {
     } else if (input === "[") {
       // Toggle sidebar collapse/expand
       await handleToggleSidebar()
+      return
+    } else if (input === "g") {
+      // Change virtual grid column count
+      await handleGridColumnsChange()
       return
     } else if (input === "l") {
       // Open logs popup

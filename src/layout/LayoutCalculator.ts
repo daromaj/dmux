@@ -71,68 +71,61 @@ export class LayoutCalculator {
       };
     }
 
+    // Manual grid override: user pinned a fixed column count (virtual grid mode).
+    // Honor it whenever it fits; otherwise fall back to the auto-scored layout.
+    const forcedCols = this.config.GRID_COLUMNS;
+    if (typeof forcedCols === 'number' && forcedCols >= 1) {
+      const clampedCols = Math.min(forcedCols, numContentPanes);
+      const forcedLayout = this.buildLayoutForCols(
+        clampedCols,
+        numContentPanes,
+        terminalWidth,
+        terminalHeight,
+        minFeasiblePaneWidth
+      );
+      if (forcedLayout) {
+        return forcedLayout;
+      }
+      // Forced grid does not fit — fall through to auto layout.
+    }
+
     // Try all column counts and score them to find the best layout
     let bestLayout: LayoutConfiguration | null = null;
     let bestScore = -1;
 
     for (let cols = numContentPanes; cols >= 1; cols--) {
+      const built = this.buildLayoutForCols(
+        cols,
+        numContentPanes,
+        terminalWidth,
+        terminalHeight,
+        minFeasiblePaneWidth
+      );
+      if (!built) {
+        continue;
+      }
+
       const rows = Math.ceil(numContentPanes / cols);
-      const columnBorders = cols - 1; // Vertical borders between columns
-      const rowBorders = rows - 1; // Horizontal borders between rows
+      const rowBorders = rows - 1;
+      const availableHeight = terminalHeight - rowBorders;
+      const paneHeight = Math.floor(availableHeight / rows);
 
-      // Calculate minimum required dimensions (can we fit at MIN width?)
-      const minRequiredWidth =
-        SIDEBAR_WIDTH + cols * minFeasiblePaneWidth + columnBorders;
-      const minRequiredHeight = rows * MIN_COMFORTABLE_HEIGHT + rowBorders;
+      // Score this layout (higher is better)
+      const score = this.scoreLayout(
+        numContentPanes,
+        cols,
+        rows,
+        built.actualPaneWidth,
+        paneHeight,
+        terminalHeight
+      );
 
-      // Check if this layout fits in terminal at minimum comfortable size
-      if (
-        minRequiredWidth <= terminalWidth &&
-        minRequiredHeight <= terminalHeight
-      ) {
-        // This layout fits! Now calculate actual pane dimensions
+      // Update best if this score is higher, OR if tied but with fewer columns (more width per pane)
+      const isBetter = score > bestScore || (score === bestScore && cols < (bestLayout?.cols || Infinity));
 
-        // Calculate ideal window max-width (cap each pane at MAX_COMFORTABLE_WIDTH)
-        // Window should be: sidebar + (columns * MAX width) + borders OR terminal width, whichever is smaller
-        const idealMaxWidth =
-          SIDEBAR_WIDTH + cols * MAX_COMFORTABLE_WIDTH + columnBorders;
-        const windowWidth = Math.min(idealMaxWidth, terminalWidth);
-
-        // Calculate actual pane width using the constrained windowWidth (not terminalWidth)
-        // This ensures panes don't exceed MAX_COMFORTABLE_WIDTH
-        const effectiveContentWidth = windowWidth - SIDEBAR_WIDTH - columnBorders;
-        const actualPaneWidth = effectiveContentWidth / cols;
-
-        // Calculate pane distribution for spanning (e.g., [2, 1, 1, 1])
-        const distribution = this.distributePanes(numContentPanes, cols);
-
-        // Calculate pane height
-        const availableHeight = terminalHeight - rowBorders;
-        const paneHeight = Math.floor(availableHeight / rows);
-
-        // Score this layout (higher is better)
-        const score = this.scoreLayout(
-          numContentPanes,
-          cols,
-          rows,
-          actualPaneWidth,
-          paneHeight,
-          terminalHeight
-        );
-
-        // Update best if this score is higher, OR if tied but with fewer columns (more width per pane)
-        const isBetter = score > bestScore || (score === bestScore && cols < (bestLayout?.cols || Infinity));
-
-        if (isBetter) {
-          bestScore = score;
-          bestLayout = {
-            cols,
-            rows,
-            windowWidth,
-            paneDistribution: distribution,
-            actualPaneWidth,
-          };
-        }
+      if (isBetter) {
+        bestScore = score;
+        bestLayout = built;
       }
     }
 
@@ -148,6 +141,47 @@ export class LayoutCalculator {
       windowWidth: terminalWidth,
       paneDistribution: [numContentPanes],
       actualPaneWidth: terminalWidth - SIDEBAR_WIDTH,
+    };
+  }
+
+  /**
+   * Builds a concrete layout for a specific column count, or returns null when
+   * that column count does not fit the terminal at the minimum comfortable size.
+   */
+  private buildLayoutForCols(
+    cols: number,
+    numContentPanes: number,
+    terminalWidth: number,
+    terminalHeight: number,
+    minFeasiblePaneWidth: number
+  ): LayoutConfiguration | null {
+    const { SIDEBAR_WIDTH, MAX_COMFORTABLE_WIDTH, MIN_COMFORTABLE_HEIGHT } = this.config;
+
+    const rows = Math.ceil(numContentPanes / cols);
+    const columnBorders = cols - 1; // Vertical borders between columns
+    const rowBorders = rows - 1; // Horizontal borders between rows
+
+    const minRequiredWidth =
+      SIDEBAR_WIDTH + cols * minFeasiblePaneWidth + columnBorders;
+    const minRequiredHeight = rows * MIN_COMFORTABLE_HEIGHT + rowBorders;
+
+    if (minRequiredWidth > terminalWidth || minRequiredHeight > terminalHeight) {
+      return null;
+    }
+
+    const idealMaxWidth =
+      SIDEBAR_WIDTH + cols * MAX_COMFORTABLE_WIDTH + columnBorders;
+    const windowWidth = Math.min(idealMaxWidth, terminalWidth);
+
+    const effectiveContentWidth = windowWidth - SIDEBAR_WIDTH - columnBorders;
+    const actualPaneWidth = effectiveContentWidth / cols;
+
+    return {
+      cols,
+      rows,
+      windowWidth,
+      paneDistribution: this.distributePanes(numContentPanes, cols),
+      actualPaneWidth,
     };
   }
 

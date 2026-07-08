@@ -659,7 +659,8 @@ export class PopupManager {
     if (!this.checkPopupSupport()) return null
 
     try {
-      const popupHeight = this.config.isDevMode ? 22 : 21
+      // Tall enough for the full single-column shortcut list; tmux clamps to the terminal.
+      const popupHeight = this.config.isDevMode ? 34 : 33
       const result = await this.launchPopup<{ action?: "hooks" }>(
         "shortcutsPopup.js",
         [],

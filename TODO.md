@@ -26,13 +26,14 @@
 
 ## Priority 1 — Layout Control
 
-- [ ] **Virtual grid placement (4×4)**
-  - Manual pane placement on a virtual grid instead of linear splits
-  - Grid adapts: 1 pane = full, 2 = side-by-side, 3 = 2+1 split, 4 = 2×2, etc.
-  - Pane creation prompts for grid position or auto-places
-  - `Ctrl+b` arrows still work for focus, but grid stays stable
-  - Move panes between grid cells (`m` → "Move to cell")
-  - Grid layout persisted in config, restored on reopen
+- [x] **Virtual grid placement** — `g` hotkey / settings `gridColumns` (Auto/1/2/3/4)
+  - [x] Fixed column grid instead of auto-scored splits (`GRID_COLUMNS` in LayoutCalculator)
+  - [x] Grid still adapts to pane count; Auto = previous adaptive behavior
+  - [x] Move panes between cells = pane reorder (Move Up/Down + `Shift+↑↓`); order = row-major cell fill
+  - [x] Grid shape persisted in settings, restored on reopen; every layout enforce reads it → stays stable
+  - [x] `Ctrl+b` arrows still focus panes (unchanged)
+  - Note: this is a fixed-columns grid (up to 4 cols × N rows), not free-form per-cell placement
+    with empty cells — cell assignment is via pane order. Full drag-to-arbitrary-cell is a follow-up.
 
 ## Priority 2 — Pane Management
 

@@ -27,6 +27,7 @@ export interface LayoutConfig {
   MIN_COMFORTABLE_WIDTH: number; // Min pane width before creating rows (default: 60)
   MAX_COMFORTABLE_WIDTH: number; // Max pane width for readability (default: 100)
   MIN_COMFORTABLE_HEIGHT: number; // Min pane height (default: 15)
+  GRID_COLUMNS?: number; // Manual grid column override (virtual grid); 0/undefined = auto
 }
 
 export const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
@@ -34,6 +35,7 @@ export const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
   MIN_COMFORTABLE_WIDTH: DEFAULT_MIN_PANE_WIDTH,
   MAX_COMFORTABLE_WIDTH: DEFAULT_MAX_PANE_WIDTH,
   MIN_COMFORTABLE_HEIGHT: 15,
+  GRID_COLUMNS: 0,
 };
 
 // Export individual constants for convenience (allows direct imports)
@@ -72,6 +74,17 @@ function clampMaxPaneWidth(value: unknown): number {
   return Math.max(MIN_MAX_PANE_WIDTH, Math.min(MAX_MAX_PANE_WIDTH, rounded));
 }
 
+// Virtual grid: 0 = auto, 1..4 = force that many columns.
+const MAX_GRID_COLUMNS = 4;
+function clampGridColumns(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return 0;
+  }
+  const rounded = Math.round(value);
+  if (rounded <= 0) return 0;
+  return Math.min(MAX_GRID_COLUMNS, rounded);
+}
+
 function resolveLayoutConfig(config?: LayoutConfig): LayoutConfig {
   if (config) {
     return config;
@@ -82,6 +95,7 @@ function resolveLayoutConfig(config?: LayoutConfig): LayoutConfig {
     const settings = new SettingsManager(stateProjectRoot || process.cwd()).getSettings();
     const minPaneWidth = clampMinPaneWidth(settings.minPaneWidth);
     const maxPaneWidth = clampMaxPaneWidth(settings.maxPaneWidth);
+    const gridColumns = clampGridColumns(settings.gridColumns);
     let normalizedMinPaneWidth = minPaneWidth;
     let normalizedMaxPaneWidth = maxPaneWidth;
     if (normalizedMinPaneWidth > normalizedMaxPaneWidth) {
@@ -90,7 +104,8 @@ function resolveLayoutConfig(config?: LayoutConfig): LayoutConfig {
 
     if (
       normalizedMinPaneWidth === DEFAULT_LAYOUT_CONFIG.MIN_COMFORTABLE_WIDTH &&
-      normalizedMaxPaneWidth === DEFAULT_LAYOUT_CONFIG.MAX_COMFORTABLE_WIDTH
+      normalizedMaxPaneWidth === DEFAULT_LAYOUT_CONFIG.MAX_COMFORTABLE_WIDTH &&
+      gridColumns === 0
     ) {
       return DEFAULT_LAYOUT_CONFIG;
     }
@@ -99,6 +114,7 @@ function resolveLayoutConfig(config?: LayoutConfig): LayoutConfig {
       ...DEFAULT_LAYOUT_CONFIG,
       MIN_COMFORTABLE_WIDTH: normalizedMinPaneWidth,
       MAX_COMFORTABLE_WIDTH: normalizedMaxPaneWidth,
+      GRID_COLUMNS: gridColumns,
     };
   } catch {
     return DEFAULT_LAYOUT_CONFIG;

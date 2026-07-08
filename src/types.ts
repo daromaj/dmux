@@ -143,6 +143,8 @@ export interface DmuxSettings {
   minPaneWidth?: number;
   // Preferred maximum content pane width in characters
   maxPaneWidth?: number;
+  // Virtual grid: fixed number of columns for content panes (0/undefined = auto-adaptive)
+  gridColumns?: number;
   // Display language ('en' for English, 'ja' for Japanese)
   language?: 'en' | 'ja';
   // AI provider: 'openrouter' (default), 'deepseek', or 'custom'
