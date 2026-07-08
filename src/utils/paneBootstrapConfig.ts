@@ -7,7 +7,7 @@ export interface PaneBootstrapConfig {
   version: 1;
   projectRoot: string;
   worktreePath: string;
-  branchName: string;
+  branchName?: string;
   slug: string;
   prompt: string;
   agent?: AgentName;

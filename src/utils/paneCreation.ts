@@ -277,12 +277,13 @@ export async function createPane(
   });
   const slug = existingWorktree ? existingWorktree.slug : naming.slug;
   const branchName = existingWorktree ? existingWorktree.branchName : naming.branchName;
+  const noWorktree = !!process.env.DMUX_NO_WORKTREE;
   const effectiveBaseBranch = naming.baseBranch;
   const tmuxService = TmuxService.getInstance();
 
   const worktreePath = existingWorktree?.worktreePath
-    || path.join(projectRoot, '.dmux', 'worktrees', slug);
-  if (!existingWorktree && fs.existsSync(worktreePath)) {
+    || (noWorktree ? projectRoot : path.join(projectRoot, '.dmux', 'worktrees', slug));
+  if (!existingWorktree && !noWorktree && fs.existsSync(worktreePath)) {
     throw new Error(
       `Worktree path already exists: ${worktreePath}. Choose a different branch/worktree name.`
     );
@@ -456,7 +457,7 @@ export async function createPane(
   );
 
   // Validate branch settings before handing the slow setup work to the pane.
-  const resolvedStartPoint = startPointBranch || effectiveBaseBranch || undefined;
+  const resolvedStartPoint = noWorktree ? undefined : (startPointBranch || effectiveBaseBranch || undefined);
   if (resolvedStartPoint && !isValidBranchName(resolvedStartPoint)) {
     throw new Error(`Invalid worktree start-point branch name: ${resolvedStartPoint}`);
   }
@@ -465,7 +466,7 @@ export async function createPane(
     id: `dmux-${Date.now()}`,
     slug,
     displayName: existingWorktreeMetadata?.displayName,
-    branchName: branchName !== slug ? branchName : undefined,
+    branchName: noWorktree ? undefined : (branchName !== slug ? branchName : undefined),
     prompt: prompt || 'No initial prompt',
     paneId: paneInfo,
     projectRoot,
@@ -477,7 +478,7 @@ export async function createPane(
     permissionMode: settings.permissionMode,
     autopilot: settings.enableAutopilotByDefault ?? false,
     goalMode,
-    mergeTargetChain,
+    mergeTargetChain: noWorktree ? undefined : mergeTargetChain,
   };
 
   const state = StateManager.getInstance().getState();
@@ -505,8 +506,8 @@ export async function createPane(
       permissionMode: settings.permissionMode,
       goalMode,
       displayName: existingWorktreeMetadata?.displayName,
-      branchName: branchName !== slug ? branchName : undefined,
-      mergeTargetChain,
+      branchName: noWorktree ? undefined : (branchName !== slug ? branchName : undefined),
+      mergeTargetChain: noWorktree ? undefined : mergeTargetChain,
     },
     hookExtraEnv,
   };

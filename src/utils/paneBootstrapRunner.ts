@@ -355,27 +355,34 @@ function setStep(
 }
 
 function buildSteps(config: PaneBootstrapConfig): Step[] {
+  const noWorktree = config.worktreePath === config.projectRoot;
   return [
     {
       id: 'worktree',
-      label: config.existingWorktree ? 'Opening existing worktree' : 'Creating git worktree',
+      label: noWorktree
+        ? 'Using project root (no worktree)'
+        : (config.existingWorktree ? 'Opening existing worktree' : 'Creating git worktree'),
       state: 'pending',
     },
-    {
-      id: 'metadata',
-      label: 'Writing dmux metadata',
-      state: 'pending',
-    },
+    ...(noWorktree ? [] : [
+      {
+        id: 'metadata',
+        label: 'Writing dmux metadata',
+        state: 'pending' as const,
+      },
+    ]),
     {
       id: 'hooks-docs',
       label: 'Preparing hook docs',
       state: config.isHooksEditingSession ? 'pending' : 'skipped',
     },
-    {
-      id: 'worktree-hook',
-      label: 'Running worktree_created hook',
-      state: 'pending',
-    },
+    ...(noWorktree ? [] : [
+      {
+        id: 'worktree-hook',
+        label: 'Running worktree_created hook',
+        state: 'pending' as const,
+      },
+    ]),
     {
       id: 'agent',
       label: config.agent ? `Launching ${getAgentLabel(config.agent)}` : 'Opening shell',
@@ -456,8 +463,8 @@ async function commandSucceeds(command: string, args: string[], cwd: string): Pr
 }
 
 async function prepareWorktree(config: PaneBootstrapConfig): Promise<void> {
-  if (config.existingWorktree) {
-    if (!fs.existsSync(path.join(config.worktreePath, '.git'))) {
+  if (config.existingWorktree || config.worktreePath === config.projectRoot) {
+    if (config.worktreePath !== config.projectRoot && !fs.existsSync(path.join(config.worktreePath, '.git'))) {
       throw new Error(`Existing worktree not found at ${config.worktreePath}`);
     }
     return;
@@ -488,20 +495,21 @@ async function prepareWorktree(config: PaneBootstrapConfig): Promise<void> {
 
   fs.mkdirSync(path.dirname(config.worktreePath), { recursive: true });
 
+  const branch = config.branchName!; // safe: we return early when noWorktree
   const branchExists = await commandSucceeds(
     'git',
-    ['show-ref', '--verify', '--quiet', `refs/heads/${config.branchName}`],
+    ['show-ref', '--verify', '--quiet', `refs/heads/${branch}`],
     config.projectRoot
   );
 
   const args = branchExists
-    ? ['worktree', 'add', config.worktreePath, config.branchName]
+    ? ['worktree', 'add', config.worktreePath, branch]
     : [
         'worktree',
         'add',
         config.worktreePath,
         '-b',
-        config.branchName,
+        branch,
         ...(config.resolvedStartPoint ? [config.resolvedStartPoint] : []),
       ];
 
@@ -705,13 +713,17 @@ async function main(): Promise<number> {
   startRendering(config, steps);
 
   try {
+    const noWorktree = config.worktreePath === config.projectRoot;
+
     setStep(config, steps, 'worktree', 'active');
     await prepareWorktree(config);
     setStep(config, steps, 'worktree', 'done', config.worktreePath);
 
-    setStep(config, steps, 'metadata', 'active');
-    writeWorktreeMetadata(config.worktreePath, config.metadata);
-    setStep(config, steps, 'metadata', 'done');
+    if (!noWorktree) {
+      setStep(config, steps, 'metadata', 'active');
+      writeWorktreeMetadata(config.worktreePath, config.metadata);
+      setStep(config, steps, 'metadata', 'done');
+    }
 
     if (config.isHooksEditingSession) {
       setStep(config, steps, 'hooks-docs', 'active');
@@ -719,25 +731,27 @@ async function main(): Promise<number> {
       setStep(config, steps, 'hooks-docs', 'done');
     }
 
-    setStep(config, steps, 'worktree-hook', 'active');
-    const hookResult = await triggerHookWithProgress(
-      'worktree_created',
-      config.projectRoot,
-      config.pane,
-      {
-        ...config.hookExtraEnv,
-        DMUX_PROGRESS: '1',
-        DMUX_STATUS_PREFIX: 'DMUX_STATUS:',
-      },
-      (event) => appendProgressLine(event.line, event.stream),
-      BOOTSTRAP_HOOK_TIMEOUT_MS
-    );
-    if (!hookResult.success) {
-      throw new Error(hookResult.error || 'worktree_created hook failed');
+    if (!noWorktree) {
+      setStep(config, steps, 'worktree-hook', 'active');
+      const hookResult = await triggerHookWithProgress(
+        'worktree_created',
+        config.projectRoot,
+        config.pane,
+        {
+          ...config.hookExtraEnv,
+          DMUX_PROGRESS: '1',
+          DMUX_STATUS_PREFIX: 'DMUX_STATUS:',
+        },
+        (event) => appendProgressLine(event.line, event.stream),
+        BOOTSTRAP_HOOK_TIMEOUT_MS
+      );
+      if (!hookResult.success) {
+        throw new Error(hookResult.error || 'worktree_created hook failed');
+      }
+      setStep(config, steps, 'worktree-hook', 'done');
     }
-    setStep(config, steps, 'worktree-hook', 'done');
 
-    if (config.agent === 'gemini') {
+    if (config.agent === 'gemini' && !noWorktree) {
       ensureGeminiFolderTrusted(config.worktreePath);
     }
 
