@@ -361,9 +361,9 @@ export class StatusDetector extends EventEmitter {
             const [, model, status] = match;
             // Provide helpful messages for common status codes
             if (status === '401') {
-              errorMessage = `API auth failed - check OPENROUTER_API_KEY`;
+              errorMessage = `API auth failed - check your AI API key`;
             } else if (status === '402') {
-              errorMessage = `Insufficient credits - add credits to OpenRouter account`;
+              errorMessage = `Insufficient credits - add credits to your provider account`;
             } else if (status === '429') {
               errorMessage = `Rate limited - wait before retrying`;
             } else if (status === '503') {
@@ -375,7 +375,7 @@ export class StatusDetector extends EventEmitter {
             errorMessage = error.message;
           }
         } else if (error.message.includes('API key')) {
-          errorMessage = 'Set OPENROUTER_API_KEY env var';
+          errorMessage = 'Set your AI API key env var (OPENROUTER_API_KEY or DMUX_AI_API_KEY)';
         } else if (error.message.includes('All models')) {
           errorMessage = 'All models failed - check API key & credits';
         } else if (error.message.includes('fetch')) {

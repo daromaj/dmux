@@ -142,6 +142,12 @@ export interface DmuxSettings {
   maxPaneWidth?: number;
   // Display language ('en' for English, 'ja' for Japanese)
   language?: 'en' | 'ja';
+  // AI provider: 'openrouter' (default), 'deepseek', or 'custom'
+  aiProvider?: 'openrouter' | 'deepseek' | 'custom';
+  // AI model name(s). Comma-separated for fallback stack (e.g. "deepseek-chat,deepseek-reasoner")
+  aiModel?: string;
+  // Custom API base URL (e.g. "https://api.deepseek.com/v1/chat/completions")
+  aiBaseUrl?: string;
 }
 
 export interface NewPaneInput {

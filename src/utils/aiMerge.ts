@@ -8,6 +8,7 @@ import { execSync } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import { LogService } from '../services/LogService.js';
+import { getAiConfig, type AiConfigInput } from './aiConfig.js';
 
 /**
  * Fetch with timeout wrapper
@@ -30,27 +31,26 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
 }
 
 /**
- * Call OpenRouter API for AI assistance with model fallback
+ * Call AI API for AI assistance with model fallback
  */
-export async function callOpenRouter(prompt: string, maxTokens: number = 1000, timeoutMs: number = 12000): Promise<string | null> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) return null;
+export async function callOpenRouter(
+  prompt: string,
+  maxTokens: number = 1000,
+  timeoutMs: number = 12000,
+  aiConfigInput?: AiConfigInput
+): Promise<string | null> {
+  const config = getAiConfig(aiConfigInput);
+  if (!config.apiKey) return null;
 
-  const models = [
-    'google/gemini-2.5-flash',
-    'openai/gpt-4o-mini',
-    'openai/gpt-oss-120b:free',
-  ];
-
-  for (const model of models) {
+  for (const model of config.modelStack) {
     try {
       const response = await fetchWithTimeout(
-        'https://openrouter.ai/api/v1/chat/completions',
+        config.baseUrl,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
+            'Authorization': `Bearer ${config.apiKey}`,
           },
           body: JSON.stringify({
             model,

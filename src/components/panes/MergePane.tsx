@@ -5,6 +5,7 @@ import CleanTextInput from '../inputs/CleanTextInput.js';
 import chalk from 'chalk';
 import { SettingsManager } from '../../utils/settingsManager.js';
 import { getPermissionFlags } from '../../utils/agentLaunch.js';
+import { getAiConfig } from '../../utils/aiConfig.js';
 
 interface MergePaneProps {
   pane: {
@@ -95,8 +96,8 @@ export default function MergePane({ pane, onComplete, onCancel, mainBranch }: Me
   };
 
   const generateCommitMessage = async (): Promise<string> => {
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) {
+    const config = getAiConfig();
+    if (!config.apiKey) {
       return `chore: merge ${pane.slug} into ${mainBranch}`;
     }
 
@@ -106,14 +107,14 @@ export default function MergePane({ pane, onComplete, onCancel, mainBranch }: Me
         return `chore: merge ${pane.slug} into ${mainBranch}`;
       }
 
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const response = await fetch(config.baseUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'Authorization': `Bearer ${config.apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'openai/gpt-4o-mini',
+          model: config.model,
           messages: [{
             role: 'user',
             content: `Generate a concise, semantic commit message for these changes. Follow conventional commits format (feat:, fix:, chore:, etc). Be specific about what changed:\n\n${diff.output.substring(0, 4000)}`

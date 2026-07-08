@@ -144,6 +144,21 @@ function sanitizeLoadedSettings(value: unknown): DmuxSettings {
     sanitized.maxPaneWidth = parsed.maxPaneWidth;
   }
 
+  if (
+    typeof parsed.aiProvider === 'string'
+    && ['openrouter', 'deepseek', 'custom'].includes(parsed.aiProvider)
+  ) {
+    sanitized.aiProvider = parsed.aiProvider as 'openrouter' | 'deepseek' | 'custom';
+  }
+
+  if (typeof parsed.aiModel === 'string' && parsed.aiModel.length > 0) {
+    sanitized.aiModel = parsed.aiModel;
+  }
+
+  if (typeof parsed.aiBaseUrl === 'string' && parsed.aiBaseUrl.length > 0) {
+    sanitized.aiBaseUrl = parsed.aiBaseUrl;
+  }
+
   return sanitized;
 }
 
@@ -273,6 +288,23 @@ const LOCALIZED_SETTING_TRANSLATIONS: Partial<
   hooks: {
     label: 'settings.manageHooks',
     description: 'settings.manageHooksDescription',
+  },
+  aiProvider: {
+    label: 'settings.aiProvider',
+    description: 'settings.aiProviderDescription',
+    optionLabels: {
+      openrouter: 'settings.aiProviderOpenRouter',
+      deepseek: 'settings.aiProviderDeepSeek',
+      custom: 'settings.aiProviderCustom',
+    },
+  },
+  aiModel: {
+    label: 'settings.aiModel',
+    description: 'settings.aiModelDescription',
+  },
+  aiBaseUrl: {
+    label: 'settings.aiBaseUrl',
+    description: 'settings.aiBaseUrlDescription',
   },
 };
 
@@ -404,6 +436,29 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
     max: MAX_MAX_PANE_WIDTH,
     step: 1,
     shiftStep: SHIFT_MAX_PANE_WIDTH_STEP,
+  },
+  {
+    key: 'aiProvider' as any,
+    label: 'AI Provider',
+    description: 'Choose which AI provider to use for branch names, commit messages, and pane analysis. Requires API key.',
+    type: 'select',
+    options: [
+      { value: 'openrouter', label: 'OpenRouter (default)' },
+      { value: 'deepseek', label: 'DeepSeek' },
+      { value: 'custom', label: 'Custom' },
+    ],
+  },
+  {
+    key: 'aiModel' as any,
+    label: 'AI Model',
+    description: 'Model name(s) to use. Comma-separate for fallback stack (e.g. "deepseek-chat,deepseek-reasoner"). Leave empty for provider defaults.',
+    type: 'text',
+  },
+  {
+    key: 'aiBaseUrl' as any,
+    label: 'AI API Base URL',
+    description: 'Custom API endpoint URL (e.g. "https://api.deepseek.com/v1/chat/completions"). Leave empty for provider defaults.',
+    type: 'text',
   },
   {
     key: 'hooks' as any,

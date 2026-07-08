@@ -2,6 +2,11 @@ import { createHash } from 'crypto';
 import { capturePaneContent } from '../utils/paneCapture.js';
 import { LogService } from './LogService.js';
 import { getPaneDisplayName } from '../utils/paneTitle.js';
+import {
+  getAiConfig,
+  getOpenRouterFreeFallbackStack,
+  type AiConfigInput,
+} from '../utils/aiConfig.js';
 
 // State types for agent status
 export type PaneState = 'option_dialog' | 'open_prompt' | 'in_progress';
@@ -69,15 +74,10 @@ export function normalizePaneContentForAnalysis(
 }
 
 export class PaneAnalyzer {
-  private apiKey: string;
-  private preferredModelStack: string[] = [
-    'google/gemini-2.5-flash',
-    'openai/gpt-4o-mini'
-  ];
-  private freeFallbackModelStack: string[] = [
-    'openai/gpt-oss-120b:free',
-    'nvidia/nemotron-3-super-120b-a12b:free'
-  ];
+  private apiKey: string | undefined;
+  private baseUrl: string;
+  private preferredModelStack: string[];
+  private freeFallbackModelStack: string[];
 
   // Content-hash based cache to avoid repeated API calls for identical content
   private cache = new Map<string, CacheEntry>();
@@ -87,8 +87,22 @@ export class PaneAnalyzer {
   // Request deduplication - prevent multiple concurrent requests for same pane
   private pendingRequests = new Map<string, Promise<PaneAnalysis>>();
 
-  constructor() {
-    this.apiKey = process.env.OPENROUTER_API_KEY || '';
+  constructor(aiConfigInput?: AiConfigInput) {
+    const config = getAiConfig(aiConfigInput);
+    this.apiKey = config.apiKey;
+    this.baseUrl = config.baseUrl;
+    // When using a custom provider/model, use that model as the preferred stack
+    // and keep the free fallback for emergencies
+    if (config.provider !== 'openrouter' || config.modelStack.length !== 2 ||
+        config.modelStack[0] !== 'google/gemini-2.5-flash' ||
+        config.modelStack[1] !== 'openai/gpt-4o-mini') {
+      // Custom config — use the resolved model stack as preferred, empty free fallback
+      this.preferredModelStack = [...config.modelStack];
+      this.freeFallbackModelStack = [];
+    } else {
+      this.preferredModelStack = [...config.modelStack];
+      this.freeFallbackModelStack = getOpenRouterFreeFallbackStack();
+    }
   }
 
   /**
@@ -143,7 +157,7 @@ export class PaneAnalyzer {
     maxTokens: number,
     signal?: AbortSignal
   ): Promise<any> {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch(this.baseUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
