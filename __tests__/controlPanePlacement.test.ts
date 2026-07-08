@@ -23,7 +23,7 @@ describe('sanitizeControlPanePosition', () => {
 
 describe('clampControlPaneHeight', () => {
   it('passes through in-range integers', () => {
-    expect(clampControlPaneHeight(12)).toBe(12);
+    expect(clampControlPaneHeight(4)).toBe(4);
     expect(clampControlPaneHeight(MIN_CONTROL_PANE_HEIGHT)).toBe(MIN_CONTROL_PANE_HEIGHT);
     expect(clampControlPaneHeight(MAX_CONTROL_PANE_HEIGHT)).toBe(MAX_CONTROL_PANE_HEIGHT);
   });
@@ -34,8 +34,8 @@ describe('clampControlPaneHeight', () => {
   });
 
   it('rounds fractional values', () => {
-    expect(clampControlPaneHeight(12.4)).toBe(12);
-    expect(clampControlPaneHeight(15.6)).toBe(16);
+    expect(clampControlPaneHeight(4.4)).toBe(4);
+    expect(clampControlPaneHeight(5.6)).toBe(6);
   });
 
   it('defaults on garbage input', () => {

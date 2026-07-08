@@ -17,9 +17,9 @@ import { StateManager } from '../shared/StateManager.js';
 export type ControlPanePosition = 'left' | 'bottom';
 
 export const SIDEBAR_WIDTH_DEFAULT = 40;
-export const DEFAULT_CONTROL_PANE_HEIGHT = 12;
-export const MIN_CONTROL_PANE_HEIGHT = 6;
-export const MAX_CONTROL_PANE_HEIGHT = 24;
+export const DEFAULT_CONTROL_PANE_HEIGHT = 4;
+export const MIN_CONTROL_PANE_HEIGHT = 2;
+export const MAX_CONTROL_PANE_HEIGHT = 8;
 
 /** Coerce arbitrary input into a valid control-pane position (default 'left'). */
 export function sanitizeControlPanePosition(value: unknown): ControlPanePosition {

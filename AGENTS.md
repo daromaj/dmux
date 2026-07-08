@@ -169,6 +169,14 @@ pnpm run typecheck
 pnpm run test
 ```
 
+## Fork relationship
+
+This repo is a fork of `standardagents/dmux`. There is NO upstream remote configured.
+
+- **NEVER re-add the upstream remote.**
+- **NEVER create PRs against `standardagents/dmux`.** Use `gh pr create` only against `origin` (this fork, `daromaj/dmux`).
+- All work stays in this fork.
+
 ## Notes for maintainers
 
 - Keep `pnpm dev` as the default path for dmux development.

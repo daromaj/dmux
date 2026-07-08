@@ -1655,7 +1655,9 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
       footerLines += 1
     }
   }
-  const contentHeight = Math.max(terminalHeight - footerLines, 10)
+  const contentHeight = isBottomControlPane
+    ? terminalHeight
+    : Math.max(terminalHeight - footerLines, 10)
 
   return (
     <Box key={`theme-${selectedThemeName}-${themeRefreshNonce}`} flexDirection="column" height={terminalHeight}>
@@ -1730,27 +1732,29 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
         </Box>
       )}
 
-      {/* Footer - always at bottom */}
-      <FooterHelp
-        show={showFooterHelp}
-        quitConfirmMode={quitConfirmMode}
-        unreadErrorCount={unreadErrorCount}
-        unreadWarningCount={unreadWarningCount}
-        currentToast={currentToast}
-        toastQueueLength={toastQueueLength}
-        toastQueuePosition={toastQueuePosition}
-        footerTip={currentFooterTip}
-        gridInfo={(() => {
-          if (!process.env.DEBUG_DMUX) return undefined
-          const rows = navigationRows.length
-          const cols = Math.max(1, ...navigationRows.map((row) => row.length))
-          const pos = getCardGridPosition(selectedIndex)
-          return `Grid: ${cols} cols × ${rows} rows | Selected: row ${pos.row}, col ${pos.col} | Terminal: ${terminalWidth}w`
-        })()}
-      />
+      {/* Footer - always at bottom (hidden in bottom strip mode) */}
+      {!isBottomControlPane && (
+        <FooterHelp
+          show={showFooterHelp}
+          quitConfirmMode={quitConfirmMode}
+          unreadErrorCount={unreadErrorCount}
+          unreadWarningCount={unreadWarningCount}
+          currentToast={currentToast}
+          toastQueueLength={toastQueueLength}
+          toastQueuePosition={toastQueuePosition}
+          footerTip={currentFooterTip}
+          gridInfo={(() => {
+            if (!process.env.DEBUG_DMUX) return undefined
+            const rows = navigationRows.length
+            const cols = Math.max(1, ...navigationRows.map((row) => row.length))
+            const pos = getCardGridPosition(selectedIndex)
+            return `Grid: ${cols} cols × ${rows} rows | Selected: row ${pos.row}, col ${pos.col} | Terminal: ${terminalWidth}w`
+          })()}
+        />
+      )}
 
-      {/* Status line - only for updates, branch info, and debug messages */}
-      {(isDevMode || updateAvailable || currentBranch || debugMessage) && (
+      {/* Status line - only for updates, branch info, and debug messages (hidden in bottom strip mode) */}
+      {!isBottomControlPane && (isDevMode || updateAvailable || currentBranch || debugMessage) && (
         <Text dimColor>
           {isDevMode && (
             <Text color="yellow" bold>

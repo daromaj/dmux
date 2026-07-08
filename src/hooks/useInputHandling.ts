@@ -426,15 +426,22 @@ export function useInputHandling(params: UseInputHandlingParams) {
     if (!controlPaneId) return
     try {
       const tmuxService = TmuxService.getInstance()
+      const isBottom = new SettingsManager(
+        StateManager.getInstance().getState().projectRoot || process.cwd()
+      ).getSettings().controlPanePosition === 'bottom'
+
       sidebarCollapsedRef.current = !sidebarCollapsedRef.current
       if (sidebarCollapsedRef.current) {
-        await tmuxService.resizePane(controlPaneId, { width: 1 })
+        await tmuxService.resizePane(
+          controlPaneId,
+          isBottom ? { height: 1 } : { width: 1 }
+        )
         tmuxService.setPaneOptionSync(controlPaneId, '@dmux_sidebar_collapsed', '1')
-        setStatusMessage("Sidebar collapsed ([ to expand)")
+        setStatusMessage(isBottom ? "Strip collapsed ([ to expand)" : "Sidebar collapsed ([ to expand)")
       } else {
         tmuxService.setPaneOptionSync(controlPaneId, '@dmux_sidebar_collapsed', '0')
         await enforceControlPaneSize(controlPaneId, SIDEBAR_WIDTH, { forceLayout: true })
-        setStatusMessage("Sidebar expanded")
+        setStatusMessage(isBottom ? "Strip expanded" : "Sidebar expanded")
       }
       setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
     } catch (error: any) {

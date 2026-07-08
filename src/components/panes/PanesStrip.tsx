@@ -134,6 +134,8 @@ const PanesStrip: React.FC<PanesStripProps> = memo(({
           <Text color={COLORS.border}> select   </Text>
           <Text color="cyan" bold>m</Text>
           <Text color={COLORS.border}> menu   </Text>
+          <Text color="cyan" bold>[</Text>
+          <Text color={COLORS.border}> collapse   </Text>
           <Text color="cyan" bold>?</Text>
           <Text color={COLORS.border}> all keys</Text>
         </Text>
