@@ -35,6 +35,9 @@ import {
 } from "../utils/projectActions.js"
 import { createShellPane, getNextDmuxId } from "../utils/shellPaneDetection.js"
 import type { AgentName } from "../utils/agentLaunch.js"
+import { buildAgentCommand, getAgentDefinitions } from "../utils/agentLaunch.js"
+import { DMUX_THEME_NAMES } from "../theme/themePalette.js"
+import type { DmuxThemeName } from "../types.js"
 import {
   getBulkVisibilityAction,
   getProjectVisibilityAction,
@@ -677,6 +680,137 @@ export function useInputHandling(params: UseInputHandlingParams) {
     })
   }
 
+  // Assign an explicit per-pane color (marks it manual so project-theme sync leaves it alone).
+  const setPaneColor = async (pane: DmuxPane) => {
+    const options = [
+      { id: "__auto__", label: "Auto (follow project theme)", description: "Clear the manual color" },
+      ...DMUX_THEME_NAMES.map((themeName) => ({
+        id: themeName,
+        label: themeName.charAt(0).toUpperCase() + themeName.slice(1),
+      })),
+    ]
+    const chosen = await popupManager.launchChoicePopup(
+      "Set Pane Color",
+      `Color for "${getPaneDisplayName(pane)}"`,
+      options
+    )
+    if (!chosen) return
+
+    const updatedPanes = panes.map((p) => {
+      if (p.id !== pane.id) return p
+      if (chosen === "__auto__") {
+        const { colorThemeSource, ...rest } = p
+        return {
+          ...rest,
+          colorTheme: resolveProjectColorTheme(getPaneProjectRoot(p, projectRoot), sidebarProjects),
+        }
+      }
+      return { ...p, colorTheme: chosen as DmuxThemeName, colorThemeSource: "manual" as const }
+    })
+    await savePanes(updatedPanes)
+    setStatusMessage(
+      chosen === "__auto__"
+        ? `Pane color reset to project theme`
+        : `Pane color set to ${chosen}`
+    )
+    setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
+  }
+
+  // Relaunch an existing agent pane with a different agent (fresh session).
+  const changePaneAgent = async (pane: DmuxPane) => {
+    const targetProjectRoot = getPaneProjectRoot(pane, projectRoot)
+    const availableAgents = getAvailableAgentsForProject(targetProjectRoot)
+    if (availableAgents.length === 0) {
+      setStatusMessage("No agents available")
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
+      return
+    }
+
+    const definitions = getAgentDefinitions()
+    const chosen = await popupManager.launchChoicePopup(
+      "Change Agent",
+      `Relaunch "${getPaneDisplayName(pane)}" with:`,
+      availableAgents.map((agentId) => {
+        const def = definitions.find((d) => d.id === agentId)
+        return {
+          id: agentId,
+          label: def?.name || agentId,
+          description: agentId === pane.agent ? "Current agent" : def?.description,
+        }
+      })
+    )
+    if (!chosen) return
+    if (chosen === pane.agent) {
+      setStatusMessage(`Pane already running ${chosen}`)
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
+      return
+    }
+
+    if (pane.agentStatus === "working") {
+      const confirmed = await popupManager.launchConfirmPopup(
+        "Agent Active",
+        `Agent in "${getPaneDisplayName(pane)}" is currently working. Replace it with ${chosen}?`,
+        "Replace",
+        "Cancel",
+        targetProjectRoot
+      )
+      if (!confirmed) return
+    }
+
+    try {
+      setStatusMessage(`Relaunching with ${chosen}...`)
+      const newAgent = chosen as AgentName
+      const command = buildAgentCommand(newAgent, pane.permissionMode)
+      const tmuxService = TmuxService.getInstance()
+      await tmuxService.respawnPane(pane.paneId, command)
+
+      const updatedPanes = panes.map((p) =>
+        p.id === pane.id ? { ...p, agent: newAgent, agentStatus: undefined, agentSummary: undefined } : p
+      )
+      await savePanes(updatedPanes)
+      await loadPanes()
+
+      setStatusMessage(`Relaunched with ${chosen}`)
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
+    } catch (error: any) {
+      setStatusMessage(`Failed to change agent: ${error?.message || String(error)}`)
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_LONG)
+    }
+  }
+
+  // Swap a pane with its neighbor in the list (and in the tmux layout).
+  const movePane = async (pane: DmuxPane, direction: -1 | 1) => {
+    const index = panes.findIndex((p) => p.id === pane.id)
+    if (index === -1) return
+    const targetIndex = index + direction
+    if (targetIndex < 0 || targetIndex >= panes.length) {
+      setStatusMessage(direction < 0 ? "Already at the top" : "Already at the bottom")
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
+      return
+    }
+
+    const neighbor = panes[targetIndex]
+    try {
+      // Swap tmux geometry first so the visible layout matches the new order.
+      const tmuxService = TmuxService.getInstance()
+      await tmuxService.swapPane(pane.paneId, neighbor.paneId)
+
+      const reordered = [...panes]
+      reordered[index] = neighbor
+      reordered[targetIndex] = pane
+      await savePanes(reordered)
+      await refreshPaneLayout()
+      await loadPanes()
+
+      setSelectedIndex(targetIndex)
+      setStatusMessage(`Moved "${getPaneDisplayName(pane)}" ${direction < 0 ? "up" : "down"}`)
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
+    } catch (error: any) {
+      setStatusMessage(`Failed to move pane: ${error?.message || String(error)}`)
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_LONG)
+    }
+  }
+
   const syncWelcomePaneForPanes = async (
     nextPanes: DmuxPane[],
     targetProjectRoot: string = getActiveProjectRoot()
@@ -979,6 +1113,26 @@ export function useInputHandling(params: UseInputHandlingParams) {
 
     if (actionId === PaneAction.OPEN_FILE_BROWSER) {
       await openFileBrowserInWorktree(pane)
+      return
+    }
+
+    if (actionId === PaneAction.SET_PANE_COLOR) {
+      await setPaneColor(pane)
+      return
+    }
+
+    if (actionId === PaneAction.SET_AGENT) {
+      await changePaneAgent(pane)
+      return
+    }
+
+    if (actionId === PaneAction.MOVE_PANE_UP) {
+      await movePane(pane, -1)
+      return
+    }
+
+    if (actionId === PaneAction.MOVE_PANE_DOWN) {
+      await movePane(pane, 1)
       return
     }
 
@@ -1400,6 +1554,25 @@ export function useInputHandling(params: UseInputHandlingParams) {
             setCommandInput("")
           }
         }
+      }
+      return
+    }
+
+    // Shift+Up/Down: reorder the selected pane in the list + tmux layout.
+    if (key.shift && (key.upArrow || key.downArrow) && selectedIndex < panes.length) {
+      await movePane(panes[selectedIndex], key.upArrow ? -1 : 1)
+      return
+    }
+
+    // Ctrl+Arrows: resize the selected pane (best-effort; auto-layout may re-tile on refresh).
+    if (key.ctrl && (key.upArrow || key.downArrow || key.leftArrow || key.rightArrow) && selectedIndex < panes.length) {
+      const pane = panes[selectedIndex]
+      const direction = key.upArrow ? "U" : key.downArrow ? "D" : key.leftArrow ? "L" : "R"
+      try {
+        await TmuxService.getInstance().resizePaneBy(pane.paneId, direction, 3)
+      } catch (error: any) {
+        setStatusMessage(`Resize failed: ${error?.message || String(error)}`)
+        setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
       }
       return
     }

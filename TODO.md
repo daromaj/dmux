@@ -18,6 +18,10 @@
 - [x] **Footer key hints** — compact shortcut line in sidebar footer for discoverability
 - [x] **Single-pane mode** — `disableWelcomePane` setting; no auto welcome pane on startup
 - [x] **pi CLI first-class** — registered + now default-enabled in the agent picker
+- [x] **Pane reordering** — menu `↑ Move Up` / `↓ Move Down` + `Shift+↑↓`; swaps list order and tmux geometry
+- [x] **Resize panes** — `Ctrl+↑↓←→` resizes the selected pane (best-effort; auto-layout re-tiles on next refresh)
+- [x] **Per-pane agent override** — menu `🔀 Change Agent` relaunches the pane with a different agent (fresh session)
+- [x] **Pane colors** — menu `🎨 Set Pane Color`; manual color sticks (not overwritten by project-theme sync)
 - [x] Verified: pane rename works without worktree; worktree cleanup on close works; config schema exists; tmux prefix is a non-issue (dmux uses no-prefix `M-` bindings, never hardcodes `C-b`)
 
 ## Priority 1 — Layout Control
@@ -32,15 +36,15 @@
 
 ## Priority 2 — Pane Management
 
-- [ ] **Pane reordering** (swap positions in dmux list → affects layout)
+- [x] **Pane reordering** — menu Move Up/Down + `Shift+↑↓` (swaps list order + tmux geometry)
 - [x] **Pane renaming** from sidebar (verified: works without worktree via menu → Rename)
-- [ ] **Resize panes** via dmux shortcuts (not raw tmux `C-b Alt+arrows`)
+- [x] **Resize panes** via dmux shortcuts — `Ctrl+↑↓←→` (best-effort under auto-layout)
 
 ## Priority 3 — Agent Integration
 
 - [x] **pi CLI** as first-class agent (registered + default-enabled)
 - [ ] **Custom agent commands** — define arbitrary launch commands per agent
-- [ ] **Per-pane agent override** — change agent for existing pane
+- [x] **Per-pane agent override** — menu `🔀 Change Agent` relaunches pane with a new agent
 - [x] **Goal mode** per-pane toggle from sidebar (menu action `🎯 Toggle Goal Mode`)
 - [x] **`p` + command** — after selecting project, pick command (shell / cc / ccc / pi)
 
@@ -49,7 +53,7 @@
 - [x] **Single-pane mode** — `disableWelcomePane` setting suppresses the auto welcome pane
 - [x] **Better shortcut discoverability** — key hints shown in sidebar footer
 - [x] **Configurable tmux prefix** — N/A: dmux uses no-prefix `M-` bindings, never hardcodes `C-b`
-- [ ] **Pane colors** — assign colors to panes for visual distinction
+- [x] **Pane colors** — menu `🎨 Set Pane Color` (manual override persists)
 
 ## Priority 5 — Git / Worktree (opt-in)
 

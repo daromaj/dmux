@@ -55,6 +55,11 @@ export function syncPaneColorThemes(
   let changed = false;
 
   const updatedPanes = panes.map((pane) => {
+    // Respect an explicit per-pane color; never overwrite a manual override.
+    if (pane.colorThemeSource === 'manual') {
+      return pane;
+    }
+
     const colorTheme = resolveProjectColorTheme(
       getPaneProjectRoot(pane, fallbackProjectRoot),
       sidebarProjects,

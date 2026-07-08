@@ -52,9 +52,12 @@ export const ShortcutsPopupApp: React.FC<ShortcutsPopupAppProps> = ({
     { key: 'A', description: 'Add terminal to worktree' },
     { key: 'n', description: 'New agent pane in selected project' },
     { key: 't', description: 'New terminal pane in selected project' },
-    { key: 'p', description: 'Add project to sidebar' },
+    { key: 'p', description: 'Quick-open project from ~/git (pick a command)' },
     { key: 'R', description: 'Remove selected empty project from sidebar' },
     { key: 'r', description: 'Reopen closed worktree' },
+    { key: '[', description: 'Collapse/expand the sidebar' },
+    { key: 'Shift+↑↓', description: 'Move selected pane up/down (reorder)' },
+    { key: 'Ctrl+↑↓←→', description: 'Resize selected pane' },
     ...(isDevMode
       ? [{ key: 'S', description: '[DEV] Toggle source pane' }]
       : []),

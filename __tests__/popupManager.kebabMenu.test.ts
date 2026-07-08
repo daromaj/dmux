@@ -56,7 +56,7 @@ describe('PopupManager launchKebabMenuPopup', () => {
       ['Pane 1', expect.any(String)],
       expect.objectContaining({
         width: 60,
-        height: Math.min(21, actions.length + 6),
+        height: Math.min(26, actions.length + 6),
         title: 'Menu: Pane 1',
         positioning: 'pane',
         targetPaneId: pane.paneId,

@@ -882,6 +882,38 @@ export class TmuxService {
   }
 
   /**
+   * Swap the positions of two panes within the window.
+   * Keeps each pane's process; only their geometry/index slots are exchanged.
+   */
+  async swapPane(srcPaneId: string, dstPaneId: string): Promise<void> {
+    await this.executeWithRetry(
+      () => {
+        this.execute(`tmux swap-pane -s '${srcPaneId}' -t '${dstPaneId}'`);
+      },
+      RetryStrategy.FAST,
+      `swapPane(${srcPaneId} <-> ${dstPaneId})`
+    );
+  }
+
+  /**
+   * Resize a pane by a delta in a direction (U/D/L/R).
+   * Manual resizes hold until the next auto-layout enforcement.
+   */
+  async resizePaneBy(
+    paneId: string,
+    direction: 'U' | 'D' | 'L' | 'R',
+    amount: number
+  ): Promise<void> {
+    await this.executeWithRetry(
+      () => {
+        this.execute(`tmux resize-pane -t '${paneId}' -${direction} ${amount}`);
+      },
+      RetryStrategy.FAST,
+      `resizePaneBy(${paneId}, ${direction}, ${amount})`
+    );
+  }
+
+  /**
    * Kill a window (DESTRUCTIVE - no retry)
    */
   async killWindow(windowId: string): Promise<void> {

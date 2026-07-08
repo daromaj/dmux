@@ -50,6 +50,7 @@ export interface DmuxPane {
   projectRoot?: string; // Main repository root this pane belongs to
   projectName?: string; // Display name for pane's project
   colorTheme?: DmuxThemeName; // Cached effective project accent for fast focus/theme switches
+  colorThemeSource?: 'auto' | 'manual'; // 'manual' = user set a per-pane color; skip project-theme sync
   type?: 'worktree' | 'shell';  // Type of pane (defaults to 'worktree' for backward compat)
   shellType?: string;  // Shell type for shell panes (bash, zsh, fish, fb, etc)
   worktreePath?: string;
