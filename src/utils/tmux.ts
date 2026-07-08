@@ -490,10 +490,29 @@ export const enforceControlPaneSize = async (
 
           // Anchor the control pane along its edge with a fixed thickness.
           if (isBottom) {
-            // main-horizontal makes the main pane (index 0 = control) the LARGE
-            // top pane, so size the main pane to the content height, then swap
-            // the control pane down into the thin bottom strip and pin it.
-            const contentHeight = Math.max(1, windowHeight - placement.thickness);
+            // IDEMPOTENCY GUARD: if the control strip is already the bottom-most
+            // pane at the target thickness, do nothing further. Re-running the
+            // main-horizontal/swap/pin sequence resizes panes on every enforce,
+            // which emits SIGWINCH back into useLayoutManagement and creates a
+            // resize→enforce→resize FLICKER loop (the welcome pane re-renders its
+            // logo each cycle). Converging to a fixed point breaks the loop.
+            const current = tmuxService.getPanePositionsSync();
+            if (current.length >= 2) {
+              const control = current.find(p => p.paneId === controlPaneId);
+              const bottomMost = current.reduce((lowest, p) => (p.top > lowest.top ? p : lowest));
+              if (control && control.paneId === bottomMost.paneId &&
+                  control.height === placement.thickness) {
+                await tmuxService.refreshClient();
+                return;
+              }
+            }
+
+            // main-horizontal makes the main pane (index 0) the LARGE top pane;
+            // size it to leave EXACTLY `thickness` rows (plus the 1-row border)
+            // for the control strip, then swap the control pane down into that
+            // strip and pin it. Accounting for the border here makes the pin a
+            // no-op in steady state so the layout converges instead of oscillating.
+            const contentHeight = Math.max(1, windowHeight - placement.thickness - 1);
             tmuxService.setWindowOptionSync('main-pane-height', String(contentHeight));
             await tmuxService.selectLayout('main-horizontal');
             const positions = tmuxService.getPanePositionsSync();

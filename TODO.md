@@ -21,6 +21,18 @@
       top + swaps control to the bottom instead of pinning the top pane). Verified in real tmux: welcome-
       only = 4 rows bottom, stays 4 on content change, `[` collapse → 1 row (whole pane), `[` expand → 4.
 
+- [x] **Screen flicker / welcome logo re-rendering (oscillation loop)** — after the pin fix the whole
+      screen kept refreshing: the bottom pane grew then got clamped, over and over, re-rendering the
+      decorative logo. Root cause: the enforce welcome-branch set `main-pane-height = windowHeight -
+      thickness`, but the 1-row pane border made `main-horizontal` yield `thickness - 1`, so the explicit
+      `resize-pane -y thickness` pin fought it by exactly one row on **every** enforce. Each resize emitted
+      SIGWINCH → `useLayoutManagement` re-enforced → resize again → never converged. Fix: (1) account for
+      the border (`- thickness - 1`) so `main-horizontal` lands on `thickness` and the pin is a steady-
+      state no-op; (2) idempotency guard — if the control pane is already the bottom-most pane at exactly
+      `thickness`, skip the whole main-horizontal/swap/pin sequence. Verified: layout converges in ~2
+      startup samples then holds rock-steady (control `4@38`, welcome content hash unchanged for 12+
+      consecutive 0.4s samples). Same border correction applied to the two create paths.
+
 - [x] **Single pane maximized** — a lone content pane now fills the whole working area instead of being
       capped at `MAX_COMFORTABLE_WIDTH` (~100 cols). Root cause: `LayoutCalculator.buildLayoutForCols`
       sized `windowWidth = min(reserved + cols*MAX_COMFORTABLE_WIDTH, terminalWidth)`, so with one pane

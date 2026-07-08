@@ -645,7 +645,7 @@ class Dmux {
             // top pane, so size the main pane to the content height, then swap
             // the control pane down into the thin bottom strip.
             const termHeight = tmuxService.getTerminalDimensionsSync().height;
-            const contentHeight = Math.max(1, termHeight - welcomePlacement.thickness);
+            const contentHeight = Math.max(1, termHeight - welcomePlacement.thickness - 1);
             execSync(`tmux set-window-option window-size latest \\; set-window-option main-pane-height ${contentHeight} \\; select-layout main-horizontal`, { stdio: 'pipe' });
             const positions = tmuxService.getPanePositionsSync();
             if (positions.length >= 2) {

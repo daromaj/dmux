@@ -73,7 +73,7 @@ export async function createWelcomePane(
         // pane fills the top. main-horizontal makes the main pane (index 0 =
         // control) the LARGE top pane, so size the main pane to the content
         // height, then swap the control pane down into the thin bottom strip.
-        const contentHeight = Math.max(1, dimensions.height - placement.thickness);
+        const contentHeight = Math.max(1, dimensions.height - placement.thickness - 1);
         execSync(`tmux set-window-option main-pane-height ${contentHeight}`, { stdio: 'pipe' });
         execSync(`tmux select-layout main-horizontal`, { stdio: 'pipe' });
         const positions = tmuxService.getPanePositionsSync();
