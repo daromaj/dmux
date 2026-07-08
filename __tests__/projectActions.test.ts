@@ -3,6 +3,7 @@ import type { DmuxPane, SidebarProject } from '../src/types.js';
 import {
   buildProjectActionLayout,
   buildVisualNavigationRows,
+  buildHorizontalNavigationRows,
   resolveSelectionAfterPaneClose,
 } from '../src/utils/projectActions.js';
 
@@ -58,6 +59,40 @@ describe('projectActions', () => {
       [0, 1],
       [2, 3, 4],
     ]);
+  });
+
+  it('chunks panes into rows of N for the horizontal (bottom) layout', () => {
+    const panes: DmuxPane[] = [
+      pane('dmux-1', 'p1', '/repo'),
+      pane('dmux-2', 'p2', '/repo'),
+      pane('dmux-3', 'p3', '/repo'),
+      pane('dmux-4', 'p4', '/repo'),
+      pane('dmux-5', 'p5', '/repo'),
+    ];
+    const layout = buildProjectActionLayout(panes, [], '/repo', 'repo');
+
+    // 5 panes chunked by 2 → [[0,1],[2,3],[4]], then the new-agent/terminal row.
+    expect(buildHorizontalNavigationRows(layout, 2)).toEqual([
+      [0, 1],
+      [2, 3],
+      [4],
+      [5, 6],
+    ]);
+
+    // Single column degrades to one pane per row.
+    expect(buildHorizontalNavigationRows(layout, 1)).toEqual([
+      [0],
+      [1],
+      [2],
+      [3],
+      [4],
+      [5, 6],
+    ]);
+  });
+
+  it('emits only the action row when there are no panes (horizontal layout)', () => {
+    const layout = buildProjectActionLayout([], [], '/repo', 'repo');
+    expect(buildHorizontalNavigationRows(layout, 3)).toEqual([[0, 1]]);
   });
 
   it('selects the next pane down in the same project after closing a pane', () => {

@@ -4,6 +4,17 @@
 
 ## Done ✓
 
+- [x] **Bottom control pane** — opt-in `controlPanePosition: 'left' | 'bottom'` setting (default
+      `left`) plus `controlPaneHeight` (rows, default 12, clamped 6..24). In bottom mode the control
+      pane becomes a full-width strip anchored at the bottom and content panes tile above it across the
+      full terminal width. Threaded a position axis through the existing custom-layout-string machinery
+      (`generateSidebarGridLayout` bottom branch, `LayoutConfig.CONTROL_POSITION/CONTROL_HEIGHT`,
+      `LayoutCalculator` reserves height, `SpacerManager`, `TmuxLayoutApplier`) via a shared
+      `getControlPanePlacement()` helper, so all enforce paths pick it up centrally. UI reflow: a
+      horizontal wrapping pane list (`PanesStrip`) with a prominent onboarding help line and grid-shaped
+      ←/→/↑↓ navigation. Design spec: `docs/superpowers/specs/2026-07-08-bottom-control-pane-design.md`.
+      Note: web-server embedded layout path stays left-only; unit-tested but not yet driven in a live TUI.
+
 - [x] **`dmux` = scratch, `dmux -c` = continue** — plain `dmux` always starts from a clean single
       pane. If a previous project session is still alive in tmux, plain `dmux` **kills it** and creates
       a fresh one (no more reattaching to old panes, no cd-into-worktree, no auto `claude --continue`).

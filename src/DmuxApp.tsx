@@ -79,6 +79,7 @@ import type {
   MergeTargetReference,
 } from "./types.js"
 import PanesGrid from "./components/panes/PanesGrid.js"
+import PanesStrip from "./components/panes/PanesStrip.js"
 import CommandPromptDialog from "./components/dialogs/CommandPromptDialog.js"
 import FileCopyPrompt from "./components/ui/FileCopyPrompt.js"
 import FooterHelp from "./components/ui/FooterHelp.js"
@@ -87,6 +88,7 @@ import { PaneEventService } from "./services/PaneEventService.js"
 import {
   buildProjectActionLayout,
   buildVisualNavigationRows,
+  buildHorizontalNavigationRows,
   buildGroupStartRows,
   getProjectActionByIndex,
   resolveSelectionAfterPaneClose,
@@ -540,6 +542,11 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
   // getPanePositions moved to utils/tmux
 
   const activeDevSourcePath = isDevMode ? process.cwd() : undefined
+  // Bottom control-pane mode reflows the pane list into a horizontal strip.
+  const isBottomControlPane = settings.controlPanePosition === 'bottom'
+  const stripColumns = isBottomControlPane
+    ? Math.max(1, Math.floor(terminalWidth / 40))
+    : 1
   const projectActionLayout = useMemo(
     () => buildProjectActionLayout(
       panes,
@@ -621,12 +628,15 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
       ? projectActionLayout.groups.flatMap((group) =>
           group.panes.map((entry) => [entry.index])
         )
-      : buildVisualNavigationRows(projectActionLayout),
-    [isLoading, projectActionLayout]
+      : isBottomControlPane
+        ? buildHorizontalNavigationRows(projectActionLayout, stripColumns)
+        : buildVisualNavigationRows(projectActionLayout),
+    [isLoading, projectActionLayout, isBottomControlPane, stripColumns]
   )
   const groupStartRows = useMemo(
-    () => isLoading ? [] : buildGroupStartRows(projectActionLayout),
-    [isLoading, projectActionLayout]
+    // Horizontal strip nav has no vertical group columns to jump between.
+    () => (isLoading || isBottomControlPane) ? [] : buildGroupStartRows(projectActionLayout),
+    [isLoading, isBottomControlPane, projectActionLayout]
   )
 
   useEffect(() => {
@@ -1623,20 +1633,36 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
     <Box key={`theme-${selectedThemeName}-${themeRefreshNonce}`} flexDirection="column" height={terminalHeight}>
       {/* Main content area - height dynamically adjusts for status messages */}
       <Box flexDirection="column" height={contentHeight} overflow="hidden">
-        <PanesGrid
-          panes={panes}
-          selectedIndex={selectedIndex}
-          activeProjectRoot={activeProjectRoot}
-          isLoading={isLoading}
-          themeName={selectedThemeName}
-          projectThemeByRoot={projectThemeByRoot}
-          agentStatuses={agentStatuses}
-          activeDevSourcePath={activeDevSourcePath}
-          sidebarProjects={sidebarProjects}
-          fallbackProjectRoot={projectRoot || process.cwd()}
-          fallbackProjectName={projectName}
-          isProjectBusy={isProjectHeaderBusy}
-        />
+        {isBottomControlPane ? (
+          <PanesStrip
+            panes={panes}
+            selectedIndex={selectedIndex}
+            columns={stripColumns}
+            isLoading={isLoading}
+            themeName={selectedThemeName}
+            projectThemeByRoot={projectThemeByRoot}
+            agentStatuses={agentStatuses}
+            activeDevSourcePath={activeDevSourcePath}
+            sidebarProjects={sidebarProjects}
+            fallbackProjectRoot={projectRoot || process.cwd()}
+            fallbackProjectName={projectName}
+          />
+        ) : (
+          <PanesGrid
+            panes={panes}
+            selectedIndex={selectedIndex}
+            activeProjectRoot={activeProjectRoot}
+            isLoading={isLoading}
+            themeName={selectedThemeName}
+            projectThemeByRoot={projectThemeByRoot}
+            agentStatuses={agentStatuses}
+            activeDevSourcePath={activeDevSourcePath}
+            sidebarProjects={sidebarProjects}
+            fallbackProjectRoot={projectRoot || process.cwd()}
+            fallbackProjectName={projectName}
+            isProjectBusy={isProjectHeaderBusy}
+          />
+        )}
 
         {showCommandPrompt && (
           <CommandPromptDialog

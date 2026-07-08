@@ -268,6 +268,41 @@ export function buildVisualNavigationRows(
 }
 
 /**
+ * Build navigation rows for the horizontal (bottom control pane) layout.
+ *
+ * All pane indices are flattened in visual order and chunked into rows of
+ * `columns`, so ←/→ moves within a wrap-row and ↑/↓ moves between wrap-rows.
+ * The new-agent/terminal actions are appended as a final row. Project grouping
+ * headers are dropped in this compact layout.
+ */
+export function buildHorizontalNavigationRows(
+  layout: ProjectActionLayout,
+  columns: number
+): number[][] {
+  const cols = Math.max(1, Math.floor(columns) || 1);
+  const paneIndices: number[] = [];
+  for (const group of layout.groups) {
+    for (const entry of group.panes) {
+      paneIndices.push(entry.index);
+    }
+  }
+
+  const rows: number[][] = [];
+  for (let i = 0; i < paneIndices.length; i += cols) {
+    rows.push(paneIndices.slice(i, i + cols));
+  }
+
+  const actionRow = layout.actionItems
+    .filter((action) => action.kind === 'new-agent' || action.kind === 'terminal')
+    .map((action) => action.index);
+  if (actionRow.length > 0) {
+    rows.push(actionRow);
+  }
+
+  return rows;
+}
+
+/**
  * Build an array of row indices where each project group starts.
  * Used by left/right navigation to jump between project groups.
  */
