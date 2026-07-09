@@ -21,7 +21,6 @@ interface UseQuakeAssistantParams {
   sessionName: string;
   sessionProjectRoot: string;
   controlPaneId?: string;
-  terminalHeight: number;
   settings: DmuxSettings;
   savePanes: (panes: DmuxPane[]) => Promise<void>;
   refreshDmuxSettings: (projectRoot?: string) => void;
@@ -46,7 +45,6 @@ export function useQuakeAssistant(params: UseQuakeAssistantParams): UseQuakeAssi
     sessionName,
     sessionProjectRoot,
     controlPaneId,
-    terminalHeight,
     settings,
     savePanes,
     refreshDmuxSettings,
@@ -59,8 +57,6 @@ export function useQuakeAssistant(params: UseQuakeAssistantParams): UseQuakeAssi
   panesRef.current = panes;
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
-  const terminalHeightRef = useRef(terminalHeight);
-  terminalHeightRef.current = terminalHeight;
   const chordArmedRef = useRef<number>(0);
 
   const refreshLayout = useCallback(() => {
@@ -164,32 +160,39 @@ export function useQuakeAssistant(params: UseQuakeAssistantParams): UseQuakeAssi
   }
   const service = serviceRef.current;
 
+  // Full-screen the control pane (native tmux zoom) so the overlay renders as a
+  // real drawer instead of being crushed into the 3-row bottom strip.
+  const zoomControlPane = useCallback(
+    (zoomed: boolean) => {
+      if (controlPaneId) {
+        void TmuxService.getInstance().setPaneZoom(controlPaneId, zoomed);
+      }
+    },
+    [controlPaneId],
+  );
+
   const openQuake = useCallback(() => {
     setQuakeOpen(true);
-    if (controlPaneId) {
-      const height = Math.max(10, terminalHeightRef.current - 4);
-      void TmuxService.getInstance().resizePane(controlPaneId, { height });
-    }
-  }, [controlPaneId]);
+    zoomControlPane(true);
+  }, [zoomControlPane]);
 
   const closeQuake = useCallback(() => {
     setQuakeOpen(false);
+    zoomControlPane(false);
     refreshLayout();
-  }, [refreshLayout]);
+  }, [zoomControlPane, refreshLayout]);
 
   const toggleQuake = useCallback(() => {
     setQuakeOpen((open) => {
       if (open) {
+        zoomControlPane(false);
         refreshLayout();
         return false;
       }
-      if (controlPaneId) {
-        const height = Math.max(10, terminalHeightRef.current - 4);
-        void TmuxService.getInstance().resizePane(controlPaneId, { height });
-      }
+      zoomControlPane(true);
       return true;
     });
-  }, [controlPaneId, refreshLayout]);
+  }, [zoomControlPane, refreshLayout]);
 
   // Global open binding (only when closed; the overlay owns close/abort while open).
   useInput(

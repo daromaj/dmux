@@ -1402,7 +1402,6 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
     sessionName,
     sessionProjectRoot,
     controlPaneId,
-    terminalHeight,
     settings,
     savePanes,
     refreshDmuxSettings,

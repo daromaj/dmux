@@ -188,7 +188,7 @@ const QuakeOverlay: React.FC<QuakeOverlayProps> = ({ service, onClose, accentCol
 
       <Box>
         <Text dimColor>
-          Enter send · Esc {busy ? 'abort' : 'close'} · Ctrl+` toggle
+          Enter send · Esc {busy ? 'abort' : 'close'} · Ctrl+\ toggle
         </Text>
       </Box>
     </Box>

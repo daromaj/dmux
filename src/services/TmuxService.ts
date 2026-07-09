@@ -580,6 +580,28 @@ export class TmuxService {
   }
 
   /**
+   * Zoom or unzoom a pane so it fills the entire window (native tmux full-screen).
+   * Idempotent: reads the current window_zoomed_flag and only toggles when the
+   * desired state differs. Used by the quake overlay for a full-screen drawer.
+   */
+  async setPaneZoom(paneId: string, zoomed: boolean): Promise<void> {
+    await this.executeWithRetry(
+      () => {
+        const flag = this.execute(
+          `tmux display-message -p -t '${paneId}' '#{window_zoomed_flag}'`,
+          { silent: true }
+        ).trim();
+        const isZoomed = flag === '1';
+        if (isZoomed !== zoomed) {
+          this.execute(`tmux resize-pane -Z -t '${paneId}'`);
+        }
+      },
+      RetryStrategy.FAST,
+      `setPaneZoom(${paneId})`
+    );
+  }
+
+  /**
    * Resize window
    */
   async resizeWindow(dimensions: { width: number; height: number }): Promise<void> {
