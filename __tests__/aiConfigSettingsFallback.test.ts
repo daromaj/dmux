@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { readApiKeyFromSettingsSync } from '../src/utils/aiConfig.js';
+import { readApiKeyFromSettingsSync, readAiSettingsSync } from '../src/utils/aiConfig.js';
 
 /**
  * Regression coverage for the tmux-stale-environment bug: dmux processes spawned
@@ -75,5 +75,54 @@ describe('readApiKeyFromSettingsSync', () => {
   it('ignores a non-string aiApiKey', () => {
     writeProjectSettings({ aiApiKey: 12345 });
     expect(readApiKeyFromSettingsSync(cwd, globalPath)).toBeUndefined();
+  });
+});
+
+describe('readAiSettingsSync (provider/model/baseUrl + key)', () => {
+  let cwd: string;
+  let globalPath: string;
+
+  beforeEach(() => {
+    cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'dmux-ai-'));
+    fs.mkdirSync(path.join(cwd, '.dmux'), { recursive: true });
+    globalPath = path.join(cwd, 'global.json');
+  });
+
+  afterEach(() => {
+    fs.rmSync(cwd, { recursive: true, force: true });
+  });
+
+  const writeProject = (obj: unknown) =>
+    fs.writeFileSync(path.join(cwd, '.dmux', 'settings.json'), JSON.stringify(obj), 'utf-8');
+  const writeGlobal = (obj: unknown) =>
+    fs.writeFileSync(globalPath, JSON.stringify(obj), 'utf-8');
+
+  it('reads the full AI block from global settings', () => {
+    // Regression: a DeepSeek key must not drift from an OpenRouter provider.
+    writeGlobal({
+      aiProvider: 'deepseek',
+      aiModel: 'deepseek-v4-pro',
+      aiBaseUrl: 'https://api.deepseek.com/chat/completions',
+      aiApiKey: 'sk-deep',
+    });
+    expect(readAiSettingsSync(cwd, globalPath)).toEqual({
+      aiProvider: 'deepseek',
+      aiModel: 'deepseek-v4-pro',
+      aiBaseUrl: 'https://api.deepseek.com/chat/completions',
+      aiApiKey: 'sk-deep',
+    });
+  });
+
+  it('project fields override global, missing project fields fall through', () => {
+    writeGlobal({ aiProvider: 'openrouter', aiModel: 'gpt-x', aiApiKey: 'sk-global' });
+    writeProject({ aiProvider: 'deepseek' });
+    const merged = readAiSettingsSync(cwd, globalPath);
+    expect(merged.aiProvider).toBe('deepseek'); // project override
+    expect(merged.aiModel).toBe('gpt-x'); // fell through from global
+    expect(merged.aiApiKey).toBe('sk-global'); // fell through from global
+  });
+
+  it('returns an empty object when nothing is configured', () => {
+    expect(readAiSettingsSync(cwd, globalPath)).toEqual({});
   });
 });

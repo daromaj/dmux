@@ -115,77 +115,115 @@ function resolveBaseUrl(
 
 const GLOBAL_SETTINGS_PATH = path.join(os.homedir() || '', '.dmux.global.json');
 
-/** Read `aiApiKey` from a single dmux settings JSON file, or undefined. */
-function readApiKeyFromSettingsFile(filePath: string): string | undefined {
+/** Read the AI-related fields from a single dmux settings JSON file. */
+function readAiSettingsFromFile(filePath: string): AiConfigInput {
   let raw: string;
   try {
     raw = fs.readFileSync(filePath, 'utf-8');
   } catch {
-    return undefined; // file missing / unreadable
+    return {}; // file missing / unreadable
   }
+  let parsed: any;
   try {
-    const parsed = JSON.parse(raw);
-    const key = parsed?.aiApiKey;
-    return typeof key === 'string' && key.length > 0 ? key : undefined;
+    parsed = JSON.parse(raw);
   } catch {
-    return undefined; // malformed JSON
+    return {}; // malformed JSON
   }
+  const out: AiConfigInput = {};
+  const str = (v: unknown): string | undefined =>
+    typeof v === 'string' && v.length > 0 ? v : undefined;
+  out.aiProvider = str(parsed?.aiProvider);
+  out.aiModel = str(parsed?.aiModel);
+  out.aiBaseUrl = str(parsed?.aiBaseUrl);
+  out.aiApiKey = str(parsed?.aiApiKey);
+  return out;
 }
 
 /**
- * Recover the API key from dmux settings files. This is the persisted fallback
- * for the tmux-stale-environment case: a dmux process spawned by a long-lived
- * tmux server inherits an environment without DMUX_AI_API_KEY/OPENROUTER_API_KEY
- * even when the shell defines them. Storing `aiApiKey` in the settings file lets
- * dmux read the key directly from disk regardless of the process environment.
+ * Read AI settings (provider/model/baseUrl/apiKey) from dmux settings files.
+ * This is the persisted fallback for the tmux-stale-environment case: a dmux
+ * process spawned by a long-lived tmux server inherits an environment without
+ * the AI env vars even when the shell defines them, so it must resolve config
+ * from disk. Storing these in the settings file makes dmux work regardless of
+ * the process environment.
  *
  * Project settings (<cwd>/.dmux/settings.json) override global
- * (~/.dmux.global.json). Exported for testing; synchronous to back resolveApiKey.
+ * (~/.dmux.global.json). Exported for testing; synchronous.
  */
+export function readAiSettingsSync(
+  cwd: string,
+  globalPath: string = GLOBAL_SETTINGS_PATH,
+): AiConfigInput {
+  const projectPath = path.join(cwd, '.dmux', 'settings.json');
+  const globalSettings = readAiSettingsFromFile(globalPath);
+  const projectSettings = readAiSettingsFromFile(projectPath);
+  // Project overrides global; drop undefined so they don't clobber.
+  return {
+    ...stripUndefined(globalSettings),
+    ...stripUndefined(projectSettings),
+  };
+}
+
+/** Back-compat helper: just the API key from settings files. */
 export function readApiKeyFromSettingsSync(
   cwd: string,
   globalPath: string = GLOBAL_SETTINGS_PATH,
 ): string | undefined {
-  const projectPath = path.join(cwd, '.dmux', 'settings.json');
+  return readAiSettingsSync(cwd, globalPath).aiApiKey;
+}
+
+function stripUndefined(input: AiConfigInput): AiConfigInput {
+  const out: AiConfigInput = {};
+  for (const [k, v] of Object.entries(input)) {
+    if (v !== undefined) (out as any)[k] = v;
+  }
+  return out;
+}
+
+let cachedDiskSettings: AiConfigInput | null = null;
+
+function getDiskAiSettings(): AiConfigInput {
+  // Read once per process and cache — the settings file doesn't change under us,
+  // and this backs every getAiConfig() call.
+  if (cachedDiskSettings === null) {
+    try {
+      cachedDiskSettings = readAiSettingsSync(process.cwd());
+    } catch {
+      cachedDiskSettings = {};
+    }
+  }
+  return cachedDiskSettings;
+}
+
+function resolveApiKey(input: AiConfigInput): string | undefined {
+  // Environment (explicit override) wins; DMUX_AI_API_KEY then OPENROUTER_API_KEY.
   return (
-    readApiKeyFromSettingsFile(projectPath) ??
-    readApiKeyFromSettingsFile(globalPath)
+    process.env.DMUX_AI_API_KEY ||
+    process.env.OPENROUTER_API_KEY ||
+    input.aiApiKey ||
+    undefined
   );
 }
 
-let cachedSettingsApiKey: string | undefined;
-let settingsApiKeyScanned = false;
-
-function resolveApiKey(input: AiConfigInput): string | undefined {
-  // 1) Environment (explicit override): DMUX_AI_API_KEY, then OPENROUTER_API_KEY.
-  const fromEnv = process.env.DMUX_AI_API_KEY || process.env.OPENROUTER_API_KEY;
-  if (fromEnv) return fromEnv;
-
-  // 2) Explicit input (a caller that already loaded merged settings).
-  if (input.aiApiKey) return input.aiApiKey;
-
-  // 3) Settings files on disk. Read once and cache — this is the path that
-  // survives a stale tmux server environment.
-  if (!settingsApiKeyScanned) {
-    settingsApiKeyScanned = true;
-    try {
-      cachedSettingsApiKey = readApiKeyFromSettingsSync(process.cwd());
-    } catch {
-      cachedSettingsApiKey = undefined;
-    }
-  }
-  return cachedSettingsApiKey;
-}
-
 /**
- * Resolve the full AI configuration from env vars and settings.
- * Settings come from the dmux settings system (merged global + project).
+ * Resolve the full AI configuration. Priority for every field:
+ *   environment  >  explicit `input`  >  dmux settings files  >  built-in default
+ *
+ * Disk settings are folded UNDER `input` so callers that already loaded merged
+ * settings behave identically, while callers passing nothing (slug, merge, the
+ * quake popup) still get the persisted config — keeping provider/model/baseUrl
+ * and the API key from drifting apart (e.g. a DeepSeek key with the OpenRouter
+ * endpoint).
  */
 export function getAiConfig(input: AiConfigInput = {}): AiConfig {
-  const provider = resolveProvider(input);
-  const modelStack = resolveModelStack(provider, input);
-  const baseUrl = resolveBaseUrl(provider, input);
-  const apiKey = resolveApiKey(input);
+  const merged: AiConfigInput = {
+    ...getDiskAiSettings(),
+    ...stripUndefined(input),
+  };
+  const provider = resolveProvider(merged);
+  const modelStack = resolveModelStack(provider, merged);
+  const baseUrl = resolveBaseUrl(provider, merged);
+  const apiKey = resolveApiKey(merged);
   const model = modelStack[0] || '';
 
   return {
