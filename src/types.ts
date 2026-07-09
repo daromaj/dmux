@@ -195,7 +195,6 @@ export interface DmuxAppProps {
   sessionName: string;
   projectRoot?: string;
   settingsFile: string;
-  autoUpdater?: any; // AutoUpdater instance
   controlPaneId?: string; // Pane ID running dmux TUI (left sidebar)
 }
 

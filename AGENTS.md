@@ -188,13 +188,13 @@ pnpm run typecheck
 pnpm run test
 ```
 
-## Fork relationship
+## Repository
 
-This repo is a fork of `standardagents/dmux`. There is NO upstream remote configured.
+This is a standalone project. `origin` (`daromaj/dmux`) is the only remote.
 
-- **NEVER re-add the upstream remote.**
-- **NEVER create PRs against `standardagents/dmux`.** Use `gh pr create` only against `origin` (this fork, `daromaj/dmux`).
-- All work stays in this fork.
+- **Do NOT add any other remotes.**
+- **Create PRs only against `origin`** (`daromaj/dmux`) with `gh pr create`.
+- All work stays in this repo.
 
 ## Notes for maintainers
 

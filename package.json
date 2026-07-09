@@ -5,13 +5,13 @@
   "type": "module",
   "author": "Justin Schroeder",
   "license": "MIT",
-  "homepage": "https://github.com/formkit/dmux#readme",
+  "homepage": "https://github.com/daromaj/dmux#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/standardagents/dmux.git"
+    "url": "git+https://github.com/daromaj/dmux.git"
   },
   "bugs": {
-    "url": "https://github.com/formkit/dmux/issues"
+    "url": "https://github.com/daromaj/dmux/issues"
   },
   "keywords": [
     "tmux",

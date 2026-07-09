@@ -8,7 +8,6 @@ import usePanes from "./hooks/usePanes.js"
 import useProjectSettings from "./hooks/useProjectSettings.js"
 import useTerminalWidth from "./hooks/useTerminalWidth.js"
 import useNavigation from "./hooks/useNavigation.js"
-import useAutoUpdater from "./hooks/useAutoUpdater.js"
 import useAgentStatus from "./hooks/useAgentStatus.js"
 import usePaneRunner from "./hooks/usePaneRunner.js"
 import usePaneCreation from "./hooks/usePaneCreation.js"
@@ -121,7 +120,6 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
   sessionName,
   settingsFile,
   projectRoot,
-  autoUpdater,
   controlPaneId,
 }) => {
   const { stdout } = useStdout()
@@ -174,12 +172,6 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
 
   // Debug/development info
   const { debugMessage, setDebugMessage, currentBranch } = useDebugInfo(__dirname)
-  // Update state handled by hook
-  const {
-    updateInfo,
-    isUpdating,
-    updateAvailable,
-  } = useAutoUpdater(autoUpdater, setStatusMessage)
   const { exit } = useApp()
 
   // Flag to ignore input temporarily after popup closes (prevents buffered keys)
@@ -529,8 +521,6 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
       // Enable mouse mode only for this dmux session (not global)
     }
   }, [])
-
-  // Update checking moved to useAutoUpdater
 
   // Welcome pane is now fully event-based:
   // - Created at startup (in src/index.ts)
@@ -1370,7 +1360,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
     const isSelectedProjectBusy = isCreatingPane || runningCommand
 
     return (projectRoot: string) => {
-      if (isLoading || isUpdating) {
+      if (isLoading) {
         return true
       }
 
@@ -1384,7 +1374,6 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
     isCreatingPane,
     isLoading,
     isTrackedProjectBusy,
-    isUpdating,
     runningCommand,
     selectedProjectRoot,
   ])
@@ -1407,8 +1396,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
       !!showCommandPrompt ||
       showFileCopyPrompt ||
       isCreatingPane ||
-      runningCommand ||
-      isUpdating,
+      runningCommand,
   })
 
   // Monitor agent status across panes (returns a map of pane ID to status)
@@ -1445,8 +1433,6 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
   })
 
   // jumpToPane and runCommand functions removed - now handled by action system and pane runner
-
-  // Update handling moved to useAutoUpdater
 
   // clearScreen function removed - no longer used (was only used by removed jumpToPane function)
 
@@ -1557,7 +1543,6 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
     isCreatingPane,
     setIsCreatingPane,
     runningCommand,
-    isUpdating,
     isLoading,
     ignoreInput: ignoreInput || showHooksPrompt, // Block other input when hooks prompt is shown
     isDevMode,
@@ -1609,7 +1594,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
   //   - Toast (active): wrapped lines + header + marginBottom
   //   - Toast (queued, transitioning): header + marginBottom (2 lines)
   //   - Debug info: +1 line if DEBUG_DMUX
-  //   - Status line: +1 line if updateAvailable/currentBranch/debugMessage
+  //   - Status line: +1 line if currentBranch/debugMessage
   //   - Status messages: +1 line per active message
   const showFooterHelp = !showCommandPrompt
   let footerLines = 2
@@ -1650,7 +1635,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
     }
 
     // Add status line
-    if (isDevMode || updateAvailable || currentBranch || debugMessage) {
+    if (isDevMode || currentBranch || debugMessage) {
       footerLines += 1
     }
     // Add line for each active status message
@@ -1760,17 +1745,12 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
         />
       )}
 
-      {/* Status line - only for updates, branch info, and debug messages (hidden in bottom strip mode) */}
-      {!isBottomControlPane && (isDevMode || updateAvailable || currentBranch || debugMessage) && (
+      {/* Status line - branch info and debug messages (hidden in bottom strip mode) */}
+      {!isBottomControlPane && (isDevMode || currentBranch || debugMessage) && (
         <Text dimColor>
           {isDevMode && (
             <Text color="yellow" bold>
               DEV MODE{" "}
-            </Text>
-          )}
-          {updateAvailable && updateInfo && (
-            <Text color="red" bold>
-              Update available: npm i -g dmux@latest{" "}
             </Text>
           )}
           {currentBranch && (

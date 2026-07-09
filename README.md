@@ -5,22 +5,17 @@
 <h3 align="center">Parallel AI agents in tmux panes</h3>
 
 <p align="center">
-  A personal, heavily-customized fork of dmux tuned to one specific workflow.
+  A personal, heavily-customized tool tuned to one specific workflow.
 </p>
 
 ---
 
-> ### ⚠️ This is a personal fork
+> ### ⚠️ This is a personal tool
 >
-> This is **my** fork of [dmux](https://github.com/formkit/dmux), bent hard toward how I
-> personally work. It is not the upstream project, is not a drop-in for it, and I make no
-> promise to keep it compatible or to accept issues/PRs.
+> dmux is bent hard toward how I personally work. It is not a general-purpose, supported
+> product, and I make no promise to keep it stable or to accept issues/PRs.
 >
-> **Full credit to the dmux team** — the original is genuinely great work, and everything here is
-> built on top of their foundation. If you want the polished, supported, general-purpose tool,
-> use the original: **[formkit/dmux](https://github.com/formkit/dmux)** · **[dmux.ai](https://dmux.ai)**.
->
-> **The big difference:** this fork does **not** manage git for you. No forced worktrees, no branch
+> **The defining behavior:** dmux does **not** manage git for you. No forced worktrees, no branch
 > creation, no merge orchestration. Panes just open in the project directory and launch an agent —
 > the agent handles its own branches, commits, and merges. Worktrees are strictly opt-in
 > (`DMUX_USE_WORKTREE=1`) and off by default.
@@ -31,7 +26,7 @@
 
 ## Install
 
-This fork isn't published to npm under `dmux` — run it from source (see [CONTRIBUTING.md](./CONTRIBUTING.md)):
+dmux isn't published to npm — run it from source (see [CONTRIBUTING.md](./CONTRIBUTING.md)):
 
 ```bash
 git clone https://github.com/daromaj/dmux
@@ -74,7 +69,7 @@ dmux is a tmux + Ink TUI that opens a pane per task and launches an AI agent in 
 
 ## Worktrees (opt-in)
 
-Worktrees are off by default. Set `DMUX_USE_WORKTREE=1` to restore the upstream behavior where each new pane gets its own git worktree and branch. Without it, panes share the project directory and dmux does nothing to your git state.
+Worktrees are off by default. Set `DMUX_USE_WORKTREE=1` to enable the mode where each new pane gets its own git worktree and branch. Without it, panes share the project directory and dmux does nothing to your git state.
 
 ## Keyboard Shortcuts
 
@@ -108,15 +103,15 @@ Worktrees are off by default. Set `DMUX_USE_WORKTREE=1` to restore the upstream 
 
 ## Documentation
 
-The upstream project's docs at **[dmux.ai](https://dmux.ai)** cover the core concepts, but they describe the original worktree-centric behavior and won't reflect this fork's changes. Fork-specific behavior and maintainer notes live in **[AGENTS.md](./AGENTS.md)**.
+Behavior and maintainer notes live in **[AGENTS.md](./AGENTS.md)**.
 
 ## Contributing
 
-This is a personal fork, so I'm not really soliciting contributions. If you want to hack on it locally, **[CONTRIBUTING.md](./CONTRIBUTING.md)** documents the "dmux-on-dmux" development loop. For the maintained, general-purpose tool, contribute to the original at **[formkit/dmux](https://github.com/formkit/dmux)**.
+This is a personal tool, so I'm not really soliciting contributions. If you want to hack on it locally, **[CONTRIBUTING.md](./CONTRIBUTING.md)** documents the "dmux-on-dmux" development loop.
 
 ## Credits
 
-Built on top of **[dmux](https://github.com/formkit/dmux)** by the FormKit team. All the hard foundational work is theirs; this fork just reshapes it for one person's workflow.
+Originally based on the dmux project by the FormKit team.
 
 ## License
 

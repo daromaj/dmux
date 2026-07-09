@@ -87,7 +87,6 @@ interface UseInputHandlingParams {
   isCreatingPane: boolean
   setIsCreatingPane: (value: boolean) => void
   runningCommand: boolean
-  isUpdating: boolean
   isLoading: boolean
   ignoreInput: boolean
   isDevMode: boolean
@@ -159,7 +158,6 @@ export function useInputHandling(params: UseInputHandlingParams) {
     isCreatingPane,
     setIsCreatingPane,
     runningCommand,
-    isUpdating,
     isLoading,
     ignoreInput,
     isDevMode,
@@ -1310,7 +1308,6 @@ export function useInputHandling(params: UseInputHandlingParams) {
     ignoreInput
     || isCreatingPane
     || runningCommand
-    || isUpdating
     || isLoading
     || showFileCopyPrompt
     || showCommandPrompt !== null
@@ -1481,7 +1478,6 @@ export function useInputHandling(params: UseInputHandlingParams) {
     isCreatingPane,
     isDevMode,
     isLoading,
-    isUpdating,
     panes,
     popupManager,
     projectRoot,
@@ -1518,7 +1514,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
       return
     }
 
-    if (isCreatingPane || runningCommand || isUpdating || isLoading) {
+    if (isCreatingPane || runningCommand || isLoading) {
       // Disable input while performing operations or loading
       return
     }

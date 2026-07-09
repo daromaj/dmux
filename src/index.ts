@@ -12,7 +12,6 @@ import { createRequire } from 'module';
 import { createInterface } from 'node:readline/promises';
 import DmuxApp from './DmuxApp.js';
 import FileBrowserApp from './FileBrowserApp.js';
-import { AutoUpdater } from './services/AutoUpdater.js';
 import { StateManager } from './shared/StateManager.js';
 import { LogService } from './services/LogService.js';
 import { TmuxService } from './services/TmuxService.js';
@@ -145,7 +144,6 @@ class Dmux {
   private projectName: string;
   private sessionName: string;
   private projectRoot: string;
-  private autoUpdater: AutoUpdater;
   private stateManager: StateManager;
 
   constructor() {
@@ -165,9 +163,6 @@ class Dmux {
     // Always use the .dmux directory config location
     this.panesFile = configFile;
     this.settingsFile = configFile; // Same file for all config
-
-    // Initialize auto-updater with config file
-    this.autoUpdater = new AutoUpdater(configFile);
 
     // Initialize state manager
     this.stateManager = StateManager.getInstance();
@@ -265,9 +260,6 @@ class Dmux {
         // If promotion fails, continue with current process so dev is still usable.
       }
     }
-
-    // Check for updates in background if needed
-    this.checkForUpdatesBackground();
 
     // Set up hooks for this session (if in tmux)
     if (inTmux) {
@@ -706,7 +698,6 @@ class Dmux {
       projectName: this.projectName,
       sessionName: this.sessionName,
       projectRoot: this.projectRoot,
-      autoUpdater: this.autoUpdater,
       controlPaneId,
     };
 
@@ -1219,11 +1210,9 @@ class Dmux {
       const projectIdentifier = `${this.projectName}-${projectHash}`;
       const oldPanesFile = path.join(homeDmuxDir, `${projectIdentifier}-panes.json`);
       const oldSettingsFile = path.join(homeDmuxDir, `${projectIdentifier}-settings.json`);
-      const oldUpdateSettingsFile = path.join(homeDmuxDir, 'update-settings.json');
 
       let panes = [];
       let settings = {};
-      let updateSettings = {};
 
       // Try to read old panes file
       if (await this.fileExists(oldPanesFile)) {
@@ -1245,36 +1234,24 @@ class Dmux {
         }
       }
 
-      // Try to read old update settings file
-      if (await this.fileExists(oldUpdateSettingsFile)) {
-        try {
-          const oldUpdateContent = await fs.readFile(oldUpdateSettingsFile, 'utf-8');
-          updateSettings = JSON.parse(oldUpdateContent);
-        } catch {
-          // Intentionally silent - migration is best-effort
-        }
-      }
-
       // Check for config from previous parent directory location
       if (await this.fileExists(oldParentConfigFile)) {
         try {
           const oldConfig = JSON.parse(await fs.readFile(oldParentConfigFile, 'utf-8'));
           if (oldConfig.panes) panes = oldConfig.panes;
           if (oldConfig.settings) settings = oldConfig.settings;
-          if (oldConfig.updateSettings) updateSettings = oldConfig.updateSettings;
         } catch {
           // Intentionally silent - migration is best-effort
         }
       }
 
       // If we found old config, migrate it
-      if (panes.length > 0 || Object.keys(settings).length > 0 || Object.keys(updateSettings).length > 0) {
+      if (panes.length > 0 || Object.keys(settings).length > 0) {
         const migratedConfig = {
           projectName: this.projectName,
           projectRoot: this.projectRoot,
           panes: panes,
           settings: settings,
-          updateSettings: updateSettings,
           lastUpdated: new Date().toISOString(),
           migratedFrom: 'dmux-legacy'
         };
@@ -1292,51 +1269,12 @@ class Dmux {
           // Intentionally silent - cleanup is best-effort
         }
         try {
-          await fs.unlink(oldUpdateSettingsFile);
-        } catch {
-          // Intentionally silent - cleanup is best-effort
-        }
-        try {
           await fs.unlink(oldParentConfigFile);
         } catch {
           // Intentionally silent - cleanup is best-effort
         }
       }
     }
-  }
-
-  private checkForUpdatesBackground() {
-    // Run update check in background without blocking startup
-    setImmediate(async () => {
-      try {
-        const shouldCheck = await this.autoUpdater.shouldCheckForUpdates();
-        if (shouldCheck) {
-          // Check for updates asynchronously
-          this.autoUpdater.checkForUpdates().catch(() => {
-            // Silently ignore update check failures
-          });
-        }
-      } catch {
-        // Silently ignore errors in background update check
-      }
-    });
-  }
-
-  async getUpdateInfo() {
-    return await this.autoUpdater.checkForUpdates();
-  }
-
-  async performUpdate() {
-    const updateInfo = await this.autoUpdater.checkForUpdates();
-    return await this.autoUpdater.performUpdate(updateInfo);
-  }
-
-  async skipUpdate(version: string) {
-    return await this.autoUpdater.skipVersion(version);
-  }
-
-  getAutoUpdater() {
-    return this.autoUpdater;
   }
 
   private applySessionPaneBorderOptions(sessionName: string, stdio: 'pipe' | 'inherit' = 'pipe') {
