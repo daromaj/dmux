@@ -49,6 +49,29 @@
 
 ## Done ✓
 
+- [x] **Rebrand dmux → qmux + de-fork + drop auto-update** — renamed the whole project from `dmux`
+      to `qmux` ("quake-mode tmux"). Removed every reference to the upstream/official repos and all
+      auto-update machinery (deleted `AutoUpdater`, `useAutoUpdater`, `updateChecker`, `UpdateDialog`);
+      standalone project now, one credit line kept, LICENSE untouched. Full rename: code symbols
+      (`Dmux*`→`Qmux*`), on-disk state (`.dmux/`→`.qmux/`, `~/.dmux.global.json`→`~/.qmux.global.json`,
+      `DMUX_*`→`QMUX_*` env vars, `dmux-`→`qmux-` tmux session prefix, `.dmux-hooks/`→`.qmux-hooks/`),
+      and the binary (`dmux`→`qmux`).
+      - **Backward-compat migration** (`src/utils/legacyMigration.ts`, runs first at startup): moves
+        legacy state to the new names, then leaves a **symlink** at each old `.dmux*` path pointing at
+        the real `.qmux*` one — old references keep resolving and writes flow through to one shared
+        file, so an older `dmux` and the new `qmux` interoperate during the transition. Idempotent,
+        best-effort, never blocks startup; also links when state was already migrated (only `.qmux`
+        present). Env fallback `QMUX_* ?? DMUX_*` (`src/utils/qmuxEnv.ts`). `dmux` bin aliased to
+        `./qmux` so the old command still works. Verified: typecheck 0, build 0, migration tests 10/10.
+
+- [x] **`qmux -c` restores shell panes too** — continue mode was only recreating agent panes; plain
+      shell panes lost to a killed tmux server are now recreated as well, in their original cwd
+      (`usePaneLoading.ts`: `selectMissingPanesToRecreate` no longer excludes `type === 'shell'`).
+
+- [x] **AI key / provider resilience** — the API key and `aiProvider`/`aiModel`/`aiBaseUrl` now resolve
+      from the qmux settings file, not just env, with recovery from the shell rc when a tmux-spawned
+      qmux inherits a stale environment (`aiConfig.ts`).
+
 - [x] **Bottom strip: tip restored + duplicate shortcuts removed + tight 3-row height** — the bottom
       control pane wasted space and the rotating `Tip:` line never showed. Three problems: (1) the shortcut
       hints rendered twice in `PanesStrip` — a static hint row (`n new agent / t terminal / p open project
