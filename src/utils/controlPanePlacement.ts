@@ -1,5 +1,5 @@
 /**
- * Control-pane placement: where the dmux control pane (sidebar) is anchored and
+ * Control-pane placement: where the qmux control pane (sidebar) is anchored and
  * how thick it is.
  *
  * - `left` (default): a fixed-WIDTH sidebar on the left (thickness = columns, 40).

@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { executeMerge, executeMergeWithConflictHandling } from '../../../src/actions/merge/mergeExecution.js';
-import type { DmuxPane } from '../../../src/types.js';
+import type { QmuxPane } from '../../../src/types.js';
 import type { ActionContext } from '../../../src/actions/types.js';
 
 // Mock child_process to prevent actual tmux commands
@@ -60,12 +60,12 @@ vi.mock('../../../src/actions/merge/conflictResolution.js', () => ({
 }));
 
 describe('Merge Execution - Bug Fixes', () => {
-  const mockPane: DmuxPane = {
+  const mockPane: QmuxPane = {
     id: 'test-1',
     slug: 'test-branch',
     prompt: 'test prompt',
     paneId: '%1',
-    worktreePath: '/test/main/.dmux/worktrees/test-branch',
+    worktreePath: '/test/main/.qmux/worktrees/test-branch',
   };
 
   const mockContext: ActionContext = {
@@ -87,7 +87,7 @@ describe('Merge Execution - Bug Fixes', () => {
       await executeMerge(mockPane, mockContext, 'main', '/test/main');
 
       // CRITICAL: Must call mergeMainIntoWorktree FIRST
-      expect(mergeMainIntoWorktree).toHaveBeenCalledWith('/test/main/.dmux/worktrees/test-branch', 'main');
+      expect(mergeMainIntoWorktree).toHaveBeenCalledWith('/test/main/.qmux/worktrees/test-branch', 'main');
 
       // THEN call mergeWorktreeIntoMain
       expect(mergeWorktreeIntoMain).toHaveBeenCalledWith('/test/main', 'test-branch');
@@ -355,7 +355,7 @@ describe('Merge Execution - Bug Fixes', () => {
       await executeMerge(mockPane, mockContext, 'main', '/test/main');
 
       expect(triggerHook).toHaveBeenCalledWith('post_merge', '/test/main', mockPane, {
-        DMUX_TARGET_BRANCH: 'main',
+        QMUX_TARGET_BRANCH: 'main',
       });
     });
 

@@ -42,10 +42,10 @@ describe('welcomePaneManager', () => {
     vi.clearAllMocks();
     vi.spyOn(Date, 'now').mockImplementation(() => 1_700_000_000_000 + (nowTick++ * 1_000));
 
-    tempProjectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dmux-welcome-pane-'));
-    const dmuxDir = path.join(tempProjectRoot, '.dmux');
-    fs.mkdirSync(dmuxDir, { recursive: true });
-    configPath = path.join(dmuxDir, 'dmux.config.json');
+    tempProjectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'qmux-welcome-pane-'));
+    const qmuxDir = path.join(tempProjectRoot, '.qmux');
+    fs.mkdirSync(qmuxDir, { recursive: true });
+    configPath = path.join(qmuxDir, 'qmux.config.json');
 
     fs.writeFileSync(configPath, JSON.stringify({
       projectName: 'test-project',
@@ -95,7 +95,7 @@ describe('welcomePaneManager', () => {
     expect(updatedConfig.welcomePaneId).toBe('%88');
   });
 
-  it('destroys the welcome pane when dmux panes become visible again', async () => {
+  it('destroys the welcome pane when qmux panes become visible again', async () => {
     mockWelcomePaneExists.mockResolvedValue(true);
 
     fs.writeFileSync(configPath, JSON.stringify({

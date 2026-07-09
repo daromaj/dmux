@@ -4,8 +4,8 @@ import type { QuakeWorkspaceContext } from '../src/utils/quakeTypes.js';
 
 function baseCtx(overrides: Partial<QuakeWorkspaceContext> = {}): QuakeWorkspaceContext {
   return {
-    sessionName: 'dmux-abc123',
-    projectRoot: '/mnt/storage/git/dmux',
+    sessionName: 'qmux-abc123',
+    projectRoot: '/mnt/storage/git/qmux',
     gridColumns: 0,
     controlPanePosition: 'bottom',
     panes: [],
@@ -18,8 +18,8 @@ describe('buildQuakeSystemPrompt', () => {
     const ctx = baseCtx({ gridColumns: 2, controlPanePosition: 'left' });
     const prompt = buildQuakeSystemPrompt(ctx);
 
-    expect(prompt).toContain('dmux-abc123');
-    expect(prompt).toContain('/mnt/storage/git/dmux');
+    expect(prompt).toContain('qmux-abc123');
+    expect(prompt).toContain('/mnt/storage/git/qmux');
     expect(prompt).toContain('2');
     expect(prompt).toContain('left');
   });
@@ -84,7 +84,7 @@ describe('buildQuakeSystemPrompt', () => {
     const prompt = buildQuakeSystemPrompt(ctx);
 
     expect(prompt).toContain('```run');
-    expect(prompt).toContain('```dmux');
+    expect(prompt).toContain('```qmux');
     expect(prompt).toContain('send-keys');
     expect(prompt).toContain('capture-pane');
   });

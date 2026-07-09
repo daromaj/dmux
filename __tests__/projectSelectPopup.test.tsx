@@ -12,7 +12,7 @@ const tempDirs: string[] = [];
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function makeTempDir(): string {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dmux-project-select-popup-'));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qmux-project-select-popup-'));
   tempDirs.push(tempDir);
   return tempDir;
 }

@@ -2,7 +2,7 @@
 
 ## Current State
 
-dmux has **13 popup files** with massive code duplication:
+qmux has **13 popup files** with massive code duplication:
 
 ```
 src/popups/
@@ -294,7 +294,7 @@ wc -l src/popups/POPUP_NAME.tsx
 
 # 6. Build and test
 pnpm build
-./dmux  # Test the popup
+./qmux  # Test the popup
 ```
 
 ## Expected Outcomes

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DmuxPane } from '../src/types.js';
+import type { QmuxPane } from '../src/types.js';
 
 const tmuxServiceMock = vi.hoisted(() => ({
   setPaneTitle: vi.fn(async () => {}),
@@ -35,24 +35,24 @@ describe('pane restoration', () => {
   it('restores worktree panes with a FRESH agent session (no resume)', async () => {
     const { recreateMissingPanes } = await import('../src/hooks/usePaneLoading.js');
 
-    const pane: DmuxPane = {
-      id: 'dmux-1',
+    const pane: QmuxPane = {
+      id: 'qmux-1',
       slug: 'feature-codex',
       prompt: 'fix the failing tests',
       paneId: '%2',
-      worktreePath: '/repo/.dmux/worktrees/feature-codex',
+      worktreePath: '/repo/.qmux/worktrees/feature-codex',
       projectRoot: '/repo',
       agent: 'codex',
       permissionMode: 'bypassPermissions',
     };
 
-    await recreateMissingPanes([pane], '/repo/.dmux/dmux.config.json');
+    await recreateMissingPanes([pane], '/repo/.qmux/qmux.config.json');
 
     // Fresh launch: `codex ...`, NOT `codex resume --last ...`.
     expect(tmuxServiceMock.sendShellCommand).toHaveBeenCalledWith(
       '%9',
       expect.stringContaining(
-        "export DMUX_PANE_ID='dmux-1'; export DMUX_TMUX_PANE_ID='%9'; codex --enable hooks --dangerously-bypass-approvals-and-sandbox"
+        "export QMUX_PANE_ID='qmux-1'; export QMUX_TMUX_PANE_ID='%9'; codex --enable hooks --dangerously-bypass-approvals-and-sandbox"
       )
     );
     const lastCall = tmuxServiceMock.sendShellCommand.mock.calls.at(-1) as unknown[] | undefined;
@@ -63,8 +63,8 @@ describe('pane restoration', () => {
   it('restores a shell pane as a fresh shell in its recorded directory (no agent)', async () => {
     const { recreateMissingPanes } = await import('../src/hooks/usePaneLoading.js');
 
-    const pane: DmuxPane = {
-      id: 'dmux-3',
+    const pane: QmuxPane = {
+      id: 'qmux-3',
       slug: 'shell-3',
       prompt: '',
       paneId: '%98',
@@ -73,7 +73,7 @@ describe('pane restoration', () => {
       projectRoot: '/repo',
     };
 
-    await recreateMissingPanes([pane], '/repo/.dmux/dmux.config.json');
+    await recreateMissingPanes([pane], '/repo/.qmux/qmux.config.json');
 
     // A new pane is split in the shell's recorded project directory.
     expect(splitPaneMock).toHaveBeenCalledWith({ cwd: '/repo' });
@@ -84,13 +84,13 @@ describe('pane restoration', () => {
   });
 });
 
-const pane = (over: Partial<DmuxPane>): DmuxPane => ({
+const pane = (over: Partial<QmuxPane>): QmuxPane => ({
   id: 'id',
   slug: 'slug',
   prompt: '',
   paneId: '%1',
   ...over,
-}) as DmuxPane;
+}) as QmuxPane;
 
 describe('shouldContinueSession', () => {
   it('is false for a plain launch', async () => {
@@ -120,7 +120,7 @@ describe('selectStalePanesToDrop', () => {
   });
 
   it('continue mode keeps dead shells AND dead worktree panes for restore (drops nothing)', async () => {
-    // `dmux -c` restores the previous session. Shell panes are recreated as fresh
+    // `qmux -c` restores the previous session. Shell panes are recreated as fresh
     // shells, so they must NOT be dropped here — otherwise a shell-only session
     // (the common case) restores to nothing.
     const { selectStalePanesToDrop } = await import('../src/hooks/usePaneLoading.js');
@@ -141,7 +141,7 @@ describe('selectMissingPanesToRecreate', () => {
   const panes = [live, deadAgent, deadShell];
   const allPaneIds = ['%1'];
 
-  it('recreates nothing without continue mode (default dmux start)', async () => {
+  it('recreates nothing without continue mode (default qmux start)', async () => {
     const { selectMissingPanesToRecreate } = await import('../src/hooks/usePaneLoading.js');
     expect(selectMissingPanesToRecreate(panes, allPaneIds, true, false)).toEqual([]);
   });

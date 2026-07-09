@@ -67,7 +67,7 @@ export function getAgentHookStatus(event: unknown): AgentHookStatus | null {
   }
 
   const record = event as Record<string, unknown>;
-  const explicitStatus = stringField(record.dmuxStatus);
+  const explicitStatus = stringField(record.qmuxStatus);
   if (explicitStatus === 'idle' || explicitStatus === 'waiting' || explicitStatus === 'working') {
     return explicitStatus;
   }

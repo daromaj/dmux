@@ -1,12 +1,12 @@
 /**
- * Mock DmuxPane fixtures for testing
+ * Mock QmuxPane fixtures for testing
  */
 
-import type { DmuxPane } from '../../src/types.js';
+import type { QmuxPane } from '../../src/types.js';
 
-export function createMockPane(overrides?: Partial<DmuxPane>): DmuxPane {
+export function createMockPane(overrides?: Partial<QmuxPane>): QmuxPane {
   return {
-    id: 'dmux-1',
+    id: 'qmux-1',
     slug: 'test-pane',
     prompt: 'test prompt',
     paneId: '%42',
@@ -18,7 +18,7 @@ export function createMockPane(overrides?: Partial<DmuxPane>): DmuxPane {
   };
 }
 
-export function createShellPane(overrides?: Partial<DmuxPane>): DmuxPane {
+export function createShellPane(overrides?: Partial<QmuxPane>): QmuxPane {
   return createMockPane({
     type: 'shell',
     worktreePath: undefined,
@@ -26,17 +26,17 @@ export function createShellPane(overrides?: Partial<DmuxPane>): DmuxPane {
   });
 }
 
-export function createWorktreePane(overrides?: Partial<DmuxPane>): DmuxPane {
+export function createWorktreePane(overrides?: Partial<QmuxPane>): QmuxPane {
   return createMockPane({
     type: 'worktree',
-    worktreePath: '/test/project/.dmux/worktrees/test-pane',
+    worktreePath: '/test/project/.qmux/worktrees/test-pane',
     ...overrides,
   });
 }
 
-export function createMultiplePanes(count: number): DmuxPane[] {
+export function createMultiplePanes(count: number): QmuxPane[] {
   return Array.from({ length: count }, (_, i) => createMockPane({
-    id: `dmux-${i + 1}`,
+    id: `qmux-${i + 1}`,
     slug: `test-pane-${i + 1}`,
     paneId: `%${40 + i}`,
   }));

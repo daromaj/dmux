@@ -17,7 +17,7 @@ import type {
  * QuakeAssistantService — the basic agentic harness behind the quake overlay.
  *
  * Loop: user message -> model streams prose + emits fenced command blocks ->
- * we run them (shell lane via injected runner, dmux lane via control handlers)
+ * we run them (shell lane via injected runner, qmux lane via control handlers)
  * -> feed results back -> repeat until the model emits no commands, or Esc, or
  * the step cap. Ink-agnostic: everything external is injected, so the loop is
  * unit-testable with a scripted model.
@@ -102,7 +102,7 @@ export class QuakeAssistantService extends EventEmitter {
   private pushEntry(
     kind: QuakeTranscriptEntry['kind'],
     text: string,
-    lane?: 'shell' | 'dmux',
+    lane?: 'shell' | 'qmux',
   ): QuakeTranscriptEntry {
     const entry: QuakeTranscriptEntry = { kind, text, lane, seq: this.nextSeq() };
     this.entries.push(entry);

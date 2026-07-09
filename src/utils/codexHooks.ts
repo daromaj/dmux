@@ -9,7 +9,7 @@ export interface CodexHookInstallResult {
 
 type ShellAssignment = [key: string, value: string];
 
-function mergeDmuxStopHook(hooksPath: string, hookCommand: string): void {
+function mergeQmuxStopHook(hooksPath: string, hookCommand: string): void {
   let hooksConfig: any = {};
   if (fs.existsSync(hooksPath)) {
     try {
@@ -32,7 +32,7 @@ function mergeDmuxStopHook(hooksPath: string, hookCommand: string): void {
     const handlers = Array.isArray(group?.hooks) ? group.hooks : [];
     return !handlers.some((handler: any) => (
       typeof handler?.command === 'string'
-      && handler.command.includes('dmux-stop-hook.cjs')
+      && handler.command.includes('qmux-stop-hook.cjs')
     ));
   });
   nextStopHooks.push({
@@ -41,7 +41,7 @@ function mergeDmuxStopHook(hooksPath: string, hookCommand: string): void {
         type: 'command',
         command: hookCommand,
         timeout: 5,
-        statusMessage: 'Notifying dmux',
+        statusMessage: 'Notifying qmux',
       },
     ],
   });
@@ -52,18 +52,18 @@ function mergeDmuxStopHook(hooksPath: string, hookCommand: string): void {
 
 export function installCodexPaneHooks(opts: {
   worktreePath: string;
-  dmuxPaneId: string;
+  qmuxPaneId: string;
   tmuxPaneId: string;
 }): CodexHookInstallResult {
   const codexDir = path.join(opts.worktreePath, '.codex');
   const hookDir = path.join(codexDir, 'hooks');
-  const stateDir = path.join(codexDir, 'dmux');
+  const stateDir = path.join(codexDir, 'qmux');
   fs.mkdirSync(hookDir, { recursive: true });
   fs.mkdirSync(stateDir, { recursive: true });
 
-  const eventFile = path.join(stateDir, `${opts.dmuxPaneId}.json`);
-  const hookScriptPath = path.join(hookDir, 'dmux-stop-hook.cjs');
-  const hookCommandPath = path.join('.codex', 'hooks', 'dmux-stop-hook.cjs');
+  const eventFile = path.join(stateDir, `${opts.qmuxPaneId}.json`);
+  const hookScriptPath = path.join(hookDir, 'qmux-stop-hook.cjs');
+  const hookCommandPath = path.join('.codex', 'hooks', 'qmux-stop-hook.cjs');
   const hookScript = `#!/usr/bin/env node
 const fs = require('fs');
 
@@ -86,8 +86,8 @@ process.stdin.on('end', () => {
 
   const event = {
     source: 'codex-stop-hook',
-    dmuxPaneId: process.env.DMUX_PANE_ID || '',
-    tmuxPaneId: process.env.DMUX_TMUX_PANE_ID || '',
+    qmuxPaneId: process.env.QMUX_PANE_ID || process.env.DMUX_PANE_ID || '',
+    tmuxPaneId: process.env.QMUX_TMUX_PANE_ID || process.env.DMUX_TMUX_PANE_ID || '',
     hookEventName: payload.hook_event_name || payload.hookEventName || '',
     turnId: payload.turn_id || payload.turnId || '',
     stopHookActive: payload.stop_hook_active === true || payload.stopHookActive === true,
@@ -102,8 +102,8 @@ process.stdin.on('end', () => {
     return;
   }
 
-  const eventFile = process.env.DMUX_CODEX_HOOK_EVENT_FILE || '';
-  if (!event.dmuxPaneId || !eventFile) {
+  const eventFile = process.env.QMUX_CODEX_HOOK_EVENT_FILE || '';
+  if (!event.qmuxPaneId || !eventFile) {
     finish();
     return;
   }
@@ -122,30 +122,30 @@ process.stdin.on('end', () => {
   fs.chmodSync(hookScriptPath, 0o755);
 
   const hooksPath = path.join(codexDir, 'hooks.json');
-  mergeDmuxStopHook(hooksPath, `node ${shellQuote(hookCommandPath)}`);
+  mergeQmuxStopHook(hooksPath, `node ${shellQuote(hookCommandPath)}`);
 
   return { eventFile };
 }
 
 function buildCodexPaneAssignments(opts: {
-  dmuxPaneId: string;
+  qmuxPaneId: string;
   tmuxPaneId: string;
   eventFile?: string;
 }): ShellAssignment[] {
   const assignments: ShellAssignment[] = [
-    ['DMUX_PANE_ID', opts.dmuxPaneId],
-    ['DMUX_TMUX_PANE_ID', opts.tmuxPaneId],
+    ['QMUX_PANE_ID', opts.qmuxPaneId],
+    ['QMUX_TMUX_PANE_ID', opts.tmuxPaneId],
   ];
 
   if (opts.eventFile) {
-    assignments.push(['DMUX_CODEX_HOOK_EVENT_FILE', opts.eventFile]);
+    assignments.push(['QMUX_CODEX_HOOK_EVENT_FILE', opts.eventFile]);
   }
 
   return assignments;
 }
 
 export function buildCodexPaneEnvironmentPrefix(opts: {
-  dmuxPaneId: string;
+  qmuxPaneId: string;
   tmuxPaneId: string;
   eventFile?: string;
 }): string {
@@ -155,7 +155,7 @@ export function buildCodexPaneEnvironmentPrefix(opts: {
 }
 
 export function buildCodexPaneExportSnippet(opts: {
-  dmuxPaneId: string;
+  qmuxPaneId: string;
   tmuxPaneId: string;
   eventFile?: string;
 }): string {
@@ -184,7 +184,7 @@ export function enableCodexFeatureFlags(command: string, flags: string[]): strin
 export function buildCodexHookedCommand(
   command: string,
   opts: {
-    dmuxPaneId: string;
+    qmuxPaneId: string;
     tmuxPaneId: string;
     eventFile?: string;
   },

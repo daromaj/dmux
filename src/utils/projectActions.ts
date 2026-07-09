@@ -1,5 +1,5 @@
 import path from 'path';
-import type { DmuxPane, SidebarProject } from '../types.js';
+import type { QmuxPane, SidebarProject } from '../types.js';
 import {
   groupPanesByProject,
   type PaneProjectGroup,
@@ -24,7 +24,7 @@ export interface ProjectActionLayout {
 
 export interface PostCloseSelection {
   selectedIndex: number;
-  pane?: DmuxPane;
+  pane?: QmuxPane;
   action?: ProjectActionItem;
 }
 
@@ -39,7 +39,7 @@ function sameRoot(a: string, b: string): boolean {
  * - Multi-project mode (>=2 groups): one pair of cards under each project group
  */
 export function buildProjectActionLayout(
-  panes: DmuxPane[],
+  panes: QmuxPane[],
   sidebarProjects: SidebarProject[],
   fallbackProjectRoot: string,
   fallbackProjectName: string
@@ -128,7 +128,7 @@ export function getProjectActionByIndex(
 }
 
 export function resolveSelectionAfterPaneClose(
-  panes: DmuxPane[],
+  panes: QmuxPane[],
   closingPaneId: string,
   sidebarProjects: SidebarProject[],
   fallbackProjectRoot: string,
@@ -143,7 +143,7 @@ export function resolveSelectionAfterPaneClose(
 
   let closingGroup: PaneProjectGroup | undefined;
   let closingGroupPaneIndex = -1;
-  let closingPane: DmuxPane | undefined;
+  let closingPane: QmuxPane | undefined;
 
   for (const group of currentLayout.groups) {
     const groupIndex = group.panes.findIndex(

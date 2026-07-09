@@ -10,7 +10,7 @@ import {
 const tempDirs: string[] = [];
 
 function makeTempDir(): string {
-  const tempDir = mkdtempSync(path.join(os.tmpdir(), 'dmux-project-root-'));
+  const tempDir = mkdtempSync(path.join(os.tmpdir(), 'qmux-project-root-'));
   tempDirs.push(tempDir);
   return tempDir;
 }

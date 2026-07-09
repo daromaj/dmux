@@ -88,7 +88,7 @@ function formatDateSlug(now = new Date()): string {
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
   const seconds = String(now.getSeconds()).padStart(2, '0');
-  return `dmux-${year}-${month}-${day}-${hours}${minutes}${seconds}`;
+  return `qmux-${year}-${month}-${day}-${hours}${minutes}${seconds}`;
 }
 
 export function normalizeSlugCandidate(value: string): string {

@@ -1,4 +1,4 @@
-import type { DmuxPane } from '../types.js';
+import type { QmuxPane } from '../types.js';
 import { LogService } from '../services/LogService.js';
 import { getPaneTitleCandidates } from './paneTitle.js';
 import { StateManager } from '../shared/StateManager.js';
@@ -15,10 +15,10 @@ import { StateManager } from '../shared/StateManager.js';
  * @returns The pane with potentially updated paneId
  */
 export function rebindPaneByTitle(
-  pane: DmuxPane,
+  pane: QmuxPane,
   titleToIdMap: Map<string, string>,
   allPaneIds: string[]
-): DmuxPane {
+): QmuxPane {
   // If pane ID exists in tmux, keep using it (even if title changed)
   if (allPaneIds.length > 0 && allPaneIds.includes(pane.paneId)) {
     return pane; // Pane still exists, no rebinding needed

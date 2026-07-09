@@ -16,35 +16,35 @@ afterEach(() => {
 });
 
 describe('grokHooks', () => {
-  it('installs local Grok hooks that record dmux pane events', () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dmux-grok-hooks-'));
+  it('installs local Grok hooks that record qmux pane events', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qmux-grok-hooks-'));
     tempDirs.push(tempDir);
 
     const result = installGrokPaneHooks({
       worktreePath: tempDir,
-      dmuxPaneId: 'dmux-1',
+      qmuxPaneId: 'qmux-1',
       tmuxPaneId: '%7',
     });
 
-    expect(result.eventFile).toBe(path.join(tempDir, '.grok', 'dmux', 'dmux-1.json'));
+    expect(result.eventFile).toBe(path.join(tempDir, '.grok', 'qmux', 'qmux-1.json'));
 
     const hooksConfig = JSON.parse(
-      fs.readFileSync(path.join(tempDir, '.grok', 'hooks', 'dmux-hooks.json'), 'utf-8')
+      fs.readFileSync(path.join(tempDir, '.grok', 'hooks', 'qmux-hooks.json'), 'utf-8')
     );
     expect(hooksConfig.hooks.Stop).toHaveLength(1);
     expect(hooksConfig.hooks.Notification).toHaveLength(1);
-    expect(hooksConfig.hooks.Stop[0].hooks[0].command).toContain('dmux-status-hook.cjs');
+    expect(hooksConfig.hooks.Stop[0].hooks[0].command).toContain('qmux-status-hook.cjs');
     expect(hooksConfig.hooks.Stop[0].hooks[0].env).toMatchObject({
-      DMUX_PANE_ID: 'dmux-1',
-      DMUX_TMUX_PANE_ID: '%7',
+      QMUX_PANE_ID: 'qmux-1',
+      QMUX_TMUX_PANE_ID: '%7',
     });
 
     const hookScript = fs.readFileSync(
-      path.join(tempDir, '.grok', 'hooks', 'dmux-status-hook.cjs'),
+      path.join(tempDir, '.grok', 'hooks', 'qmux-status-hook.cjs'),
       'utf-8'
     );
     expect(hookScript).toContain('grok-status-hook');
     expect(hookScript).toContain('GROK_HOOK_EVENT');
-    expect(hookScript).toContain('expectedDmuxPaneId');
+    expect(hookScript).toContain('expectedQmuxPaneId');
   });
 });

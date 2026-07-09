@@ -7,9 +7,9 @@ import { triggerHookWithProgress, type HookProgressEvent } from '../src/utils/ho
 const tempDirs: string[] = [];
 
 function makeTempProject(): string {
-  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dmux-hooks-progress-'));
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'qmux-hooks-progress-'));
   tempDirs.push(projectRoot);
-  fs.mkdirSync(path.join(projectRoot, '.dmux-hooks'), { recursive: true });
+  fs.mkdirSync(path.join(projectRoot, '.qmux-hooks'), { recursive: true });
   return projectRoot;
 }
 
@@ -22,12 +22,12 @@ afterEach(() => {
 describe('triggerHookWithProgress', () => {
   it('streams stdout and stderr lines while waiting for a blocking hook', async () => {
     const projectRoot = makeTempProject();
-    const hookPath = path.join(projectRoot, '.dmux-hooks', 'worktree_created');
+    const hookPath = path.join(projectRoot, '.qmux-hooks', 'worktree_created');
     fs.writeFileSync(
       hookPath,
       [
         '#!/bin/sh',
-        'echo "DMUX_STATUS: installing dependencies"',
+        'echo "QMUX_STATUS: installing dependencies"',
         'echo "warming cache" >&2',
         'echo "done"',
       ].join('\n'),
@@ -47,7 +47,7 @@ describe('triggerHookWithProgress', () => {
     expect(result.success).toBe(true);
     expect(events).toContainEqual({
       stream: 'stdout',
-      line: 'DMUX_STATUS: installing dependencies',
+      line: 'QMUX_STATUS: installing dependencies',
     });
     expect(events).toContainEqual({ stream: 'stdout', line: 'done' });
     expect(events).toContainEqual({ stream: 'stderr', line: 'warming cache' });
@@ -55,12 +55,12 @@ describe('triggerHookWithProgress', () => {
 
   it('does not arm a timeout when callers disable it', async () => {
     const projectRoot = makeTempProject();
-    const hookPath = path.join(projectRoot, '.dmux-hooks', 'worktree_created');
+    const hookPath = path.join(projectRoot, '.qmux-hooks', 'worktree_created');
     fs.writeFileSync(
       hookPath,
       [
         '#!/bin/sh',
-        'echo "DMUX_STATUS: setup complete"',
+        'echo "QMUX_STATUS: setup complete"',
       ].join('\n'),
       'utf-8'
     );
@@ -82,7 +82,7 @@ describe('triggerHookWithProgress', () => {
       expect(setTimeoutSpy).not.toHaveBeenCalled();
       expect(events).toContainEqual({
         stream: 'stdout',
-        line: 'DMUX_STATUS: setup complete',
+        line: 'QMUX_STATUS: setup complete',
       });
     } finally {
       setTimeoutSpy.mockRestore();
@@ -91,7 +91,7 @@ describe('triggerHookWithProgress', () => {
 
   it('still reports explicit hook failures', async () => {
     const projectRoot = makeTempProject();
-    const hookPath = path.join(projectRoot, '.dmux-hooks', 'worktree_created');
+    const hookPath = path.join(projectRoot, '.qmux-hooks', 'worktree_created');
     fs.writeFileSync(
       hookPath,
       [

@@ -9,7 +9,7 @@ import {
   handleWorktreeUncommitted,
   handleMergeConflict,
 } from '../../../src/actions/merge/issueHandlers/index.js';
-import type { DmuxPane } from '../../../src/types.js';
+import type { QmuxPane } from '../../../src/types.js';
 import type { ActionContext } from '../../../src/actions/types.js';
 
 // Mock utilities
@@ -56,7 +56,7 @@ vi.mock('../../../src/actions/merge/mergeExecution.js', () => ({
 }));
 
 describe('Issue Handlers', () => {
-  const mockPane: DmuxPane = {
+  const mockPane: QmuxPane = {
     id: 'test-1',
     slug: 'test-branch',
     prompt: 'test prompt',

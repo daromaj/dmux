@@ -1,6 +1,6 @@
-# AGENTS.md - dmux Maintainer Guide
+# AGENTS.md - qmux Maintainer Guide
 
-This file is the maintainer-focused source of truth for working on dmux itself.
+This file is the maintainer-focused source of truth for working on qmux itself.
 
 ## Docs map
 
@@ -12,11 +12,11 @@ This file is the maintainer-focused source of truth for working on dmux itself.
 
 ## Project overview
 
-dmux is a TypeScript + Ink TUI for managing parallel AI-agent work in tmux panes backed by git worktrees.
+qmux is a TypeScript + Ink TUI for managing parallel AI-agent work in tmux panes backed by git worktrees.
 
 Core behavior:
 
-- One project-scoped dmux session (stable name based on project root hash)
+- One project-scoped qmux session (stable name based on project root hash)
 - One worktree per work pane
 - Agent launch + prompt bootstrap in each pane
 - Merge/close actions with worktree cleanup hooks
@@ -25,9 +25,9 @@ Core behavior:
 ## Important architecture landmarks
 
 - `src/index.ts`: startup, tmux session attach/create, control pane management, dev-mode startup behavior
-- `src/DmuxApp.tsx`: main TUI state, status/footer, input hookups, source switching
-- `src/services/DmuxFocusService.ts`: macOS helper lifecycle, fully-focused pane tracking, helper-backed native notifications
-- `src/services/DmuxAttentionService.ts`: attention-notification coordinator for idle/waiting panes
+- `src/QmuxApp.tsx`: main TUI state, status/footer, input hookups, source switching
+- `src/services/QmuxFocusService.ts`: macOS helper lifecycle, fully-focused pane tracking, helper-backed native notifications
+- `src/services/QmuxAttentionService.ts`: attention-notification coordinator for idle/waiting panes
 - `src/hooks/useInputHandling.ts`: keyboard and menu action handling
 - `src/services/PopupManager.ts`: popup launch + data plumbing
 - `src/actions/types.ts`: action registry and menu visibility rules
@@ -36,36 +36,36 @@ Core behavior:
 
 ## Native helper
 
-dmux ships a macOS helper daemon implemented in `native/macos/dmux-helper.swift`.
+qmux ships a macOS helper daemon implemented in `native/macos/qmux-helper.swift`.
 
 What it does:
 
-- Release packages ship a prebuilt `dmux-helper.app` bundle under `native/macos/prebuilt/`
-- On macOS, dmux syncs that packaged app bundle into `~/.dmux/native-helper/dmux-helper.app`
-- If the packaged bundle is unavailable (for example in a source checkout without a prepack step), dmux can still build the helper app bundle on demand from `native/macos/dmux-helper.swift`
-- Auto-starts behind a Unix socket at `~/.dmux/native-helper/run/dmux-helper.sock`
+- Release packages ship a prebuilt `qmux-helper.app` bundle under `native/macos/prebuilt/`
+- On macOS, qmux syncs that packaged app bundle into `~/.qmux/native-helper/qmux-helper.app`
+- If the packaged bundle is unavailable (for example in a source checkout without a prepack step), qmux can still build the helper app bundle on demand from `native/macos/qmux-helper.swift`
+- Auto-starts behind a Unix socket at `~/.qmux/native-helper/run/qmux-helper.sock`
 - Tracks the actual frontmost macOS app/window via CoreGraphics + Accessibility
-- Correlates the active terminal window/tab back to a specific dmux instance using a short token injected into the terminal title
+- Correlates the active terminal window/tab back to a specific qmux instance using a short token injected into the terminal title
 - Delivers macOS notifications for panes that need attention
-- The square helper icon source lives at `native/macos/dmux-helper-icon.png`; it is derived from `docs/public/favicon.svg` so the docs/favicon mark and native helper branding stay aligned
+- The square helper icon source lives at `native/macos/qmux-helper-icon.png`; it is derived from `docs/public/favicon.svg` so the docs/favicon mark and native helper branding stay aligned
 - Bundles custom notification sounds from `native/macos/sounds/` and randomly chooses from the configured enabled set for each background alert
-- Startup also removes the legacy `~/.dmux/macos-notifier` helper if it still exists from older dmux releases
-- This is progressive enhancement only: on non-macOS platforms the helper path must stay inert and dmux should continue working without native focus/notification integration
+- Startup also removes the legacy `~/.qmux/macos-notifier` helper if it still exists from older qmux releases
+- This is progressive enhancement only: on non-macOS platforms the helper path must stay inert and qmux should continue working without native focus/notification integration
 
 Focus model:
 
-- `DmuxFocusService` writes a per-instance token into the terminal title.
+- `QmuxFocusService` writes a per-instance token into the terminal title.
 - The helper looks at the frontmost visible app window and its title.
 - A pane is considered "fully focused" only when:
-  - the frontmost app bundle matches the terminal app running this dmux instance, and
-  - the focused window title contains this dmux instance's token, and
+  - the frontmost app bundle matches the terminal app running this qmux instance, and
+  - the focused window title contains this qmux instance's token, and
   - tmux reports that pane as the selected pane.
 
 Notification model:
 
 - Worker heuristics + `PaneAnalyzer` first decide whether a pane is still working or has settled into `idle` / `waiting`.
 - `StatusDetector` emits attention events only after LLM-backed analysis succeeds.
-- `DmuxAttentionService` only sends a native notification when that pane is not the fully focused pane for this dmux instance.
+- `QmuxAttentionService` only sends a native notification when that pane is not the fully focused pane for this qmux instance.
 
 If focus behavior changes, update this section and keep `CLAUDE.md` as a symlink to `AGENTS.md`.
 
@@ -78,14 +78,14 @@ basic agentic harness (send keystrokes to panes, read pane output, change layout
   encodings defensively (`key.ctrl && '\``, raw `\x1c`, and the chord) — Ctrl+backtick is terminal-
   dependent, so confirm which one fires in your terminal via a raw-key log if it doesn't respond.
 - The model streams prose plus fenced command blocks: ` ```run ` (shell/tmux, executed via a shell)
-  and ` ```dmux ` (control verbs `grid`/`control`/`color`/`layout refresh`, routed in-process because
+  and ` ```qmux ` (control verbs `grid`/`control`/`color`/`layout refresh`, routed in-process because
   raw tmux geometry is stomped by the layout enforcer and settings have no file watcher).
 - Full-auto: commands run with no confirmation gate. `Esc` aborts the loop. A forensic transcript is
-  appended to `<projectRoot>/.dmux/quake-history.jsonl`.
+  appended to `<projectRoot>/.qmux/quake-history.jsonl`.
 - Landmarks: `src/services/QuakeAssistantService.ts` (the loop), `src/components/QuakeOverlay.tsx`
   (overlay UI), `src/hooks/useQuakeAssistant.ts` (wiring + toggle + control-pane grow/restore),
   `src/utils/quakeSystemPrompt.ts` (the operating manual), `src/utils/aiClient.ts` (reusable
-  OpenAI-compatible streaming client). Wired into `DmuxApp.tsx`. Design spec:
+  OpenAI-compatible streaming client). Wired into `QmuxApp.tsx`. Design spec:
   `docs/superpowers/specs/2026-07-09-quake-mode-assistant-design.md`.
 
 ## Adding a new agent to the registry
@@ -116,15 +116,15 @@ pnpm run typecheck
 pnpm run test
 ```
 
-## Maintainer local workflow (dmux-on-dmux)
+## Maintainer local workflow (qmux-on-qmux)
 
-`pnpm dev` is the standard entry point when editing dmux.
+`pnpm dev` is the standard entry point when editing qmux.
 
 What it does:
 
 1. Bootstraps local docs/hooks (`dev:bootstrap`)
 2. Compiles TypeScript once
-3. Launches dmux in dev mode from `dist/index.js` (built runtime parity)
+3. Launches qmux in dev mode from `dist/index.js` (built runtime parity)
 4. Auto-promotes to watch mode when launched in tmux
 
 Result: changes in this worktree should recompile/restart automatically without repeated manual relaunches.
@@ -172,15 +172,15 @@ Checks include:
 Key artifacts:
 
 - `src/utils/generated-agents-doc.ts`
-- local hooks under `.dmux-hooks/` (notably `worktree_created`, `pre_merge`)
+- local hooks under `.qmux-hooks/` (notably `worktree_created`, `pre_merge`)
 
 ## Pull request workflow
 
 Recommended:
 
-1. Run dmux from a maintainer worktree with `pnpm dev`.
+1. Run qmux from a maintainer worktree with `pnpm dev`.
 2. Create worktree panes for features/fixes.
-3. Iterate and merge via dmux.
+3. Iterate and merge via qmux.
 4. Run checks before PR:
 
 ```bash
@@ -198,7 +198,7 @@ This is a standalone project. `origin` (`daromaj/dmux`) is the only remote.
 
 ## Notes for maintainers
 
-- Keep `pnpm dev` as the default path for dmux development.
+- Keep `pnpm dev` as the default path for qmux development.
 - Treat `dev:watch` as internal machinery behind the default `dev` entrypoint.
 - Keep dev-only controls hidden outside DEV mode.
 - Update this file when dev workflow behavior changes.

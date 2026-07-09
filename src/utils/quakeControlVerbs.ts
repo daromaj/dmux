@@ -1,11 +1,11 @@
 /**
- * Parser/dispatcher for `dmux:` control verbs emitted by the quake-mode
- * assistant inside fenced ```dmux blocks (see docs/superpowers/specs/
+ * Parser/dispatcher for `qmux:` control verbs emitted by the quake-mode
+ * assistant inside fenced ```qmux blocks (see docs/superpowers/specs/
  * 2026-07-09-quake-mode-assistant-design.md and src/utils/quakeTypes.ts).
  *
  * This module is intentionally free of side effects: every verb is routed
  * into an injected `QuakeControlHandlers` implementation. That keeps it
- * pure and unit-testable — the wiring layer (DmuxApp) supplies handlers
+ * pure and unit-testable — the wiring layer (QmuxApp) supplies handlers
  * that close over real settings/layout state.
  */
 
@@ -78,7 +78,7 @@ async function dispatchVerb(parsed: ParsedControlVerb, handlers: QuakeControlHan
       case 'layout': {
         const sub = (args[0] ?? '').toLowerCase();
         if (sub !== 'refresh') {
-          return `Unknown dmux verb: layout ${args.join(' ')}`.trimEnd();
+          return `Unknown qmux verb: layout ${args.join(' ')}`.trimEnd();
         }
         return await handlers.refreshLayout();
       }
@@ -87,7 +87,7 @@ async function dispatchVerb(parsed: ParsedControlVerb, handlers: QuakeControlHan
         return await handlers.refreshLayout();
 
       default:
-        return `Unknown dmux verb: ${verb}${args.length ? ' ' + args.join(' ') : ''}`;
+        return `Unknown qmux verb: ${verb}${args.length ? ' ' + args.join(' ') : ''}`;
     }
   } catch (err) {
     return toErrorNote(err);
@@ -95,7 +95,7 @@ async function dispatchVerb(parsed: ParsedControlVerb, handlers: QuakeControlHan
 }
 
 /**
- * Run every verb line in a ```dmux control block, in order, against the
+ * Run every verb line in a ```qmux control block, in order, against the
  * injected handlers. Never throws — a failing/unknown verb is turned into
  * an error result line so it doesn't abort the rest of the block.
  * Returns all per-line result notes joined by newlines.

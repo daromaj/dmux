@@ -1,24 +1,24 @@
 import { describe, it, expect } from 'vitest';
 import { groupPanesByProject } from '../src/utils/paneGrouping.js';
-import type { DmuxPane } from '../src/types.js';
+import type { QmuxPane } from '../src/types.js';
 
-function pane(id: string, slug: string, projectRoot?: string): DmuxPane {
+function pane(id: string, slug: string, projectRoot?: string): QmuxPane {
   return {
     id,
     slug,
     prompt: `prompt-${slug}`,
-    paneId: `%${id.replace('dmux-', '')}`,
+    paneId: `%${id.replace('qmux-', '')}`,
     projectRoot,
   };
 }
 
 describe('groupPanesByProject', () => {
   it('groups panes by project while preserving pane order', () => {
-    const panes: DmuxPane[] = [
-      pane('dmux-1', 'a1', '/repo-a'),
-      pane('dmux-2', 'a2', '/repo-a'),
-      pane('dmux-3', 'b1', '/repo-b'),
-      pane('dmux-4', 'a3', '/repo-a'),
+    const panes: QmuxPane[] = [
+      pane('qmux-1', 'a1', '/repo-a'),
+      pane('qmux-2', 'a2', '/repo-a'),
+      pane('qmux-3', 'b1', '/repo-b'),
+      pane('qmux-4', 'a3', '/repo-a'),
     ];
 
     const groups = groupPanesByProject(panes, '/repo-main', 'repo-main');
@@ -37,7 +37,7 @@ describe('groupPanesByProject', () => {
   });
 
   it('falls back to session project root for panes without metadata', () => {
-    const panes: DmuxPane[] = [pane('dmux-1', 'main-pane')];
+    const panes: QmuxPane[] = [pane('qmux-1', 'main-pane')];
 
     const groups = groupPanesByProject(panes, '/repo-main', 'repo-main');
     expect(groups).toHaveLength(1);
@@ -46,9 +46,9 @@ describe('groupPanesByProject', () => {
   });
 
   it('includes empty sidebar projects and keeps sidebar ordering stable', () => {
-    const panes: DmuxPane[] = [
-      pane('dmux-1', 'main-pane', '/repo-main'),
-      pane('dmux-2', 'aux-pane', '/repo-aux'),
+    const panes: QmuxPane[] = [
+      pane('qmux-1', 'main-pane', '/repo-main'),
+      pane('qmux-2', 'aux-pane', '/repo-aux'),
     ];
 
     const groups = groupPanesByProject(

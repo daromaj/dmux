@@ -3,14 +3,14 @@
  */
 
 import { execSync } from 'child_process';
-import type { DmuxPane } from '../../types.js';
+import type { QmuxPane } from '../../types.js';
 import type { ActionResult, ActionContext } from '../types.js';
 
 /**
  * Copy worktree path to clipboard
  */
 export async function copyPath(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext
 ): Promise<ActionResult> {
   if (!pane.worktreePath) {

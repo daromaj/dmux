@@ -29,7 +29,7 @@ export function shellQuote(value: string): string {
 }
 
 export function getPromptsDir(projectRoot: string): string {
-  return path.join(projectRoot, '.dmux', PROMPTS_SUBDIR);
+  return path.join(projectRoot, '.qmux', PROMPTS_SUBDIR);
 }
 
 export async function writePromptFile(
@@ -93,9 +93,9 @@ export async function cleanupPromptFilesForSlug(
 export function buildPromptReadAndDeleteSnippet(promptPath: string): string {
   const quotedPromptPath = shellQuote(promptPath);
   if (isFishShell(process.env.SHELL)) {
-    return `set DMUX_PROMPT_FILE ${quotedPromptPath}; set DMUX_PROMPT_CONTENT "$(cat "$DMUX_PROMPT_FILE" 2>/dev/null || true)"; rm -f "$DMUX_PROMPT_FILE"`;
+    return `set QMUX_PROMPT_FILE ${quotedPromptPath}; set QMUX_PROMPT_CONTENT "$(cat "$QMUX_PROMPT_FILE" 2>/dev/null || true)"; rm -f "$QMUX_PROMPT_FILE"`;
   }
-  return `DMUX_PROMPT_FILE=${quotedPromptPath}; DMUX_PROMPT_CONTENT="$(cat "$DMUX_PROMPT_FILE" 2>/dev/null || true)"; rm -f "$DMUX_PROMPT_FILE"`;
+  return `QMUX_PROMPT_FILE=${quotedPromptPath}; QMUX_PROMPT_CONTENT="$(cat "$QMUX_PROMPT_FILE" 2>/dev/null || true)"; rm -f "$QMUX_PROMPT_FILE"`;
 }
 
 function isFishShell(shellPath?: string): boolean {

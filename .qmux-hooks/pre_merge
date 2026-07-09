@@ -5,12 +5,12 @@
 
 set -euo pipefail
 
-echo "[Hook] Running pre-merge checks for $DMUX_SLUG"
+echo "[Hook] Running pre-merge checks for $QMUX_SLUG"
 
-cd "$DMUX_WORKTREE_PATH"
+cd "$QMUX_WORKTREE_PATH"
 
-if [ "${DMUX_SKIP_PRE_MERGE:-0}" = "1" ]; then
-  echo "[Hook] DMUX_SKIP_PRE_MERGE=1, skipping checks"
+if [ "${QMUX_SKIP_PRE_MERGE:-0}" = "1" ]; then
+  echo "[Hook] QMUX_SKIP_PRE_MERGE=1, skipping checks"
   exit 0
 fi
 

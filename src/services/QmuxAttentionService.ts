@@ -7,11 +7,11 @@ import {
   type StatusUpdateEvent,
 } from './StatusDetector.js';
 import {
-  DmuxFocusService,
-  type DmuxFocusChangedEvent,
-} from './DmuxFocusService.js';
+  QmuxFocusService,
+  type QmuxFocusChangedEvent,
+} from './QmuxFocusService.js';
 import { LogService } from './LogService.js';
-import { supportsNativeDmuxHelper } from '../utils/focusDetection.js';
+import { supportsNativeQmuxHelper } from '../utils/focusDetection.js';
 
 interface AttentionCandidate {
   paneId: string;
@@ -23,8 +23,8 @@ interface AttentionCandidate {
   fingerprint: string;
 }
 
-interface DmuxAttentionServiceOptions {
-  focusService: DmuxFocusService;
+interface QmuxAttentionServiceOptions {
+  focusService: QmuxFocusService;
   notificationsEnabled?: () => boolean;
   idleNotificationCooldownMs?: number;
 }
@@ -35,7 +35,7 @@ export interface PaneAttentionChangedEvent {
   needsAttention: boolean;
 }
 
-export class DmuxAttentionService extends EventEmitter {
+export class QmuxAttentionService extends EventEmitter {
   private static readonly DEFAULT_IDLE_NOTIFICATION_COOLDOWN_MS = 2 * 60 * 1000;
 
   private readonly logger = LogService.getInstance();
@@ -49,14 +49,14 @@ export class DmuxAttentionService extends EventEmitter {
   private readonly idleNotificationCooldownMs: number;
   private active = false;
 
-  constructor(private readonly options: DmuxAttentionServiceOptions) {
+  constructor(private readonly options: QmuxAttentionServiceOptions) {
     super();
     this.idleNotificationCooldownMs = options.idleNotificationCooldownMs
-      ?? DmuxAttentionService.DEFAULT_IDLE_NOTIFICATION_COOLDOWN_MS;
+      ?? QmuxAttentionService.DEFAULT_IDLE_NOTIFICATION_COOLDOWN_MS;
   }
 
   start(): void {
-    if (this.active || !supportsNativeDmuxHelper()) {
+    if (this.active || !supportsNativeQmuxHelper()) {
       return;
     }
 
@@ -129,7 +129,7 @@ export class DmuxAttentionService extends EventEmitter {
     void this.maybeNotify(event.paneId);
   };
 
-  private readonly handleFocusChanged = (_event: DmuxFocusChangedEvent): void => {
+  private readonly handleFocusChanged = (_event: QmuxFocusChangedEvent): void => {
     if (!this.areNotificationsEnabled()) {
       for (const paneId of this.candidates.keys()) {
         this.resetPaneAttention(paneId);

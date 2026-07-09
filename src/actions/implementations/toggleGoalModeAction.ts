@@ -2,7 +2,7 @@
  * TOGGLE_GOAL_MODE Action - Toggle goal mode for a pane
  */
 
-import type { DmuxPane } from '../../types.js';
+import type { QmuxPane } from '../../types.js';
 import type { ActionResult, ActionContext } from '../types.js';
 import { getPaneDisplayName } from '../../utils/paneTitle.js';
 
@@ -13,7 +13,7 @@ import { getPaneDisplayName } from '../../utils/paneTitle.js';
  * so a mid-session toggle takes effect the next time the agent is launched.
  */
 export async function toggleGoalMode(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext
 ): Promise<ActionResult> {
   try {

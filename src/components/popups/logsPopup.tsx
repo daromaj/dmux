@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Logs Popup - Scrollable log viewer for dmux
+ * Logs Popup - Scrollable log viewer for qmux
  *
  * Displays all logs with filtering options:
  * - All logs
@@ -192,7 +192,7 @@ const LogsPopupApp: React.FC<LogsPopupAppProps> = ({ allLogs, stats, panes = [],
       }).join('\n');
 
       // Write to temp file
-      const tempFile = path.join(os.tmpdir(), `dmux-logs-${Date.now()}.txt`);
+      const tempFile = path.join(os.tmpdir(), `qmux-logs-${Date.now()}.txt`);
       try {
         fs.writeFileSync(tempFile, logsText);
       } catch (error) {
@@ -342,7 +342,7 @@ const LogsPopupApp: React.FC<LogsPopupAppProps> = ({ allLogs, stats, panes = [],
             {levelLabel}
             {'] '}
           </Text>
-          <Text dimColor>[{log.source || 'dmux'}]</Text>
+          <Text dimColor>[{log.source || 'qmux'}]</Text>
           <Text color={color}>
             {' '}
             {log.message}

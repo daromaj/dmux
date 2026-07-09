@@ -36,7 +36,7 @@ export function PopupWrapper<T = any>({
   const { exit } = useApp();
 
   useEffect(() => {
-    const readyFile = process.env.DMUX_POPUP_READY_FILE;
+    const readyFile = process.env.QMUX_POPUP_READY_FILE;
     if (!readyFile) return;
 
     try {

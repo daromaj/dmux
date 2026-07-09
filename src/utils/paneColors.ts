@@ -1,11 +1,11 @@
 import path from 'path';
-import type { DmuxPane, DmuxThemeName, SidebarProject } from '../types.js';
-import { isDmuxThemeName, normalizeDmuxTheme } from '../theme/themePalette.js';
+import type { QmuxPane, QmuxThemeName, SidebarProject } from '../types.js';
+import { isQmuxThemeName, normalizeQmuxTheme } from '../theme/themePalette.js';
 import { getPaneProjectRoot } from './paneProject.js';
 import { getSidebarProjectColorTheme } from './sidebarProjects.js';
 import { SettingsManager } from './settingsManager.js';
 
-type ProjectThemeCache = Map<string, DmuxThemeName>;
+type ProjectThemeCache = Map<string, QmuxThemeName>;
 
 function getCacheKey(projectRoot: string): string {
   return path.resolve(projectRoot);
@@ -15,7 +15,7 @@ export function resolveProjectColorTheme(
   projectRoot: string,
   sidebarProjects: SidebarProject[],
   cache: ProjectThemeCache = new Map()
-): DmuxThemeName {
+): QmuxThemeName {
   const cacheKey = getCacheKey(projectRoot);
   const cachedTheme = cache.get(cacheKey);
   if (cachedTheme) {
@@ -23,19 +23,19 @@ export function resolveProjectColorTheme(
   }
 
   const resolvedTheme = getSidebarProjectColorTheme(sidebarProjects, projectRoot)
-    || normalizeDmuxTheme(new SettingsManager(projectRoot).getSettings().colorTheme);
+    || normalizeQmuxTheme(new SettingsManager(projectRoot).getSettings().colorTheme);
 
   cache.set(cacheKey, resolvedTheme);
   return resolvedTheme;
 }
 
 export function getPaneColorTheme(
-  pane: DmuxPane,
+  pane: QmuxPane,
   sidebarProjects: SidebarProject[],
   fallbackProjectRoot: string,
   cache: ProjectThemeCache = new Map()
-): DmuxThemeName {
-  if (isDmuxThemeName(pane.colorTheme)) {
+): QmuxThemeName {
+  if (isQmuxThemeName(pane.colorTheme)) {
     return pane.colorTheme;
   }
 
@@ -47,10 +47,10 @@ export function getPaneColorTheme(
 }
 
 export function syncPaneColorThemes(
-  panes: DmuxPane[],
+  panes: QmuxPane[],
   sidebarProjects: SidebarProject[],
   fallbackProjectRoot: string
-): DmuxPane[] {
+): QmuxPane[] {
   const projectThemeCache: ProjectThemeCache = new Map();
   let changed = false;
 

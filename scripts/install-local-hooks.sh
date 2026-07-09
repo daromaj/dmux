@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-HOOK_DIR="$ROOT_DIR/.dmux-hooks"
+HOOK_DIR="$ROOT_DIR/.qmux-hooks"
 EXAMPLES_DIR="$HOOK_DIR/examples"
 
 FORCE=0
@@ -19,7 +19,7 @@ HOOKS=(
   "pre_merge"
 )
 
-echo "Installing dmux local development hooks..."
+echo "Installing qmux local development hooks..."
 echo "Hooks directory: $HOOK_DIR"
 
 mkdir -p "$HOOK_DIR"

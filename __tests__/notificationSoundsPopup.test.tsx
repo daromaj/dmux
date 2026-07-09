@@ -27,7 +27,7 @@ describe('NotificationSoundsPopupApp', () => {
 
     const { stdin } = render(
       <NotificationSoundsPopupApp
-        resultFile="/tmp/dmux-notification-sounds-result.json"
+        resultFile="/tmp/qmux-notification-sounds-result.json"
         data={{
           sounds: [
             {
@@ -62,7 +62,7 @@ describe('NotificationSoundsPopupApp', () => {
 
     const { stdin } = render(
       <NotificationSoundsPopupApp
-        resultFile="/tmp/dmux-notification-sounds-result.json"
+        resultFile="/tmp/qmux-notification-sounds-result.json"
         data={{
           sounds: [
             {

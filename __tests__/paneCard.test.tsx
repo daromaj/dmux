@@ -39,7 +39,7 @@ describe('PaneCard', () => {
       type: 'shell',
       shellType: 'fb',
       agent: undefined,
-      browserPath: '/test/project/.dmux/worktrees/test-pane',
+      browserPath: '/test/project/.qmux/worktrees/test-pane',
       worktreePath: undefined,
     });
 

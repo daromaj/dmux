@@ -1,11 +1,11 @@
 import path from 'path';
-import type { DmuxPane } from '../types.js';
+import type { QmuxPane } from '../types.js';
 
-const WORKTREE_PATH_PATTERN = /[\\\/]\.dmux[\\\/]worktrees[\\\/][^\\\/]+$/;
+const WORKTREE_PATH_PATTERN = /[\\\/]\.qmux[\\\/]worktrees[\\\/][^\\\/]+$/;
 
 /**
- * Derive repository root from a dmux worktree path.
- * Example: /repo/.dmux/worktrees/feature-a -> /repo
+ * Derive repository root from a qmux worktree path.
+ * Example: /repo/.qmux/worktrees/feature-a -> /repo
  */
 export function deriveProjectRootFromWorktreePath(worktreePath?: string): string | undefined {
   if (!worktreePath) return undefined;
@@ -18,7 +18,7 @@ export function deriveProjectRootFromWorktreePath(worktreePath?: string): string
  * then the session project root as fallback.
  */
 export function getPaneProjectRoot(
-  pane: DmuxPane,
+  pane: QmuxPane,
   fallbackProjectRoot: string
 ): string {
   const fromPane = pane.projectRoot?.trim();
@@ -34,7 +34,7 @@ export function getPaneProjectRoot(
  * Resolve a display name for a pane's project.
  */
 export function getPaneProjectName(
-  pane: DmuxPane,
+  pane: QmuxPane,
   fallbackProjectRoot: string,
   fallbackProjectName?: string
 ): string {

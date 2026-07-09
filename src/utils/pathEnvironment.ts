@@ -22,24 +22,24 @@ function isLocalNodeModulesBin(entry: string, projectRoot?: string): boolean {
     return false;
   }
 
-  if (normalized.includes(`${path.sep}.dmux${path.sep}worktrees${path.sep}`)) {
+  if (normalized.includes(`${path.sep}.qmux${path.sep}worktrees${path.sep}`)) {
     return true;
   }
 
   return Boolean(projectRoot && isWithin(path.resolve(projectRoot), normalized));
 }
 
-function isLocalDmuxCandidate(candidatePath: string, projectRoot?: string): boolean {
+function isLocalQmuxCandidate(candidatePath: string, projectRoot?: string): boolean {
   const normalized = normalizeEntry(candidatePath);
 
-  if (candidatePath.includes(`${path.sep}node_modules${path.sep}.bin${path.sep}dmux`)) {
+  if (candidatePath.includes(`${path.sep}node_modules${path.sep}.bin${path.sep}qmux`)) {
     return true;
   }
 
   return Boolean(projectRoot && isWithin(path.resolve(projectRoot), normalized));
 }
 
-export function sanitizePathForInstalledDmux(
+export function sanitizePathForInstalledQmux(
   rawPath: string = process.env.PATH || '',
   projectRoot?: string
 ): string {
@@ -49,11 +49,11 @@ export function sanitizePathForInstalledDmux(
     .join(path.delimiter);
 }
 
-export function resolveInstalledDmuxExecutable(options: {
+export function resolveInstalledQmuxExecutable(options: {
   projectRoot?: string;
   pathValue?: string;
 } = {}): string {
-  const pathValue = sanitizePathForInstalledDmux(
+  const pathValue = sanitizePathForInstalledQmux(
     options.pathValue || process.env.PATH || '',
     options.projectRoot
   );
@@ -62,11 +62,11 @@ export function resolveInstalledDmuxExecutable(options: {
   for (const entry of pathValue.split(path.delimiter)) {
     if (!entry) continue;
 
-    const candidate = path.join(entry, 'dmux');
+    const candidate = path.join(entry, 'qmux');
     if (seen.has(candidate)) continue;
     seen.add(candidate);
 
-    if (isLocalDmuxCandidate(candidate, options.projectRoot)) continue;
+    if (isLocalQmuxCandidate(candidate, options.projectRoot)) continue;
 
     try {
       fs.accessSync(candidate, fs.constants.X_OK);
@@ -76,6 +76,6 @@ export function resolveInstalledDmuxExecutable(options: {
     }
   }
 
-  return 'dmux';
+  return 'qmux';
 }
 

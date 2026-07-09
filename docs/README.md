@@ -1,6 +1,6 @@
-# dmux Documentation Site
+# qmux Documentation Site
 
-Single-page marketing and documentation site for dmux.
+Single-page marketing and documentation site for qmux.
 
 ## Development
 

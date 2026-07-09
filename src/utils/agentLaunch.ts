@@ -556,7 +556,7 @@ export function buildAgentLaunchInstances(
 }
 
 /**
- * Resolve CLI permission flags for a given agent and dmux permissionMode.
+ * Resolve CLI permission flags for a given agent and qmux permissionMode.
  */
 export function getPermissionFlags(
   agent: AgentName,
@@ -640,7 +640,7 @@ export async function launchAgentInPane(opts: {
   slug: string;
   projectRoot: string;
   goalMode?: boolean;
-  dmuxPaneId?: string;
+  qmuxPaneId?: string;
   codexHookEventFile?: string;
   permissionMode?: '' | 'plan' | 'acceptEdits' | 'bypassPermissions';
 }): Promise<void> {
@@ -663,7 +663,7 @@ export async function launchAgentInPane(opts: {
 
       if (promptFilePath) {
         const promptBootstrap = buildPromptReadAndDeleteSnippet(promptFilePath);
-        claudeCmd = `${promptBootstrap}; claude "$DMUX_PROMPT_CONTENT"${permissionSuffix}`;
+        claudeCmd = `${promptBootstrap}; claude "$QMUX_PROMPT_CONTENT"${permissionSuffix}`;
       } else {
         const escapedPrompt = launchPrompt
           .replace(/\\/g, '\\\\')
@@ -681,7 +681,7 @@ export async function launchAgentInPane(opts: {
     const permissionFlags = getPermissionFlags('codex', permissionMode);
     const permissionSuffix = permissionFlags ? ` ${permissionFlags}` : '';
     const codexEnvPrefix = buildCodexPaneEnvironmentPrefix({
-      dmuxPaneId: opts.dmuxPaneId || '',
+      qmuxPaneId: opts.qmuxPaneId || '',
       tmuxPaneId: paneId,
       eventFile: opts.codexHookEventFile,
     });
@@ -700,7 +700,7 @@ export async function launchAgentInPane(opts: {
 
       if (promptFilePath) {
         const promptBootstrap = buildPromptReadAndDeleteSnippet(promptFilePath);
-        codexCmd = `${promptBootstrap}; ${codexEnvPrefix} codex ${codexFeatureFlags} "$DMUX_PROMPT_CONTENT"${permissionSuffix}`;
+        codexCmd = `${promptBootstrap}; ${codexEnvPrefix} codex ${codexFeatureFlags} "$QMUX_PROMPT_CONTENT"${permissionSuffix}`;
       } else {
         codexCmd = `${codexEnvPrefix} codex ${codexFeatureFlags} ${shellQuote(launchPrompt)}${permissionSuffix}`;
       }
@@ -721,7 +721,7 @@ export async function launchAgentInPane(opts: {
 
       if (promptFilePath) {
         const promptBootstrap = buildPromptReadAndDeleteSnippet(promptFilePath);
-        opencodeCmd = `${promptBootstrap}; opencode --prompt "$DMUX_PROMPT_CONTENT"`;
+        opencodeCmd = `${promptBootstrap}; opencode --prompt "$QMUX_PROMPT_CONTENT"`;
       } else {
         const escapedPrompt = launchPrompt
           .replace(/\\/g, '\\\\')
@@ -751,7 +751,7 @@ export async function launchAgentInPane(opts: {
         const promptBootstrap = buildPromptReadAndDeleteSnippet(promptFilePath);
         launchCommand = `${promptBootstrap}; ${buildInitialPromptCommand(
           agent,
-          '"$DMUX_PROMPT_CONTENT"',
+          '"$QMUX_PROMPT_CONTENT"',
           permissionMode
         )}`;
       } else {

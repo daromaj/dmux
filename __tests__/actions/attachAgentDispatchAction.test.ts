@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import { executeAction, PaneAction } from '../../src/actions/index.js';
 import type { ActionContext } from '../../src/actions/types.js';
-import type { DmuxPane } from '../../src/types.js';
+import type { QmuxPane } from '../../src/types.js';
 
-const pane: DmuxPane = {
+const pane: QmuxPane = {
   id: 'pane-1',
   slug: 'feature-1',
   prompt: 'test prompt',
   paneId: '%1',
-  worktreePath: '/tmp/repo/.dmux/worktrees/feature-1',
+  worktreePath: '/tmp/repo/.qmux/worktrees/feature-1',
 };
 
 const context: ActionContext = {

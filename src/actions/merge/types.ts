@@ -25,7 +25,7 @@ export interface WorktreeInfo {
   /** Main branch in parent repo (main, master, etc.) */
   mainBranch: string;
 
-  /** Whether this is the root worktree (the dmux pane's worktree) */
+  /** Whether this is the root worktree (the qmux pane's worktree) */
   isRoot: boolean;
 
   /** Relative path from root worktree (for display), "." for root */

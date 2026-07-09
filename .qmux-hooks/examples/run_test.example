@@ -1,15 +1,15 @@
 #!/bin/bash
 # Example: run_test hook
 #
-# This hook runs tests and reports the status back to dmux via the HTTP API.
-# Status updates appear in real-time in the dmux UI.
+# This hook runs tests and reports the status back to qmux via the HTTP API.
+# Status updates appear in real-time in the qmux UI.
 
 set -e
 
-echo "[Hook] Running tests for $DMUX_SLUG"
+echo "[Hook] Running tests for $QMUX_SLUG"
 
-cd "$DMUX_WORKTREE_PATH"
-API_URL="http://localhost:$DMUX_SERVER_PORT/api/panes/$DMUX_PANE_ID/test"
+cd "$QMUX_WORKTREE_PATH"
+API_URL="http://localhost:$QMUX_SERVER_PORT/api/panes/$QMUX_PANE_ID/test"
 
 # Update status: running
 curl -s -X PUT "$API_URL" \
@@ -19,7 +19,7 @@ curl -s -X PUT "$API_URL" \
 echo "[Hook] Running test suite..."
 
 # Capture test output
-OUTPUT_FILE="/tmp/dmux-test-$DMUX_PANE_ID.txt"
+OUTPUT_FILE="/tmp/qmux-test-$QMUX_PANE_ID.txt"
 
 # Run tests (adjust command for your project)
 # Examples:
@@ -40,7 +40,7 @@ fi
 # Get output (truncate if too long)
 OUTPUT=$(head -c 5000 "$OUTPUT_FILE")
 
-# Report results back to dmux
+# Report results back to qmux
 curl -s -X PUT "$API_URL" \
   -H "Content-Type: application/json" \
   -d "$(jq -n \
@@ -51,7 +51,7 @@ curl -s -X PUT "$API_URL" \
 # Cleanup
 rm -f "$OUTPUT_FILE"
 
-echo "[Hook] Test results reported to dmux"
+echo "[Hook] Test results reported to qmux"
 
 # Exit with test status
 if [ "$STATUS" = "passed" ]; then

@@ -2,14 +2,14 @@
 # Example: run_dev hook
 #
 # This hook starts a dev server and optionally creates a tunnel for sharing.
-# It reports the server URL back to dmux via the HTTP API.
+# It reports the server URL back to qmux via the HTTP API.
 
 set -e
 
-echo "[Hook] Starting dev server for $DMUX_SLUG"
+echo "[Hook] Starting dev server for $QMUX_SLUG"
 
-cd "$DMUX_WORKTREE_PATH"
-API_URL="http://localhost:$DMUX_SERVER_PORT/api/panes/$DMUX_PANE_ID/dev"
+cd "$QMUX_WORKTREE_PATH"
+API_URL="http://localhost:$QMUX_SERVER_PORT/api/panes/$QMUX_PANE_ID/dev"
 
 # Update status: starting
 curl -s -X PUT "$API_URL" \
@@ -18,7 +18,7 @@ curl -s -X PUT "$API_URL" \
 
 # Start dev server in background
 # Adjust the command for your project (pnpm dev, npm run dev, vite, etc.)
-LOG_FILE="/tmp/dmux-dev-$DMUX_PANE_ID.log"
+LOG_FILE="/tmp/qmux-dev-$QMUX_PANE_ID.log"
 pnpm dev > "$LOG_FILE" 2>&1 &
 DEV_PID=$!
 
@@ -52,7 +52,7 @@ echo "[Hook] Dev server running at $LOCAL_URL"
 # For now, just use local URL (uncomment tunnel code above to enable)
 FINAL_URL="$LOCAL_URL"
 
-# Report status back to dmux
+# Report status back to qmux
 curl -s -X PUT "$API_URL" \
   -H "Content-Type: application/json" \
   -d "{\"status\": \"running\", \"url\": \"$FINAL_URL\"}" > /dev/null

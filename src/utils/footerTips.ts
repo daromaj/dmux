@@ -2,9 +2,9 @@
 const BASE_FOOTER_TIPS = [
   'Press [?] for every shortcut.',
   'Press [m] for pane actions.',
-  'Press [s] to tweak dmux settings.',
+  'Press [s] to tweak qmux settings.',
   'You can hide tips in settings.',
-  'Press [l] to inspect dmux logs.',
+  'Press [l] to inspect qmux logs.',
   'Press [n] for a new agent pane.',
   'Press [t] for a new terminal.',
   'On a pane, [a] adds an agent.',

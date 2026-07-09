@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { homedir } from 'os';
-import type { DmuxSettings, SettingsScope, EffectiveSettingsScope, SettingDefinition } from '../types.js';
+import type { QmuxSettings, SettingsScope, EffectiveSettingsScope, SettingDefinition } from '../types.js';
 import {
   DEFAULT_MIN_PANE_WIDTH,
   DEFAULT_MAX_PANE_WIDTH,
@@ -26,9 +26,9 @@ import {
 } from './notificationSounds.js';
 import { t } from '../i18n/index.js';
 import {
-  DEFAULT_DMUX_THEME,
-  DMUX_THEME_NAMES,
-  isDmuxThemeName,
+  DEFAULT_QMUX_THEME,
+  QMUX_THEME_NAMES,
+  isQmuxThemeName,
 } from '../theme/themePalette.js';
 import {
   clampControlPaneHeight,
@@ -37,15 +37,15 @@ import {
   MAX_CONTROL_PANE_HEIGHT,
 } from './controlPanePlacement.js';
 
-const GLOBAL_SETTINGS_PATH = join(homedir(), '.dmux.global.json');
-const TEAM_DEFAULTS_FILENAME = '.dmux.defaults.json';
+const GLOBAL_SETTINGS_PATH = join(homedir(), '.qmux.global.json');
+const TEAM_DEFAULTS_FILENAME = '.qmux.defaults.json';
 const PERMISSION_MODES = ['', 'plan', 'acceptEdits', 'bypassPermissions'] as const;
 const LANGUAGE_OPTIONS = ['en', 'ja'] as const;
-function isPermissionMode(value: string): value is NonNullable<DmuxSettings['permissionMode']> {
+function isPermissionMode(value: string): value is NonNullable<QmuxSettings['permissionMode']> {
   return (PERMISSION_MODES as readonly string[]).includes(value);
 }
 
-function isLanguage(value: string): value is NonNullable<DmuxSettings['language']> {
+function isLanguage(value: string): value is NonNullable<QmuxSettings['language']> {
   return (LANGUAGE_OPTIONS as readonly string[]).includes(value);
 }
 
@@ -67,13 +67,13 @@ function isValidMinPaneWidth(value: unknown): value is number {
   );
 }
 
-function sanitizeLoadedSettings(value: unknown): DmuxSettings {
+function sanitizeLoadedSettings(value: unknown): QmuxSettings {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return {};
   }
 
   const parsed = value as Record<string, unknown>;
-  const sanitized: DmuxSettings = {};
+  const sanitized: QmuxSettings = {};
 
   if (typeof parsed.permissionMode === 'string' && isPermissionMode(parsed.permissionMode)) {
     sanitized.permissionMode = parsed.permissionMode;
@@ -123,7 +123,7 @@ function sanitizeLoadedSettings(value: unknown): DmuxSettings {
     sanitized.disableWelcomePane = parsed.disableWelcomePane;
   }
 
-  if (typeof parsed.colorTheme === 'string' && isDmuxThemeName(parsed.colorTheme)) {
+  if (typeof parsed.colorTheme === 'string' && isQmuxThemeName(parsed.colorTheme)) {
     sanitized.colorTheme = parsed.colorTheme;
   }
 
@@ -208,8 +208,8 @@ function sanitizeLoadedSettings(value: unknown): DmuxSettings {
   return sanitized;
 }
 
-function cloneSettingsArrays(settings: DmuxSettings): DmuxSettings {
-  const cloned: DmuxSettings = { ...settings };
+function cloneSettingsArrays(settings: QmuxSettings): QmuxSettings {
+  const cloned: QmuxSettings = { ...settings };
 
   if (Array.isArray(cloned.enabledAgents)) {
     cloned.enabledAgents = [...cloned.enabledAgents];
@@ -226,7 +226,7 @@ function cloneSettingsArrays(settings: DmuxSettings): DmuxSettings {
   return cloned;
 }
 
-const DEFAULT_SETTINGS: DmuxSettings = {
+const DEFAULT_SETTINGS: QmuxSettings = {
   // Conservative defaults — user must explicitly configure permissions and agents.
   permissionMode: '',
   enableAutopilotByDefault: true,
@@ -244,7 +244,7 @@ const DEFAULT_SETTINGS: DmuxSettings = {
   controlPaneHeight: DEFAULT_CONTROL_PANE_HEIGHT,
   favoriteCommands: ['cc', 'cc -c', 'pi', 'pi -c'],
   language: 'en',
-  colorTheme: DEFAULT_DMUX_THEME,
+  colorTheme: DEFAULT_QMUX_THEME,
 };
 
 const AGENT_OPTIONS = getAgentDefinitions().map((agent) => ({
@@ -367,7 +367,7 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   {
     key: 'language',
     label: 'Language',
-    description: 'Select the display language for dmux',
+    description: 'Select the display language for qmux',
     type: 'select',
     options: [
       { value: 'en', label: 'English' },
@@ -401,7 +401,7 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   {
     key: 'enableNotifications',
     label: 'Enable Notifications',
-    description: 'Allow dmux to show native attention notifications and same-window attention flashes',
+    description: 'Allow qmux to show native attention notifications and same-window attention flashes',
     type: 'boolean',
   },
   {
@@ -423,19 +423,19 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   {
     key: 'enabledNotificationSounds' as any,
     label: 'Attention Notification Sounds',
-    description: 'Select the macOS helper sounds that dmux randomizes between for background alerts',
+    description: 'Select the macOS helper sounds that qmux randomizes between for background alerts',
     type: 'action' as any,
   },
   {
     key: 'showFooterTips',
     label: 'Show Footer Tips',
-    description: 'Rotate short dmux tips in the footer. Disable this if you prefer a quieter sidebar.',
+    description: 'Rotate short qmux tips in the footer. Disable this if you prefer a quieter sidebar.',
     type: 'boolean',
   },
   {
     key: 'disableWelcomePane',
     label: 'Single-Pane Mode',
-    description: 'Do not auto-create the welcome/placeholder pane on startup. dmux opens with just the sidebar.',
+    description: 'Do not auto-create the welcome/placeholder pane on startup. qmux opens with just the sidebar.',
     type: 'boolean',
   },
   {
@@ -455,7 +455,7 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
     key: 'controlPanePosition',
     label: 'Control Pane Position',
     description:
-      'Where the dmux control pane sits: a fixed-width sidebar on the left (default), or a full-width strip across the bottom.',
+      'Where the qmux control pane sits: a fixed-width sidebar on the left (default), or a full-width strip across the bottom.',
     type: 'select',
     options: [
       { value: 'left', label: 'Left sidebar (default)' },
@@ -478,9 +478,9 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   {
     key: 'colorTheme',
     label: 'Color Theme',
-    description: 'Choose the accent color for the dmux UI and welcome pane',
+    description: 'Choose the accent color for the qmux UI and welcome pane',
     type: 'select',
-    options: DMUX_THEME_NAMES.map((themeName) => ({
+    options: QMUX_THEME_NAMES.map((themeName) => ({
       value: themeName,
       label: themeName.charAt(0).toUpperCase() + themeName.slice(1),
     })),
@@ -561,7 +561,7 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
   {
     key: 'hooks' as any,
     label: 'Manage Hooks',
-    description: 'View and edit dmux lifecycle hooks',
+    description: 'View and edit qmux lifecycle hooks',
     type: 'action' as any,
   },
 ];
@@ -597,19 +597,19 @@ export class SettingsManager {
   private globalPath: string;
   private projectPath: string;
   private teamDefaultsPath: string;
-  private globalSettings: DmuxSettings = {};
-  private projectSettings: DmuxSettings = {};
-  private teamDefaults: DmuxSettings = {};
+  private globalSettings: QmuxSettings = {};
+  private projectSettings: QmuxSettings = {};
+  private teamDefaults: QmuxSettings = {};
 
   constructor(projectRoot?: string) {
     const root = projectRoot || process.cwd();
     this.globalPath = GLOBAL_SETTINGS_PATH;
-    this.projectPath = join(root, '.dmux', 'settings.json');
+    this.projectPath = join(root, '.qmux', 'settings.json');
     this.teamDefaultsPath = join(root, TEAM_DEFAULTS_FILENAME);
     this.loadSettings();
   }
 
-  private loadSettingsFile(filePath: string, label: string): DmuxSettings {
+  private loadSettingsFile(filePath: string, label: string): QmuxSettings {
     if (!existsSync(filePath)) {
       return {};
     }
@@ -646,7 +646,7 @@ export class SettingsManager {
   }
 
   private resolveGlobalPaneWidths(
-    overrides?: Partial<Pick<DmuxSettings, 'minPaneWidth' | 'maxPaneWidth'>>
+    overrides?: Partial<Pick<QmuxSettings, 'minPaneWidth' | 'maxPaneWidth'>>
   ): { minPaneWidth: number; maxPaneWidth: number } {
     const hasMinOverride = overrides?.minPaneWidth !== undefined;
     const hasMaxOverride = overrides?.maxPaneWidth !== undefined;
@@ -672,7 +672,7 @@ export class SettingsManager {
   /**
    * Get merged settings (project > global > team defaults > built-in defaults)
    */
-  getSettings(): DmuxSettings {
+  getSettings(): QmuxSettings {
     const merged = cloneSettingsArrays({
       ...DEFAULT_SETTINGS,
       ...this.teamDefaults,
@@ -691,7 +691,7 @@ export class SettingsManager {
   /**
    * Get a specific setting value (with project override)
    */
-  getSetting<K extends keyof DmuxSettings>(key: K): DmuxSettings[K] {
+  getSetting<K extends keyof QmuxSettings>(key: K): QmuxSettings[K] {
     const merged = this.getSettings();
     return merged[key];
   }
@@ -699,23 +699,23 @@ export class SettingsManager {
   /**
    * Get global settings only
    */
-  getGlobalSettings(): DmuxSettings {
+  getGlobalSettings(): QmuxSettings {
     return cloneSettingsArrays(this.globalSettings);
   }
 
   /**
    * Get project settings only
    */
-  getProjectSettings(): DmuxSettings {
+  getProjectSettings(): QmuxSettings {
     return cloneSettingsArrays(this.projectSettings);
   }
 
   /**
    * Update a setting at the specified scope
    */
-  updateSetting<K extends keyof DmuxSettings>(
+  updateSetting<K extends keyof QmuxSettings>(
     key: K,
-    value: DmuxSettings[K],
+    value: QmuxSettings[K],
     scope: SettingsScope
   ): void {
     // Validate branch-related settings
@@ -730,7 +730,7 @@ export class SettingsManager {
     if (key === 'language' && (typeof value !== 'string' || !isLanguage(value))) {
       throw new Error(`Invalid language: "${String(value)}"`);
     }
-    if (key === 'colorTheme' && !isDmuxThemeName(value)) {
+    if (key === 'colorTheme' && !isQmuxThemeName(value)) {
       throw new Error(`Invalid colorTheme: "${String(value)}"`);
     }
     if (key === 'enabledAgents') {
@@ -772,7 +772,7 @@ export class SettingsManager {
       ) {
         throw new Error('Invalid gridColumns: expected an integer between 0 and 4');
       }
-      value = numericValue as DmuxSettings[K];
+      value = numericValue as QmuxSettings[K];
     }
 
     if (key === 'controlPanePosition') {
@@ -794,12 +794,12 @@ export class SettingsManager {
           `Invalid controlPaneHeight: expected an integer between ${MIN_CONTROL_PANE_HEIGHT} and ${MAX_CONTROL_PANE_HEIGHT}`
         );
       }
-      value = numericValue as DmuxSettings[K];
+      value = numericValue as QmuxSettings[K];
     }
 
     // Pane width settings are always stored globally, regardless of requested scope.
     if (key === 'minPaneWidth' || key === 'maxPaneWidth') {
-      const paneWidthOverrides: Partial<Pick<DmuxSettings, 'minPaneWidth' | 'maxPaneWidth'>> = {};
+      const paneWidthOverrides: Partial<Pick<QmuxSettings, 'minPaneWidth' | 'maxPaneWidth'>> = {};
       if (key === 'minPaneWidth') {
         paneWidthOverrides.minPaneWidth = value as number;
       } else {
@@ -837,14 +837,14 @@ export class SettingsManager {
   /**
    * Update multiple settings at once
    */
-  updateSettings(settings: Partial<DmuxSettings>, scope: SettingsScope): void {
+  updateSettings(settings: Partial<QmuxSettings>, scope: SettingsScope): void {
     if (typeof settings.permissionMode === 'string' && !isPermissionMode(settings.permissionMode)) {
       throw new Error(`Invalid permissionMode: "${settings.permissionMode}"`);
     }
     if (settings.language !== undefined && !isLanguage(settings.language)) {
       throw new Error(`Invalid language: "${String(settings.language)}"`);
     }
-    if (settings.colorTheme !== undefined && !isDmuxThemeName(settings.colorTheme)) {
+    if (settings.colorTheme !== undefined && !isQmuxThemeName(settings.colorTheme)) {
       throw new Error(`Invalid colorTheme: "${String(settings.colorTheme)}"`);
     }
     if (settings.enabledAgents !== undefined) {
@@ -888,12 +888,12 @@ export class SettingsManager {
       );
     }
 
-    const settingsToApply: Partial<DmuxSettings> = { ...settings };
+    const settingsToApply: Partial<QmuxSettings> = { ...settings };
     let projectSettingsChanged = false;
     let paneWidthsUpdated = false;
 
     if (settingsToApply.minPaneWidth !== undefined || settingsToApply.maxPaneWidth !== undefined) {
-      const paneWidthOverrides: Partial<Pick<DmuxSettings, 'minPaneWidth' | 'maxPaneWidth'>> = {};
+      const paneWidthOverrides: Partial<Pick<QmuxSettings, 'minPaneWidth' | 'maxPaneWidth'>> = {};
       if (settingsToApply.minPaneWidth !== undefined) {
         paneWidthOverrides.minPaneWidth = settingsToApply.minPaneWidth;
       }
@@ -948,7 +948,7 @@ export class SettingsManager {
   /**
    * Remove a setting from the specified scope
    */
-  removeSetting(key: keyof DmuxSettings, scope: SettingsScope): void {
+  removeSetting(key: keyof QmuxSettings, scope: SettingsScope): void {
     if (scope === 'global') {
       delete this.globalSettings[key];
       this.saveGlobalSettings();
@@ -987,7 +987,7 @@ export class SettingsManager {
   /**
    * Check if a setting is overridden at the project level
    */
-  isProjectOverride(key: keyof DmuxSettings): boolean {
+  isProjectOverride(key: keyof QmuxSettings): boolean {
     if (key === 'minPaneWidth' || key === 'maxPaneWidth') {
       return false;
     }
@@ -997,14 +997,14 @@ export class SettingsManager {
   /**
    * Get team defaults (committed to repo, read-only)
    */
-  getTeamDefaults(): DmuxSettings {
+  getTeamDefaults(): QmuxSettings {
     return cloneSettingsArrays(this.teamDefaults);
   }
 
   /**
    * Get the effective scope for a setting (where it's currently defined)
    */
-  getEffectiveScope(key: keyof DmuxSettings): EffectiveSettingsScope | null {
+  getEffectiveScope(key: keyof QmuxSettings): EffectiveSettingsScope | null {
     if (key === 'minPaneWidth') {
       return this.globalSettings.minPaneWidth !== undefined ? 'global' : null;
     }

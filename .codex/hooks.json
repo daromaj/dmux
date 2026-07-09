@@ -5,9 +5,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node '.codex/hooks/dmux-stop-hook.cjs'",
+            "command": "node '.codex/hooks/qmux-stop-hook.cjs'",
             "timeout": 5,
-            "statusMessage": "Notifying dmux"
+            "statusMessage": "Notifying qmux"
           }
         ]
       }

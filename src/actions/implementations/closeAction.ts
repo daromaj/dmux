@@ -5,7 +5,7 @@
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import path from 'path';
-import type { DmuxPane, DmuxConfig } from '../../types.js';
+import type { QmuxPane, QmuxConfig } from '../../types.js';
 import type { ActionResult, ActionContext, ActionOption } from '../types.js';
 import { StateManager } from '../../shared/StateManager.js';
 import { PaneLifecycleManager } from '../../services/PaneLifecycleManager.js';
@@ -69,7 +69,7 @@ async function waitForTmuxPaneToClose(paneId: string): Promise<boolean> {
   return false;
 }
 
-async function killTmuxPaneReliably(pane: DmuxPane): Promise<boolean> {
+async function killTmuxPaneReliably(pane: QmuxPane): Promise<boolean> {
   if (!tmuxPaneExists(pane.paneId)) {
     LogService.getInstance().debug(
       `Pane ${pane.paneId} already gone, skipping kill`,
@@ -113,7 +113,7 @@ async function killTmuxPaneReliably(pane: DmuxPane): Promise<boolean> {
  * Close a pane - presents options for how to close
  */
 export async function closePane(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext
 ): Promise<ActionResult> {
   const paneName = getPaneDisplayName(pane);
@@ -203,7 +203,7 @@ export async function closePane(
  * Execute the selected close option
  */
 async function executeCloseOption(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   option: string
 ): Promise<ActionResult> {
@@ -213,7 +213,7 @@ async function executeCloseOption(
   const state = stateManager.getState();
   const sessionProjectRoot = state.projectRoot || process.cwd();
   const paneProjectRoot = getPaneProjectRoot(pane, sessionProjectRoot);
-  const panesFile = state.panesFile || path.join(sessionProjectRoot, '.dmux', 'dmux.config.json');
+  const panesFile = state.panesFile || path.join(sessionProjectRoot, '.qmux', 'qmux.config.json');
 
   try {
     // CRITICAL: Mark pane as closing FIRST to prevent race condition with polling
@@ -302,14 +302,14 @@ async function executeCloseOption(
       }
 
       if (context.onPaneRemove) {
-        await context.onPaneRemove(pane.paneId); // Pass tmux pane ID, not dmux ID
+        await context.onPaneRemove(pane.paneId); // Pass tmux pane ID, not qmux ID
       }
 
       // Recalculate layout for remaining panes
       // CRITICAL FIX: Use validated pane IDs, not just the ones from config
       // The config may have stale IDs if panes were killed between save and layout
       try {
-        const config: DmuxConfig = JSON.parse(fs.readFileSync(panesFile, 'utf-8'));
+        const config: QmuxConfig = JSON.parse(fs.readFileSync(panesFile, 'utf-8'));
         if (config.controlPaneId && updatedPanes.length > 0) {
           // Verify control pane exists before attempting layout
           const paneListCheck = execSync('tmux list-panes -F "#{pane_id}"', {
@@ -375,7 +375,7 @@ async function executeCloseOption(
       // sibling panes remain on that worktree, respawn the control pane from
       // the root checkout.
       if (
-        process.env.DMUX_DEV === 'true' &&
+        process.env.QMUX_DEV === 'true' &&
         pane.worktreePath &&
         isActiveDevSourcePath(pane.worktreePath, process.cwd()) &&
         !hasRemainingPaneForWorktree
@@ -383,7 +383,7 @@ async function executeCloseOption(
         try {
           const fallbackCommand = buildDevWatchRespawnCommand(sessionProjectRoot);
           const quotedCommand = `'${fallbackCommand.replace(/'/g, "'\\''")}'`;
-          const configForRespawn: DmuxConfig = JSON.parse(fs.readFileSync(panesFile, 'utf-8'));
+          const configForRespawn: QmuxConfig = JSON.parse(fs.readFileSync(panesFile, 'utf-8'));
           const targetControlPaneId = configForRespawn.controlPaneId || execSync(
             'tmux display-message -p "#{pane_id}"',
             { encoding: 'utf-8', stdio: 'pipe', timeout: 5000 }

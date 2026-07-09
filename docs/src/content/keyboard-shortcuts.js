@@ -3,10 +3,10 @@ export const meta = { title: 'Keyboard Shortcuts' };
 export function render() {
   return `
     <h1>Keyboard Shortcuts</h1>
-    <p class="lead">dmux is designed for keyboard-first navigation. All major actions are available through single-key shortcuts.</p>
+    <p class="lead">qmux is designed for keyboard-first navigation. All major actions are available through single-key shortcuts.</p>
 
     <h2>Pane Management</h2>
-    <p><kbd>Alt+Shift+M</kbd> opens the pane menu for the currently focused tmux pane. dmux renders the same pane menu used in the sidebar, but positions it over the active pane so you can act on that pane without moving focus back to the control sidebar first.</p>
+    <p><kbd>Alt+Shift+M</kbd> opens the pane menu for the currently focused tmux pane. qmux renders the same pane menu used in the sidebar, but positions it over the active pane so you can act on that pane without moving focus back to the control sidebar first.</p>
     <table class="shortcut-table">
       <thead>
         <tr><th>Key</th><th>Action</th></tr>
@@ -53,7 +53,7 @@ export function render() {
         <tr><td><kbd>l</kbd></td><td>View application logs</td></tr>
         <tr><td><kbd>L</kbd></td><td>Reset sidebar layout (re-enforce pane sizing)</td></tr>
         <tr><td><kbd>?</kbd></td><td>Show keyboard shortcuts help</td></tr>
-        <tr><td><kbd>q</kbd></td><td>Quit dmux</td></tr>
+        <tr><td><kbd>q</kbd></td><td>Quit qmux</td></tr>
       </tbody>
     </table>
 
@@ -72,7 +72,7 @@ export function render() {
 
     <div class="callout callout-tip">
       <div class="callout-title">Tip</div>
-      You can paste large prompts using your terminal's paste function. dmux supports bracketed paste mode and will handle multi-line pastes correctly.
+      You can paste large prompts using your terminal's paste function. qmux supports bracketed paste mode and will handle multi-line pastes correctly.
     </div>
 
     <h2>File Browser</h2>

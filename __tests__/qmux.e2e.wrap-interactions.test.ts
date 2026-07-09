@@ -20,7 +20,7 @@ function detectRunner(): { cmd: string; label: string } | null {
 }
 
 const runner = detectRunner();
-const runE2E = process.env.DMUX_E2E === '1';
+const runE2E = process.env.QMUX_E2E === '1';
 const canRun = runE2E && hasCmd('tmux') && !!runner;
 
 async function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
@@ -38,11 +38,11 @@ function getInputLines(captured: string): string[] {
   return inputLines;
 }
 
-describe.sequential('dmux e2e: input wrapping interactions', () => {
+describe.sequential('qmux e2e: input wrapping interactions', () => {
   it.runIf(canRun)('wraps full word at the moment overflow occurs (on screen)', async () => {
-    const server = `dmux-e2e-wrap-${Date.now()}`;
-    const session = `dmux-e2e-wrap`;
-    const tmpHome = await fsp.mkdtemp(path.join(os.tmpdir(), 'dmux-e2e-home-'));
+    const server = `qmux-e2e-wrap-${Date.now()}`;
+    const session = `qmux-e2e-wrap`;
+    const tmpHome = await fsp.mkdtemp(path.join(os.tmpdir(), 'qmux-e2e-home-'));
 
     try {
       try { execSync(`tmux -L ${server} kill-session -t ${session}`, { stdio: 'pipe' }); } catch {}
@@ -54,7 +54,7 @@ describe.sequential('dmux e2e: input wrapping interactions', () => {
       execSync(`tmux -L ${server} resize-pane -t ${session}:0.0 -x 27 -y 20`, { stdio: 'pipe' });
 
       execSync(`tmux -L ${server} send-keys -t ${session}:0.0 '${runner!.cmd}' Enter`, { stdio: 'pipe' });
-      // Wait longer for dmux to fully initialize
+      // Wait longer for qmux to fully initialize
       await sleep(1000);
       // Open New Pane dialog
       execSync(`tmux -L ${server} send-keys -t ${session}:0.0 n`, { stdio: 'pipe' });

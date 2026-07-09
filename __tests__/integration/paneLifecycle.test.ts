@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { DmuxPane } from '../../src/types.js';
+import type { QmuxPane } from '../../src/types.js';
 import type { ActionContext } from '../../src/actions/types.js';
 import {
   createMockTmuxSession,
@@ -33,7 +33,7 @@ vi.mock('child_process', () => ({
 }));
 
 // Mock StateManager
-const mockGetPanes = vi.fn((): DmuxPane[] => []);
+const mockGetPanes = vi.fn((): QmuxPane[] => []);
 const mockSetPanes = vi.fn();
 const mockGetState = vi.fn(() => ({ projectRoot: '/test' }));
 const mockPauseConfigWatcher = vi.fn();
@@ -90,7 +90,7 @@ vi.mock('fs', () => ({
 
 const getBootstrapWrites = () =>
   fsMock.writeFileSync.mock.calls.filter(([target]) =>
-    String(target).includes('/.dmux/bootstrap/')
+    String(target).includes('/.qmux/bootstrap/')
   );
 
 const getLatestBootstrapConfig = () => {
@@ -118,14 +118,14 @@ describe('Pane Lifecycle Integration Tests', () => {
     mockEnqueueCleanup.mockReset();
 
     // Create fresh test environment
-    tmuxSession = createMockTmuxSession('dmux-test', 1);
+    tmuxSession = createMockTmuxSession('qmux-test', 1);
     gitRepo = createMockGitRepo('main');
     createdWorktreePaths = new Set<string>();
     killedPaneIds = new Set<string>();
 
     fsMock.existsSync.mockImplementation((target) => {
       const value = String(target);
-      if (value.includes('/.dmux/worktrees/')) {
+      if (value.includes('/.qmux/worktrees/')) {
         return createdWorktreePaths.has(value);
       }
       return true;
@@ -154,7 +154,7 @@ describe('Pane Lifecycle Integration Tests', () => {
       // Tmux display-message (get current pane id or session name)
       if (cmd.includes('display-message')) {
         if (cmd.includes('#{session_name}')) {
-          return returnValue('dmux-test');
+          return returnValue('qmux-test');
         }
         return returnValue('%0');
       }
@@ -163,7 +163,7 @@ describe('Pane Lifecycle Integration Tests', () => {
       if (cmd.includes('list-panes')) {
         return returnValue(
           [
-            '%0:dmux-control:80x24',
+            '%0:qmux-control:80x24',
             '%1:test:80x24',
           ]
             .filter((line) => {
@@ -192,7 +192,7 @@ describe('Pane Lifecycle Integration Tests', () => {
       if (cmd.includes('worktree add')) {
         const pathMatch = cmd.match(/git worktree add "([^"]+)"/);
         const branchMatch = cmd.match(/-b "([^"]+)"/) || cmd.match(/git worktree add "[^"]+" "([^"]+)"/);
-        const worktreePath = pathMatch?.[1] || '/test/.dmux/worktrees/test-slug';
+        const worktreePath = pathMatch?.[1] || '/test/.qmux/worktrees/test-slug';
         const branchName = branchMatch?.[1] || 'test-slug';
         createdWorktreePaths.add(worktreePath);
         createdWorktreePaths.add(`${worktreePath}/.git`);
@@ -289,7 +289,7 @@ describe('Pane Lifecycle Integration Tests', () => {
 
       expect(mockExecSync.mock.calls.some(([cmd]) =>
         typeof cmd === 'string'
-        && cmd.includes('tmux set -t dmux-test pane-border-status top')
+        && cmd.includes('tmux set -t qmux-test pane-border-status top')
       )).toBe(true);
 
       expect(mockExecSync.mock.calls.some(([cmd]) =>
@@ -312,7 +312,7 @@ describe('Pane Lifecycle Integration Tests', () => {
       );
 
       const bootstrapConfig = getLatestBootstrapConfig();
-      expect(bootstrapConfig.worktreePath).toMatch(/^\/test\/\.dmux\/worktrees\/add-user/);
+      expect(bootstrapConfig.worktreePath).toMatch(/^\/test\/\.qmux\/worktrees\/add-user/);
       expect(bootstrapConfig.branchName).toMatch(/^add-user/);
       expect(bootstrapConfig.existingWorktree).toBe(false);
 
@@ -328,10 +328,10 @@ describe('Pane Lifecycle Integration Tests', () => {
     it('passes remote tracking baseBranch values to bootstrap without forcing refs/heads', async () => {
       fsMock.readFileSync.mockImplementation((target) => {
         const value = String(target);
-        if (value.endsWith('/.dmux/settings.json')) {
+        if (value.endsWith('/.qmux/settings.json')) {
           return JSON.stringify({ baseBranch: 'origin/main' });
         }
-        if (value.endsWith('/.dmux/dmux.config.json')) {
+        if (value.endsWith('/.qmux/qmux.config.json')) {
           return JSON.stringify({ controlPaneId: '%0' });
         }
         return JSON.stringify({});
@@ -361,7 +361,7 @@ describe('Pane Lifecycle Integration Tests', () => {
 
     it('should attach a fresh pane to an existing worktree without recreating it', async () => {
       const { createPane } = await import('../../src/utils/paneCreation.js');
-      const existingWorktreePath = '/test/.dmux/worktrees/resume-me';
+      const existingWorktreePath = '/test/.qmux/worktrees/resume-me';
       createdWorktreePaths.add(existingWorktreePath);
       createdWorktreePaths.add(`${existingWorktreePath}/.git`);
 
@@ -427,12 +427,12 @@ describe('Pane Lifecycle Integration Tests', () => {
           projectName: 'test-project',
           existingPanes: [
             {
-              id: 'dmux-1',
+              id: 'qmux-1',
               slug: 'existing',
               prompt: 'existing pane',
               paneId: '%5',
               projectRoot: '/primary/repo',
-              worktreePath: '/primary/repo/.dmux/worktrees/existing',
+              worktreePath: '/primary/repo/.qmux/worktrees/existing',
             },
           ],
           projectRoot: '/target/repo',
@@ -448,10 +448,10 @@ describe('Pane Lifecycle Integration Tests', () => {
 
       const bootstrapConfig = getLatestBootstrapConfig();
       expect(bootstrapConfig.projectRoot).toBe('/target/repo');
-      expect(bootstrapConfig.worktreePath).toBe('/target/repo/.dmux/worktrees/target-slug');
+      expect(bootstrapConfig.worktreePath).toBe('/target/repo/.qmux/worktrees/target-slug');
 
       expect(getSendKeysCommands().some((cmd) =>
-        cmd.includes('/target/repo/.dmux/bootstrap/')
+        cmd.includes('/target/repo/.qmux/bootstrap/')
       )).toBe(true);
     });
 
@@ -477,22 +477,22 @@ describe('Pane Lifecycle Integration Tests', () => {
           projectName: 'test-project',
           existingPanes: [
             {
-              id: 'dmux-visible',
+              id: 'qmux-visible',
               slug: 'visible',
               prompt: 'visible pane',
               paneId: '%1',
               hidden: false,
               projectRoot: '/test',
-              worktreePath: '/test/.dmux/worktrees/visible',
+              worktreePath: '/test/.qmux/worktrees/visible',
             },
             {
-              id: 'dmux-hidden',
+              id: 'qmux-hidden',
               slug: 'hidden',
               prompt: 'hidden pane',
               paneId: '%9',
               hidden: true,
               projectRoot: '/other/repo',
-              worktreePath: '/other/repo/.dmux/worktrees/hidden',
+              worktreePath: '/other/repo/.qmux/worktrees/hidden',
             },
           ],
           slugBase: 'visible-new-pane',
@@ -525,7 +525,7 @@ describe('Pane Lifecycle Integration Tests', () => {
       );
 
       const bootstrapConfig = getLatestBootstrapConfig();
-      expect(bootstrapConfig.worktreePath).toBe('/test/.dmux/worktrees/feat-lin-123-fix-auth');
+      expect(bootstrapConfig.worktreePath).toBe('/test/.qmux/worktrees/feat-lin-123-fix-auth');
       expect(bootstrapConfig.branchName).toBe('feat/LIN-123-fix-auth');
       expect(bootstrapConfig.resolvedStartPoint).toBe('develop');
       expect(bootstrapConfig.pane.branchName).toBe('feat/LIN-123-fix-auth');
@@ -547,7 +547,7 @@ describe('Pane Lifecycle Integration Tests', () => {
       );
 
       const bootstrapConfig = getLatestBootstrapConfig();
-      expect(bootstrapConfig.worktreePath).toBe('/test/.dmux/worktrees/feat-lin-777-ab-test-opencode');
+      expect(bootstrapConfig.worktreePath).toBe('/test/.qmux/worktrees/feat-lin-777-ab-test-opencode');
       expect(bootstrapConfig.branchName).toBe('feat/LIN-777-ab-test-opencode');
       expect(bootstrapConfig.pane.branchName).toBe('feat/LIN-777-ab-test-opencode');
     });
@@ -557,10 +557,10 @@ describe('Pane Lifecycle Integration Tests', () => {
 
       fsMock.existsSync.mockImplementation((targetPath: string) => {
         const value = String(targetPath);
-        if (value === '/test/.dmux/worktrees/feat-lin-999-existing') {
+        if (value === '/test/.qmux/worktrees/feat-lin-999-existing') {
           return true;
         }
-        return !value.includes('.dmux/worktrees/');
+        return !value.includes('.qmux/worktrees/');
       });
 
       await expect(
@@ -621,7 +621,7 @@ describe('Pane Lifecycle Integration Tests', () => {
           projectName: 'test-project',
           existingPanes: [
             {
-              id: 'dmux-1',
+              id: 'qmux-1',
               slug: 'shell-1',
               prompt: '',
               paneId: '%5',
@@ -710,7 +710,7 @@ describe('Pane Lifecycle Integration Tests', () => {
     it('keeps the pane visible and delegates a missing worktree failure to bootstrap', async () => {
       const { createPane } = await import('../../src/utils/paneCreation.js');
 
-      const missingWorktreePath = '/test/.dmux/worktrees/does-not-exist';
+      const missingWorktreePath = '/test/.qmux/worktrees/does-not-exist';
 
       const result = await createPane(
         {
@@ -808,16 +808,16 @@ describe('Pane Lifecycle Integration Tests', () => {
     it('should present choice dialog for worktree panes', async () => {
       const { closePane } = await import('../../src/actions/implementations/closeAction.js');
 
-      const testPane: DmuxPane = {
-        id: 'dmux-1',
+      const testPane: QmuxPane = {
+        id: 'qmux-1',
         slug: 'test-branch',
         prompt: 'test',
         paneId: '%1',
-        worktreePath: '/test/.dmux/worktrees/test-branch',
+        worktreePath: '/test/.qmux/worktrees/test-branch',
       };
 
       const mockContext: ActionContext = {
-        sessionName: 'dmux-test',
+        sessionName: 'qmux-test',
         projectName: 'test-project',
         panes: [testPane],
         savePanes: vi.fn(),
@@ -840,16 +840,16 @@ describe('Pane Lifecycle Integration Tests', () => {
     it('should kill tmux pane when closing', async () => {
       const { closePane } = await import('../../src/actions/implementations/closeAction.js');
 
-      const testPane: DmuxPane = {
-        id: 'dmux-1',
+      const testPane: QmuxPane = {
+        id: 'qmux-1',
         slug: 'test-branch',
         prompt: 'test',
         paneId: '%1',
-        worktreePath: '/test/.dmux/worktrees/test-branch',
+        worktreePath: '/test/.qmux/worktrees/test-branch',
       };
 
       const mockContext: ActionContext = {
-        sessionName: 'dmux-test',
+        sessionName: 'qmux-test',
         projectName: 'test-project',
         panes: [testPane],
         savePanes: vi.fn(),
@@ -874,16 +874,16 @@ describe('Pane Lifecycle Integration Tests', () => {
     it('should queue worktree cleanup with kill_and_clean option', async () => {
       const { closePane } = await import('../../src/actions/implementations/closeAction.js');
 
-      const testPane: DmuxPane = {
-        id: 'dmux-1',
+      const testPane: QmuxPane = {
+        id: 'qmux-1',
         slug: 'test-branch',
         prompt: 'test',
         paneId: '%1',
-        worktreePath: '/test/.dmux/worktrees/test-branch',
+        worktreePath: '/test/.qmux/worktrees/test-branch',
       };
 
       const mockContext: ActionContext = {
-        sessionName: 'dmux-test',
+        sessionName: 'qmux-test',
         projectName: 'test-project',
         panes: [testPane],
         savePanes: vi.fn(),
@@ -912,16 +912,16 @@ describe('Pane Lifecycle Integration Tests', () => {
         throw new Error('enqueue failed');
       });
 
-      const testPane: DmuxPane = {
-        id: 'dmux-1',
+      const testPane: QmuxPane = {
+        id: 'qmux-1',
         slug: 'test-branch',
         prompt: 'test',
         paneId: '%1',
-        worktreePath: '/test/.dmux/worktrees/test-branch',
+        worktreePath: '/test/.qmux/worktrees/test-branch',
       };
 
       const mockContext: ActionContext = {
-        sessionName: 'dmux-test',
+        sessionName: 'qmux-test',
         projectName: 'test-project',
         panes: [testPane],
         savePanes: vi.fn(),
@@ -944,16 +944,16 @@ describe('Pane Lifecycle Integration Tests', () => {
       const { closePane } = await import('../../src/actions/implementations/closeAction.js');
       const { triggerHook } = await import('../../src/utils/hooks.js');
 
-      const testPane: DmuxPane = {
-        id: 'dmux-1',
+      const testPane: QmuxPane = {
+        id: 'qmux-1',
         slug: 'test-branch',
         prompt: 'test',
         paneId: '%1',
-        worktreePath: '/test/.dmux/worktrees/test-branch',
+        worktreePath: '/test/.qmux/worktrees/test-branch',
       };
 
       const mockContext: ActionContext = {
-        sessionName: 'dmux-test',
+        sessionName: 'qmux-test',
         projectName: 'test-project',
         panes: [testPane],
         savePanes: vi.fn(),
@@ -1014,12 +1014,12 @@ describe('Pane Lifecycle Integration Tests', () => {
 
     it('should preserve worktree and slug during rebind', async () => {
       // Test that rebinding doesn't recreate worktree
-      const testPane: DmuxPane = {
-        id: 'dmux-1',
+      const testPane: QmuxPane = {
+        id: 'qmux-1',
         slug: 'existing-branch',
         prompt: 'original prompt',
         paneId: '%1', // Old, dead pane
-        worktreePath: '/test/.dmux/worktrees/existing-branch',
+        worktreePath: '/test/.qmux/worktrees/existing-branch',
       };
 
       // Rebinding would update paneId but keep slug and worktreePath

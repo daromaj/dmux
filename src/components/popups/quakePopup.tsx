@@ -7,7 +7,7 @@ import { QuakeAssistantService } from '../../services/QuakeAssistantService.js';
 import { callChatCompletion } from '../../utils/aiClient.js';
 import { runQuakeShell } from '../../utils/quakeShell.js';
 import { SettingsManager } from '../../utils/settingsManager.js';
-import { isDmuxThemeName } from '../../theme/themePalette.js';
+import { isQmuxThemeName } from '../../theme/themePalette.js';
 import type {
   QuakeControlHandlers,
   QuakeWorkspaceContext,
@@ -21,7 +21,7 @@ import type {
  *
  * Data (projectRoot, session, control pane id, panes file, resolved AI config)
  * is passed in through a JSON file written by the main process, since a tmux
- * popup does not reliably inherit the dmux process environment.
+ * popup does not reliably inherit the qmux process environment.
  */
 
 interface QuakePopupData {
@@ -48,10 +48,10 @@ const data = readData();
 
 // A tmux popup does not inherit the parent env, so seed the AI config into this
 // process's env — getAiConfig()/callChatCompletion read from here.
-if (data.ai?.apiKey) process.env.DMUX_AI_API_KEY = data.ai.apiKey;
-if (data.ai?.baseUrl) process.env.DMUX_AI_BASE_URL = data.ai.baseUrl;
-if (data.ai?.model) process.env.DMUX_AI_MODEL = data.ai.model;
-if (data.ai?.provider) process.env.DMUX_AI_PROVIDER = data.ai.provider;
+if (data.ai?.apiKey) process.env.QMUX_AI_API_KEY = data.ai.apiKey;
+if (data.ai?.baseUrl) process.env.QMUX_AI_BASE_URL = data.ai.baseUrl;
+if (data.ai?.model) process.env.QMUX_AI_MODEL = data.ai.model;
+if (data.ai?.provider) process.env.QMUX_AI_PROVIDER = data.ai.provider;
 
 function resolveSessionName(): string {
   if (data.sessionName) return data.sessionName;
@@ -60,7 +60,7 @@ function resolveSessionName(): string {
       encoding: 'utf-8',
     }).trim();
   } catch {
-    return 'dmux';
+    return 'qmux';
   }
 }
 
@@ -95,12 +95,12 @@ const getWorkspaceContext = (): QuakeWorkspaceContext => {
 };
 
 // Control verbs run in this separate process, so they persist settings to disk
-// (best-effort) rather than hot-applying to the live dmux UI.
+// (best-effort) rather than hot-applying to the live qmux UI.
 const controlHandlers: QuakeControlHandlers = {
   setGridColumns: (columns) => {
     const n = columns === 'auto' ? 0 : columns;
     new SettingsManager(data.projectRoot).updateSetting('gridColumns', n as any, 'global');
-    return `Saved gridColumns=${n === 0 ? 'auto' : n} (applies on next dmux layout change).`;
+    return `Saved gridColumns=${n === 0 ? 'auto' : n} (applies on next qmux layout change).`;
   },
   setControlPosition: (position) => {
     new SettingsManager(data.projectRoot).updateSetting(
@@ -108,11 +108,11 @@ const controlHandlers: QuakeControlHandlers = {
       position as any,
       'global',
     );
-    return `Saved control position=${position} (applies on next dmux layout change).`;
+    return `Saved control position=${position} (applies on next qmux layout change).`;
   },
   setPaneColor: (paneRef, color) => {
     const normalized = color.trim().toLowerCase();
-    if (!isDmuxThemeName(normalized)) {
+    if (!isQmuxThemeName(normalized)) {
       return `Invalid color "${color}". Not a known theme.`;
     }
     try {
@@ -130,7 +130,7 @@ const controlHandlers: QuakeControlHandlers = {
       return `Failed to set color: ${err?.message || String(err)}`;
     }
   },
-  refreshLayout: () => 'Layout refresh happens automatically in the main dmux UI.',
+  refreshLayout: () => 'Layout refresh happens automatically in the main qmux UI.',
 };
 
 const service = new QuakeAssistantService({
@@ -144,7 +144,7 @@ const service = new QuakeAssistantService({
       timeoutMs,
     }),
   complete: (opts) => callChatCompletion(opts),
-  transcriptPath: `${data.projectRoot}/.dmux/quake-history.jsonl`,
+  transcriptPath: `${data.projectRoot}/.qmux/quake-history.jsonl`,
 });
 
 const QuakePopupApp: React.FC = () => {
@@ -164,7 +164,7 @@ const QuakePopupApp: React.FC = () => {
 render(<QuakePopupApp />);
 
 // Signal readiness so the launcher's readyPromise resolves.
-const readyFile = process.env.DMUX_POPUP_READY_FILE;
+const readyFile = process.env.QMUX_POPUP_READY_FILE;
 if (readyFile) {
   try {
     fs.writeFileSync(readyFile, 'ready');

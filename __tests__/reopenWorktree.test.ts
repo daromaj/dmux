@@ -6,7 +6,7 @@ const fsMock = vi.hoisted(() => ({
 
 const tmuxServiceMock = vi.hoisted(() => ({
   getCurrentPaneIdSync: vi.fn(() => '%0'),
-  getCurrentSessionNameSync: vi.fn(() => 'dmux-test'),
+  getCurrentSessionNameSync: vi.fn(() => 'qmux-test'),
   paneExists: vi.fn(async () => true),
   setSessionOptionSync: vi.fn(),
   setPaneTitle: vi.fn(async () => {}),
@@ -112,21 +112,21 @@ describe('reopenWorktree', () => {
 
     const result = await reopenWorktree({
       slug: 'reopen-me',
-      worktreePath: '/repo/.dmux/worktrees/reopen-me',
+      worktreePath: '/repo/.qmux/worktrees/reopen-me',
       projectRoot: '/repo',
       existingPanes: [],
       sessionProjectRoot: '/repo',
-      sessionConfigPath: '/repo/.dmux/dmux.config.json',
+      sessionConfigPath: '/repo/.qmux/qmux.config.json',
     });
 
     expect(tmuxServiceMock.sendShellCommand).toHaveBeenCalledWith(
       '%1',
       expect.stringMatching(
-        /^export DMUX_PANE_ID='dmux-\d+'; export DMUX_TMUX_PANE_ID='%1'; codex --enable hooks resume --last --dangerously-bypass-approvals-and-sandbox$/
+        /^export QMUX_PANE_ID='qmux-\d+'; export QMUX_TMUX_PANE_ID='%1'; codex --enable hooks resume --last --dangerously-bypass-approvals-and-sandbox$/
       )
     );
     expect(tmuxServiceMock.setSessionOptionSync).toHaveBeenCalledWith(
-      'dmux-test',
+      'qmux-test',
       'pane-border-status',
       'top'
     );
@@ -139,11 +139,11 @@ describe('reopenWorktree', () => {
 
     await reopenWorktree({
       slug: 'reopen-me',
-      worktreePath: '/repo/.dmux/worktrees/reopen-me',
+      worktreePath: '/repo/.qmux/worktrees/reopen-me',
       projectRoot: '/repo',
       existingPanes: [
         {
-          id: 'dmux-1',
+          id: 'qmux-1',
           slug: 'shell-1',
           prompt: '',
           paneId: '%9',
@@ -152,7 +152,7 @@ describe('reopenWorktree', () => {
         },
       ],
       sessionProjectRoot: '/repo',
-      sessionConfigPath: '/repo/.dmux/dmux.config.json',
+      sessionConfigPath: '/repo/.qmux/qmux.config.json',
     });
 
     expect(destroyWelcomePaneCoordinatedMock).toHaveBeenCalledWith('/repo');

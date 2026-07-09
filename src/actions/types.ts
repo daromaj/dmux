@@ -1,12 +1,12 @@
 /**
- * Standardized Action System for dmux
+ * Standardized Action System for qmux
  *
  * This module defines the core action types and response structures used across
- * all dmux interfaces (TUI, Web UI, Native Apps, etc.). By standardizing action
+ * all qmux interfaces (TUI, Web UI, Native Apps, etc.). By standardizing action
  * responses, we ensure consistent behavior and UI patterns across all interfaces.
  */
 
-import type { DmuxPane } from '../types.js';
+import type { QmuxPane } from '../types.js';
 import {
   getBulkVisibilityAction,
   getProjectVisibilityAction,
@@ -88,14 +88,14 @@ export interface ActionResult {
  * Context provided to action functions
  */
 export interface ActionContext {
-  panes: DmuxPane[];
+  panes: QmuxPane[];
   currentPaneId?: string;
   sessionName: string;
   projectName: string;
-  savePanes: (panes: DmuxPane[]) => Promise<void>;
+  savePanes: (panes: QmuxPane[]) => Promise<void>;
 
   // Optional callbacks for specific actions
-  onPaneUpdate?: (pane: DmuxPane) => void;
+  onPaneUpdate?: (pane: QmuxPane) => void;
   onPaneRemove?: (paneId: string) => void | Promise<void>;
   onActionResult?: (result: ActionResult) => Promise<void>;
 }
@@ -104,7 +104,7 @@ export interface ActionContext {
  * Standard action function signature
  */
 export type ActionFunction = (
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   params?: any
 ) => Promise<ActionResult>;
@@ -348,7 +348,7 @@ const HIDDEN_MENU_ACTIONS = new Set<PaneAction>([
  * Get available actions for a pane based on its state
  */
 export function getAvailableActions(
-  pane: DmuxPane,
+  pane: QmuxPane,
   projectSettings?: any,
   isDevMode: boolean = false
 ): ActionMetadata[] {
@@ -406,8 +406,8 @@ function getProjectVisibilityMenuAction(
 }
 
 export function getPaneMenuActions(
-  pane: DmuxPane,
-  panes: DmuxPane[],
+  pane: QmuxPane,
+  panes: QmuxPane[],
   projectSettings?: any,
   isDevMode: boolean = false,
   projectRoot: string = pane.projectRoot || ''

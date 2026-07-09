@@ -8,7 +8,7 @@
 export * from './types.js';
 export * as paneActions from './paneActions.js';
 
-import type { DmuxPane } from '../types.js';
+import type { QmuxPane } from '../types.js';
 import type { ActionResult, ActionContext, PaneAction } from './types.js';
 import * as actions from './paneActions.js';
 
@@ -17,7 +17,7 @@ import * as actions from './paneActions.js';
  */
 export async function executeAction(
   actionId: PaneAction,
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   params?: any
 ): Promise<ActionResult> {
@@ -110,6 +110,6 @@ export async function executeAction(
  * Convenience function to get an action handler
  */
 export function getActionHandler(actionId: PaneAction) {
-  return (pane: DmuxPane, context: ActionContext, params?: any) =>
+  return (pane: QmuxPane, context: ActionContext, params?: any) =>
     executeAction(actionId, pane, context, params);
 }

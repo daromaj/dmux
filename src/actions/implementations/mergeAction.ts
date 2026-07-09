@@ -6,7 +6,7 @@
  */
 
 import { execSync } from 'child_process';
-import type { DmuxPane } from '../../types.js';
+import type { QmuxPane } from '../../types.js';
 import type { ActionResult, ActionContext } from '../types.js';
 import { triggerHook } from '../../utils/hooks.js';
 import { getPaneBranchName } from '../../utils/git.js';
@@ -31,7 +31,7 @@ import { getPaneDisplayName } from '../../utils/paneTitle.js';
  * Supports multi-merge: if sub-worktrees exist, merges all of them sequentially.
  */
 export async function mergePane(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   params?: { mainBranch?: string }
 ): Promise<ActionResult> {
@@ -110,7 +110,7 @@ export async function mergePane(
  * Execute single root worktree merge (original flow, backwards compatible)
  */
 async function executeSingleRootMerge(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   params: { mainBranch?: string } | undefined,
   mergeTarget: MergeTargetResolution
@@ -168,7 +168,7 @@ async function executeSingleRootMerge(
       cancelLabel: 'Cancel',
       onConfirm: async () => {
         await triggerHook('pre_merge', mergeTarget.targetRepoPath, pane, {
-          DMUX_TARGET_BRANCH: validation.mainBranch,
+          QMUX_TARGET_BRANCH: validation.mainBranch,
         });
         return executeMerge(
           pane,
@@ -211,7 +211,7 @@ async function executeSingleRootMerge(
 }
 
 function buildMergeTargetFallbackConfirmation(
-  pane: DmuxPane,
+  pane: QmuxPane,
   paneName: string,
   mergeTarget: MergeTargetResolution,
   onConfirm: () => Promise<ActionResult>
@@ -235,7 +235,7 @@ function buildMergeTargetFallbackConfirmation(
  * Handle detected merge issues by delegating to specialized handlers
  */
 async function handleMergeIssues(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   validation: any,
   mainRepoPath: string

@@ -19,7 +19,7 @@ afterEach(() => {
 
 describe('KebabMenuPopupApp', () => {
   it('selects a menu action from its visible shortcut', async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dmux-kebab-popup-'));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qmux-kebab-popup-'));
     tempDirs.push(tempDir);
     const resultFile = path.join(tempDir, 'result.json');
 

@@ -25,7 +25,7 @@ Layout logic is currently **spread across 9+ files** with inconsistent approache
 - **Line 155**: First pane: `setupSidebarLayout(controlPaneId)`
 - **Lines 160-174**: Subsequent panes: alternating split logic
   ```typescript
-  const splitDirection = dmuxPaneIds.length % 2 === 1 ? '-h' : '-v';
+  const splitDirection = qmuxPaneIds.length % 2 === 1 ? '-h' : '-v';
   tmux split-window ${splitDirection} -t '${targetPane}' -P -F '#{pane_id}'
   ```
 - **Line 190**: `enforceControlPaneSize(controlPaneId, SIDEBAR_WIDTH)`
@@ -73,7 +73,7 @@ Layout logic is currently **spread across 9+ files** with inconsistent approache
 - **Line 36**: `const SIDEBAR_WIDTH = 40` (duplicate definition)
 - **Line 39**: `enforceControlPaneSize(controlPaneId, SIDEBAR_WIDTH)`
 
-#### 9. **src/DmuxApp.tsx**
+#### 9. **src/QmuxApp.tsx**
 - **Lines 1431, 1465, 1568, 2219**: Multiple `enforceControlPaneSize()` calls
 - **Line 1550**: Debug dialog creates pane: `tmux split-window -h -P -F '#{pane_id}'`
 - **Problem**: Reactive layout enforcement, not proactive
@@ -93,11 +93,11 @@ Layout logic is currently **spread across 9+ files** with inconsistent approache
 ## Problems with Current Approach
 
 ### 1. Startup Flash
-When dmux starts, the sidebar is initially full-width until first `resize-pane` command executes:
+When qmux starts, the sidebar is initially full-width until first `resize-pane` command executes:
 ```
 Initial:                    After 100ms:
 ┌───────────────────────┐   ┌──────────┬────────────┐
-│  dmux (full width)    │   │  dmux    │  Welcome   │
+│  qmux (full width)    │   │  qmux    │  Welcome   │
 │                       │ → │  (40)    │            │
 └───────────────────────┘   └──────────┴────────────┘
 ```
@@ -107,24 +107,24 @@ Panes are created with alternating splits, then `enforceControlPaneSize()` moves
 ```
 After split-window:         After enforceControlPaneSize():
 ┌──────────┬──────────┐     ┌──────────┬─────────┬─────────┐
-│  dmux    │  Pane 1  │     │  dmux    │ Pane 1  │ Pane 2  │
+│  qmux    │  Pane 1  │     │  qmux    │ Pane 1  │ Pane 2  │
 │  (50)    ├──────────┤ →   │  (40)    ├─────────┴─────────┤
 │          │  Pane 2  │     │          │      Pane 3        │
 └──────────┴──────────┘     └──────────┴────────────────────┘
 ```
 
 ### 3. No Width Constraints
-dmux window always spans full terminal width, even when content doesn't need it:
+qmux window always spans full terminal width, even when content doesn't need it:
 ```
 Terminal = 300 cols, 3 panes:
 ┌──────────┬──────────────────────────────────────────────────┐
-│  dmux    │            Content (260 cols)                    │
+│  qmux    │            Content (260 cols)                    │
 │  (40)    │   Panes are too wide for comfortable reading     │
 └──────────┴──────────────────────────────────────────────────┘
 
 Desired (with max-width constraint using MAX_COMFORTABLE_WIDTH = 120):
 ┌──────────┬────────────────────┬────────────────────┬────────────────────┐                       │
-│  dmux    │      Pane 1        │      Pane 2        │      Pane 3        │   Empty space (right) │
+│  qmux    │      Pane 1        │      Pane 2        │      Pane 3        │   Empty space (right) │
 │  (40)    │      (120)         │      (120)         │      (120)         │                       │
 └──────────┴────────────────────┴────────────────────┴────────────────────┘                       │
 
@@ -137,14 +137,14 @@ Current custom layout string distributes panes left-to-right, top-to-bottom:
 ```
 5 panes, 3 columns:
 ┌──────────┬────────┬────────┬────────┐
-│  dmux    │ Pane 1 │ Pane 2 │ Pane 3 │
+│  qmux    │ Pane 1 │ Pane 2 │ Pane 3 │
 │  (40)    ├────────┼────────┼────────┤
 │          │ Pane 4 │ Pane 5 │        │
 └──────────┴────────┴────────┴────────┘
 
 Desired (span orphan panes):
 ┌──────────┬────────┬────────┬────────┐
-│  dmux    │ Pane 1 │ Pane 2 │ Pane 3 │
+│  qmux    │ Pane 1 │ Pane 2 │ Pane 3 │
 │  (40)    ├────────┼────────┤  (full │
 │          │ Pane 4 │ Pane 5 │ height)│
 └──────────┴────────┴────────┴────────┘
@@ -169,7 +169,7 @@ Desired (span orphan panes):
 ```
 Terminal width = any
 ┌──────────┐
-│  dmux    │ Empty space
+│  qmux    │ Empty space
 │  (40)    │
 └──────────┘
 Max Width = 40
@@ -179,7 +179,7 @@ Max Width = 40
 ```
 Terminal width = any
 ┌──────────┬──────────────────────────────────┐
-│  dmux    │      Welcome Pane                │
+│  qmux    │      Welcome Pane                │
 │  (40)    │   (uses all remaining space)     │
 └──────────┴──────────────────────────────────┘
 Max Width = terminal width (unlimited)
@@ -194,7 +194,7 @@ Ideal pane width = min(260, MAX_COMFORTABLE_WIDTH) = 120
 Window max-width = 40 + 120 = 160
 
 ┌──────────┬────────────────────┐                            │
-│  dmux    │   Content Pane     │   Empty space (140 cols)   │
+│  qmux    │   Content Pane     │   Empty space (140 cols)   │
 │  (40)    │      (120)         │                            │
 └──────────┴────────────────────┘                            │
 Max Width = 160
@@ -213,7 +213,7 @@ Try 2 columns:
 Window max-width = 40 + 120*2 + 1 = 281
 
 ┌──────────┬────────────────────┬────────────────────┐       │
-│  dmux    │   Pane 1           │   Pane 2           │ Empty │
+│  qmux    │   Pane 1           │   Pane 2           │ Empty │
 │  (40)    │   (120)            │   (120)            │       │
 └──────────┴────────────────────┴────────────────────┘       │
 Max Width = 281
@@ -231,7 +231,7 @@ Try 3 columns:
 Window max-width = min(40 + 120*3 + 2, 300) = 300 (full terminal)
 
 ┌──────────┬───────────────┬───────────────┬───────────────┐
-│  dmux    │   Pane 1      │   Pane 2      │   Pane 3      │
+│  qmux    │   Pane 1      │   Pane 2      │   Pane 3      │
 │  (40)    │     (86)      │     (86)      │     (86)      │
 └──────────┴───────────────┴───────────────┴───────────────┘
 Max Width = 300 (NO empty space - all 3 panes as columns, equal width)
@@ -252,7 +252,7 @@ Try 2 columns:
 Window max-width = min(40 + 120*2 + 1, 200) = 200
 
 ┌──────────┬────────────────┬────────────────┐
-│  dmux    │   Pane 1       │   Pane 2       │
+│  qmux    │   Pane 1       │   Pane 2       │
 │  (40)    │   (79)         ├────────────────┤
 │          │                │   Pane 3       │
 └──────────┴────────────────┴────────────────┘
@@ -278,7 +278,7 @@ Window max-width = min(40 + 120*4 + 3, 300) = 300 (full terminal)
 Distribution: [2, 1, 1, 1] → 2 panes in col 1, 1 each in cols 2-4
 
 ┌──────────┬──────────┬──────────┬──────────┬──────────┐
-│  dmux    │ Pane 1   │ Pane 2   │ Pane 3   │ Pane 4   │
+│  qmux    │ Pane 1   │ Pane 2   │ Pane 3   │ Pane 4   │
 │  (40)    │  (64)    │  (64)    │  (64)    │  (64)    │
 │          ├──────────┤          │          │          │
 │          │ Pane 5   │          │          │          │
@@ -292,7 +292,7 @@ Note: Panes 2-4 span full height since they have only 1 pane each
 ```
 Initial (Terminal = 200 cols, 5 panes, 2 columns):
 ┌──────────┬──────────┬──────────┐
-│  dmux    │ Pane 1   │ Pane 3   │
+│  qmux    │ Pane 1   │ Pane 3   │
 │  (40)    │  (79)    │  (79)    │
 │          ├──────────┼──────────┤
 │          │ Pane 2   │ Pane 4   │
@@ -307,7 +307,7 @@ Try 5 columns:
   Per-pane width = 306 / 5 = 61 (barely above MIN 60!)
 
 ┌──────────┬──────┬──────┬──────┬──────┬──────┐
-│  dmux    │ P1   │ P2   │ P3   │ P4   │ P5   │
+│  qmux    │ P1   │ P2   │ P3   │ P4   │ P5   │
 │  (40)    │ (61) │ (61) │ (61) │ (61) │ (61) │
 └──────────┴──────┴──────┴──────┴──────┴──────┘
 Max Width = 350 (NO empty space, NO rows - 5 individual columns)
@@ -320,7 +320,7 @@ Action: Debounce 500ms → recalculateAndApplyLayout()
 ```
 Initial (Terminal = 300 cols, 5 panes, 4 columns from Phase 6):
 ┌──────────┬──────────┬──────────┬──────────┬──────────┐
-│  dmux    │ Pane 1   │ Pane 2   │ Pane 3   │ Pane 4   │
+│  qmux    │ Pane 1   │ Pane 2   │ Pane 3   │ Pane 4   │
 │  (40)    │  (64)    │  (64)    │  (64)    │  (64)    │
 │          ├──────────┤          │          │          │
 │          │ Pane 5   │          │          │          │
@@ -337,7 +337,7 @@ Try 2 columns:
   Per-pane width = 139 / 2 = 69
 
 ┌──────────┬──────────┬──────────┐
-│  dmux    │ Pane 1   │ Pane 3   │
+│  qmux    │ Pane 1   │ Pane 3   │
 │  (40)    │  (69)    │  (69)    │
 │          ├──────────┼──────────┤
 │          │ Pane 2   │ Pane 4   │
@@ -591,7 +591,7 @@ function applyPaneLayout(
 2. **Lines 152-174**: Replace alternating split logic:
    ```typescript
    // OLD: Alternating splits
-   const splitDirection = dmuxPaneIds.length % 2 === 1 ? '-h' : '-v';
+   const splitDirection = qmuxPaneIds.length % 2 === 1 ? '-h' : '-v';
    paneInfo = execSync(`tmux split-window ${splitDirection} ...`);
 
    // NEW: Always split horizontally, let layout manager organize
@@ -678,7 +678,7 @@ function applyPaneLayout(
 ### Phase 5: Replace All enforceControlPaneSize Calls
 
 **Files to Update**:
-- `src/DmuxApp.tsx` (lines 1431, 1465, 1568, 2219)
+- `src/QmuxApp.tsx` (lines 1431, 1465, 1568, 2219)
 - `src/hooks/usePaneRunner.ts` (line 142)
 - `src/hooks/useWorktreeActions.ts` (line 39)
 - `src/utils/conflictResolutionPane.ts` (line 70)
@@ -712,7 +712,7 @@ recalculateAndApplyLayout(controlPaneId, contentPaneIds, dimensions.width, dimen
 
 ### Phase 7: Add Terminal Resize Detection
 
-**File**: `src/DmuxApp.tsx`
+**File**: `src/QmuxApp.tsx`
 
 **Add After Line 21** (imports):
 ```typescript
@@ -838,7 +838,7 @@ function generateLayoutStringWithSpanning(
 ## Testing Scenarios
 
 ### Scenario 1: Fresh Startup
-1. Start dmux in 200-col terminal
+1. Start qmux in 200-col terminal
 2. **Expected**: Sidebar appears immediately at 40 cols (no flash)
 3. **Expected**: Welcome pane uses all remaining 159 cols
 4. **Expected**: Window max-width = 200
@@ -897,7 +897,7 @@ function generateLayoutStringWithSpanning(
 3. **Expected**: No ad-hoc layout commands bypass layout manager
 
 ### Scenario 10: Pane Restoration (from usePanes.ts)
-1. Restart dmux session with saved panes
+1. Restart qmux session with saved panes
 2. **Expected**: Panes restored with correct layout
 3. **Expected**: No `even-horizontal` hack applied
 4. **Expected**: Layout manager recalculates optimal layout
@@ -917,7 +917,7 @@ function generateLayoutStringWithSpanning(
 - [ ] Update welcome pane creation/destruction to call layoutManager
 - [ ] Replace all `enforceControlPaneSize()` calls (9 locations)
 - [ ] Remove duplicate `SIDEBAR_WIDTH` definitions (5 locations)
-- [ ] Add terminal resize detection in DmuxApp.tsx
+- [ ] Add terminal resize detection in QmuxApp.tsx
 - [ ] Fix `usePanes.ts` pane restoration to use layoutManager
 
 ### Polish & Testing
@@ -932,7 +932,7 @@ function generateLayoutStringWithSpanning(
 ## Open Questions
 
 1. **Should we detect terminal resize globally or per-component?**
-   - **Recommendation**: Globally in DmuxApp.tsx, since it has access to all panes and controlPaneId
+   - **Recommendation**: Globally in QmuxApp.tsx, since it has access to all panes and controlPaneId
 
 2. **How to handle pane spanning in tmux layout strings?**
    - **Recommendation**: Distribute panes vertically within each column, give shorter columns full-height panes

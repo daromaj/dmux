@@ -1,5 +1,5 @@
 /**
- * Centralized Logging Service for dmux
+ * Centralized Logging Service for qmux
  *
  * Replaces scattered console.log/error calls with a unified logging system
  * that can be viewed in a dedicated UI without messing up pane formatting.
@@ -107,7 +107,7 @@ class CircularBuffer<T> {
 }
 
 /**
- * LogService singleton - central logging hub for dmux
+ * LogService singleton - central logging hub for qmux
  *
  * Performance optimizations:
  * - Uses circular buffer for O(1) log insertion
@@ -164,7 +164,7 @@ export class LogService extends EventEmitter {
 
     // Also log to console for development (can be disabled in production)
     if (!this.suppressConsole && (process.env.NODE_ENV !== 'production' || level === 'error')) {
-      const prefix = `[${source || 'dmux'}]`;
+      const prefix = `[${source || 'qmux'}]`;
       switch (level) {
         case 'error':
           console.error(prefix, message, stack || '');
@@ -360,8 +360,8 @@ export class LogService extends EventEmitter {
       'Development mode enabled - this is a test warning',
       'Debug log: System initialized successfully',
       'HTTP server running on port 42001',
-      'Project root: /Volumes/StudioExternal/Primary/projects/dmux',
-      'dmux started for project: dmux',
+      'Project root: /Volumes/StudioExternal/Primary/projects/qmux',
+      'qmux started for project: qmux',
       'Pane created successfully',
       'Git worktree initialized',
       'Branch merged into main',
@@ -383,7 +383,7 @@ export class LogService extends EventEmitter {
       const level = levels[Math.floor(Math.random() * levels.length)];
       const source = sources[Math.floor(Math.random() * sources.length)];
       const message = messages[Math.floor(Math.random() * messages.length)];
-      const paneId = Math.random() > 0.7 ? `dmux-${Math.floor(Math.random() * 5)}` : undefined;
+      const paneId = Math.random() > 0.7 ? `qmux-${Math.floor(Math.random() * 5)}` : undefined;
 
       this.addLog(level, `${message} (${i + 1})`, source, paneId);
 

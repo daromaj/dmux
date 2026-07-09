@@ -23,12 +23,12 @@ describe('slug generation', () => {
 
   it('falls back to a readable date when there is no prompt', async () => {
     const slug = await generateSlug('');
-    expect(slug).toMatch(/^dmux-\d{4}-\d{2}-\d{2}-\d{6}$/);
+    expect(slug).toMatch(/^qmux-\d{4}-\d{2}-\d{2}-\d{6}$/);
   });
 
   it('uses significant prompt words when no provider is configured', async () => {
-    const slug = await generateSlug('Refactor Dmux App');
-    expect(slug).toBe('refactor-dmux-app');
+    const slug = await generateSlug('Refactor Qmux App');
+    expect(slug).toBe('refactor-qmux-app');
   });
 
   it('builds a local slug from repeated significant words', () => {

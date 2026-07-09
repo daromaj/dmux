@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
 import * as path from 'path';
 import { execAsync, execAsyncRace } from './execAsync.js';
-import type { DmuxPane } from '../types.js';
+import type { QmuxPane } from '../types.js';
 
 /** Regex for characters allowed in git branch names and branch prefixes */
 export const SAFE_BRANCH_CHARS = /^[a-zA-Z0-9._\/-]*$/;
@@ -15,7 +15,7 @@ const HAS_DOT_DOT = /\.\./;
  * Get the git branch name for a pane.
  * Returns branchName if set (prefix-based), otherwise falls back to slug.
  */
-export function getPaneBranchName(pane: DmuxPane): string {
+export function getPaneBranchName(pane: QmuxPane): string {
   return pane.branchName || pane.slug;
 }
 
@@ -276,7 +276,7 @@ export async function getOrphanedWorktreesAsync(
   projectRoot: string,
   activePaneSlugs: string[]
 ): Promise<OrphanedWorktree[]> {
-  const worktreesDir = path.join(projectRoot, '.dmux', 'worktrees');
+  const worktreesDir = path.join(projectRoot, '.qmux', 'worktrees');
 
   try {
     await fsPromises.access(worktreesDir);
@@ -345,7 +345,7 @@ export async function getOrphanedWorktreesAsync(
 }
 
 /**
- * Gets a list of orphaned worktrees - worktrees that exist in .dmux/worktrees
+ * Gets a list of orphaned worktrees - worktrees that exist in .qmux/worktrees
  * but don't have an active pane tracking them
  * @deprecated Use getOrphanedWorktreesAsync for non-blocking operation
  */
@@ -353,7 +353,7 @@ export function getOrphanedWorktrees(
   projectRoot: string,
   activePaneSlugs: string[]
 ): OrphanedWorktree[] {
-  const worktreesDir = path.join(projectRoot, '.dmux', 'worktrees');
+  const worktreesDir = path.join(projectRoot, '.qmux', 'worktrees');
 
   if (!fs.existsSync(worktreesDir)) {
     return [];

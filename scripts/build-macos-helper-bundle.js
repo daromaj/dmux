@@ -10,18 +10,18 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
 const macosRoot = path.join(projectRoot, 'native', 'macos');
-const sourcePath = path.join(macosRoot, 'dmux-helper.swift');
-const infoPlistPath = path.join(macosRoot, 'dmux-helper-Info.plist');
-const iconSourcePath = path.join(macosRoot, 'dmux-helper-icon.png');
+const sourcePath = path.join(macosRoot, 'qmux-helper.swift');
+const infoPlistPath = path.join(macosRoot, 'qmux-helper-Info.plist');
+const iconSourcePath = path.join(macosRoot, 'qmux-helper-icon.png');
 const soundsDir = path.join(macosRoot, 'sounds');
 const prebuiltRoot = path.join(macosRoot, 'prebuilt');
-const appPath = path.join(prebuiltRoot, 'dmux-helper.app');
+const appPath = path.join(prebuiltRoot, 'qmux-helper.app');
 const contentsPath = path.join(appPath, 'Contents');
 const macOsPath = path.join(contentsPath, 'MacOS');
 const resourcesPath = path.join(contentsPath, 'Resources');
-const executablePath = path.join(macOsPath, 'dmux-helper');
-const iconPngPath = path.join(resourcesPath, 'dmux-helper.png');
-const iconIcnsPath = path.join(resourcesPath, 'dmux-helper.icns');
+const executablePath = path.join(macOsPath, 'qmux-helper');
+const iconPngPath = path.join(resourcesPath, 'qmux-helper.png');
+const iconIcnsPath = path.join(resourcesPath, 'qmux-helper.icns');
 const universalTargets = ['arm64-apple-macos12.0', 'x86_64-apple-macos12.0'];
 
 function runBuildTool(executable, args, options = {}) {
@@ -38,8 +38,8 @@ function runBuildTool(executable, args, options = {}) {
 }
 
 async function buildIcns(iconSource, iconIcns) {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dmux-helper-prebuilt-icon-'));
-  const iconsetDir = path.join(tempDir, 'dmux-helper.iconset');
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'qmux-helper-prebuilt-icon-'));
+  const iconsetDir = path.join(tempDir, 'qmux-helper.iconset');
 
   try {
     await fs.mkdir(iconsetDir, { recursive: true });
@@ -90,14 +90,14 @@ async function buildIcns(iconSource, iconIcns) {
 }
 
 async function buildUniversalBinary(outputPath) {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dmux-helper-build-'));
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'qmux-helper-build-'));
 
   try {
     const archBinaries = [];
 
     for (const target of universalTargets) {
       const archName = target.split('-')[0];
-      const archBinaryPath = path.join(tempDir, `dmux-helper-${archName}`);
+      const archBinaryPath = path.join(tempDir, `qmux-helper-${archName}`);
       const result = runBuildTool('swiftc', [
         '-O',
         '-target',

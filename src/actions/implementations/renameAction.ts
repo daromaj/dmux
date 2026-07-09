@@ -1,4 +1,4 @@
-import type { DmuxPane } from '../../types.js';
+import type { QmuxPane } from '../../types.js';
 import type { ActionResult, ActionContext } from '../types.js';
 import { TmuxService } from '../../services/TmuxService.js';
 import { StateManager } from '../../shared/StateManager.js';
@@ -14,7 +14,7 @@ import {
 
 const MAX_PANE_DISPLAY_NAME_LENGTH = 80;
 
-function persistWorktreeDisplayName(pane: DmuxPane, displayName?: string): void {
+function persistWorktreeDisplayName(pane: QmuxPane, displayName?: string): void {
   if (!pane.worktreePath) {
     return;
   }
@@ -27,7 +27,7 @@ function persistWorktreeDisplayName(pane: DmuxPane, displayName?: string): void 
 }
 
 export async function renamePane(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext
 ): Promise<ActionResult> {
   const currentName = getPaneDisplayName(pane);
@@ -66,7 +66,7 @@ export async function renamePane(
       }
 
       try {
-        const updatedPane: DmuxPane = {
+        const updatedPane: QmuxPane = {
           ...pane,
           displayName: nextDisplayName,
         };

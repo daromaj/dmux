@@ -17,8 +17,8 @@ import {
   SETTING_DEFINITIONS,
 } from "../utils/settingsManager.js"
 import type {
-  DmuxPane,
-  DmuxThemeName,
+  QmuxPane,
+  QmuxThemeName,
   NewPaneInput,
   ProjectSettings,
   SettingDefinition,
@@ -42,7 +42,7 @@ import { getPaneProjectRoot } from "../utils/paneProject.js"
 import { getPaneDisplayName } from "../utils/paneTitle.js"
 import type { TrackProjectActivity } from "../types/activity.js"
 import { SettingsManager } from "../utils/settingsManager.js"
-import { DEFAULT_DMUX_THEME, DMUX_THEME_NAMES } from "../theme/themePalette.js"
+import { DEFAULT_QMUX_THEME, QMUX_THEME_NAMES } from "../theme/themePalette.js"
 import {
   AUTO_SIDEBAR_PROJECT_COLOR_THEME_VALUE,
   getSidebarProjectColorThemeSettingValue,
@@ -72,7 +72,7 @@ interface PopupOptions {
   width?: number
   height?: number
   title: string
-  themeName?: DmuxThemeName
+  themeName?: QmuxThemeName
   positioning?: "standard" | "centered" | "large" | "pane"
   targetPaneId?: string
 }
@@ -208,7 +208,7 @@ export class PopupManager {
       const popupHandle = await this.trackProjectActivity(async () => {
         // Write temp file if data provided
         if (tempData !== undefined) {
-          tempFile = `/tmp/dmux-${scriptName.replace(".js", "")}-${Date.now()}.json`
+          tempFile = `/tmp/qmux-${scriptName.replace(".js", "")}-${Date.now()}.json`
           await fs.writeFile(tempFile, JSON.stringify(tempData))
           args = [tempFile, ...args]
         }
@@ -397,7 +397,7 @@ export class PopupManager {
     const data = {
       projectRoot,
       controlPaneId: this.config.controlPaneId,
-      panesFile: path.join(projectRoot, ".dmux", "dmux.config.json"),
+      panesFile: path.join(projectRoot, ".qmux", "qmux.config.json"),
       ai: ai
         ? {
             apiKey: ai.apiKey,
@@ -408,7 +408,7 @@ export class PopupManager {
         : undefined,
     }
 
-    const dataFile = path.join(os.tmpdir(), `dmux-quake-${Date.now()}.json`)
+    const dataFile = path.join(os.tmpdir(), `qmux-quake-${Date.now()}.json`)
     await fs.writeFile(dataFile, JSON.stringify(data), "utf-8")
 
     const scriptPath = resolveDistPath("components", "popups", "quakePopup.js")
@@ -449,7 +449,7 @@ export class PopupManager {
         shouldPromptForGitOptions ? "1" : "0",
         settings.enableGoalModeByDefault ? "1" : "0",
       ]
-      const projectName = effectivePath ? path.basename(effectivePath) : "dmux"
+      const projectName = effectivePath ? path.basename(effectivePath) : "qmux"
       const result = await this.launchPopup<unknown>(
         "newPanePopup.js",
         popupArgs,
@@ -473,8 +473,8 @@ export class PopupManager {
   }
 
   async launchKebabMenuPopup(
-    pane: DmuxPane,
-    panes: DmuxPane[],
+    pane: QmuxPane,
+    panes: QmuxPane[],
     options: { anchorToPane?: boolean } = {}
   ): Promise<PaneMenuActionId | null> {
     if (!this.checkPopupSupport()) return null
@@ -705,7 +705,7 @@ export class PopupManager {
         "logsPopup.js",
         [],
         {
-          title: "🪵 dmux Logs",
+          title: "🪵 qmux Logs",
           positioning: "large",
         },
         logsData,
@@ -792,7 +792,7 @@ export class PopupManager {
         description: "Fallback color used when a project does not have its own saved theme",
         type: "select",
         scopeBehavior: "global",
-        options: DMUX_THEME_NAMES.map((themeName) => ({
+        options: QMUX_THEME_NAMES.map((themeName) => ({
           value: themeName,
           label: themeName.charAt(0).toUpperCase() + themeName.slice(1),
         })),
@@ -800,13 +800,13 @@ export class PopupManager {
       const projectColorThemeSetting: SettingDefinition = {
         key: SIDEBAR_PROJECT_COLOR_THEME_SETTING_KEY,
         label: "Project Color Theme",
-        description: "Color for this project in the current dmux session. Auto picks an unused color; inherit follows the project's saved/default theme.",
+        description: "Color for this project in the current qmux session. Auto picks an unused color; inherit follows the project's saved/default theme.",
         type: "select",
         scopeBehavior: "session",
         options: [
           { value: AUTO_SIDEBAR_PROJECT_COLOR_THEME_VALUE, label: "Auto" },
           { value: "", label: "Inherit Default Theme" },
-          ...DMUX_THEME_NAMES.map((themeName) => ({
+          ...QMUX_THEME_NAMES.map((themeName) => ({
             value: themeName,
             label: themeName.charAt(0).toUpperCase() + themeName.slice(1),
           })),
@@ -829,7 +829,7 @@ export class PopupManager {
 
       let settingsPopupWidth = 84
       try {
-        // Use tmux client dimensions, not the dmux pane's stdout width.
+        // Use tmux client dimensions, not the qmux pane's stdout width.
         const dims = await TmuxService.getInstance().getAllDimensions()
         const maxAvailableWidth = dims.clientWidth - this.config.sidebarWidth - 2
         settingsPopupWidth = Math.max(70, Math.min(84, maxAvailableWidth))
@@ -853,7 +853,7 @@ export class PopupManager {
             [DEFAULT_COLOR_THEME_SETTING_KEY]:
               settingsManager.getGlobalSettings().colorTheme
               ?? settingsManager.getTeamDefaults().colorTheme
-              ?? DEFAULT_DMUX_THEME,
+              ?? DEFAULT_QMUX_THEME,
             [SIDEBAR_PROJECT_COLOR_THEME_SETTING_KEY]:
               currentSessionProjectThemeSetting
               || settingsManager.getProjectSettings().colorTheme

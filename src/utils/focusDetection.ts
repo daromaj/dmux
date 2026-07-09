@@ -1,4 +1,4 @@
-export interface DmuxHelperSubscribeMessage {
+export interface QmuxHelperSubscribeMessage {
   type: 'subscribe';
   instanceId: string;
   titleToken: string;
@@ -6,7 +6,7 @@ export interface DmuxHelperSubscribeMessage {
   terminalProgram?: string;
 }
 
-export interface DmuxHelperNotifyMessage {
+export interface QmuxHelperNotifyMessage {
   type: 'notify';
   title: string;
   subtitle?: string;
@@ -18,12 +18,12 @@ export interface DmuxHelperNotifyMessage {
   tmuxSocketPath?: string;
 }
 
-export interface DmuxHelperPreviewSoundMessage {
+export interface QmuxHelperPreviewSoundMessage {
   type: 'preview-sound';
   soundName?: string;
 }
 
-export interface DmuxHelperFocusStateMessage {
+export interface QmuxHelperFocusStateMessage {
   type: 'focus-state';
   instanceId: string;
   fullyFocused: boolean;
@@ -39,8 +39,8 @@ export function buildFocusToken(instanceId: string): string {
 }
 
 export function buildFocusWindowTitle(projectName: string, token: string): string {
-  const cleanProjectName = projectName.trim() || 'dmux';
-  return `dmux ${cleanProjectName} [${token}]`;
+  const cleanProjectName = projectName.trim() || 'qmux';
+  return `qmux ${cleanProjectName} [${token}]`;
 }
 
 export function buildTerminalTitleSequence(title: string, insideTmux: boolean): string {
@@ -94,6 +94,6 @@ export function parseTmuxSocketPath(tmuxEnv?: string): string | undefined {
   return socketPath || undefined;
 }
 
-export function supportsNativeDmuxHelper(platform: NodeJS.Platform = process.platform): boolean {
+export function supportsNativeQmuxHelper(platform: NodeJS.Platform = process.platform): boolean {
   return platform === 'darwin';
 }

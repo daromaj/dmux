@@ -16,10 +16,10 @@ import {
   buildTerminalTitleSequence,
   mapTerminalProgramToBundleId,
   parseTmuxSocketPath,
-  supportsNativeDmuxHelper,
-  type DmuxHelperFocusStateMessage,
-  type DmuxHelperNotifyMessage,
-  type DmuxHelperSubscribeMessage,
+  supportsNativeQmuxHelper,
+  type QmuxHelperFocusStateMessage,
+  type QmuxHelperNotifyMessage,
+  type QmuxHelperSubscribeMessage,
 } from '../utils/focusDetection.js';
 import {
   getBundledNotificationSoundDefinitions,
@@ -34,17 +34,17 @@ const ATTENTION_FLASH_STEP_MS = 250;
 const ATTENTION_FLASH_SEQUENCE_LENGTH = 12;
 const ATTENTION_FLASH_FALLBACK_BG = 'colour237';
 
-interface DmuxFocusServiceOptions {
+interface QmuxFocusServiceOptions {
   projectName: string;
   projectRoot?: string;
 }
 
-export interface DmuxFocusChangedEvent {
+export interface QmuxFocusChangedEvent {
   fullyFocusedPaneId: string | null;
   helperFocused: boolean;
 }
 
-export interface DmuxAttentionNotificationRequest {
+export interface QmuxAttentionNotificationRequest {
   title: string;
   subtitle?: string;
   body: string;
@@ -75,27 +75,27 @@ function getHelperRuntimePaths(): {
   versionPath: string;
   socketPath: string;
 } {
-  const helperBaseDir = path.join(os.homedir(), '.dmux', 'native-helper');
-  const packagedAppPath = resolvePackagePath('native', 'macos', 'prebuilt', 'dmux-helper.app');
+  const helperBaseDir = path.join(os.homedir(), '.qmux', 'native-helper');
+  const packagedAppPath = resolvePackagePath('native', 'macos', 'prebuilt', 'qmux-helper.app');
   const packagedContentsPath = path.join(packagedAppPath, 'Contents');
-  const appPath = path.join(helperBaseDir, 'dmux-helper.app');
+  const appPath = path.join(helperBaseDir, 'qmux-helper.app');
   const contentsPath = path.join(appPath, 'Contents');
   const resourcesPath = path.join(contentsPath, 'Resources');
   return {
-    sourcePath: resolvePackagePath('native', 'macos', 'dmux-helper.swift'),
-    infoPlistSourcePath: resolvePackagePath('native', 'macos', 'dmux-helper-Info.plist'),
-    iconSourcePath: resolvePackagePath('native', 'macos', 'dmux-helper-icon.png'),
+    sourcePath: resolvePackagePath('native', 'macos', 'qmux-helper.swift'),
+    infoPlistSourcePath: resolvePackagePath('native', 'macos', 'qmux-helper-Info.plist'),
+    iconSourcePath: resolvePackagePath('native', 'macos', 'qmux-helper-icon.png'),
     soundSourceDir: resolvePackagePath('native', 'macos', 'sounds'),
     packagedAppPath,
-    packagedExecutablePath: path.join(packagedContentsPath, 'MacOS', 'dmux-helper'),
+    packagedExecutablePath: path.join(packagedContentsPath, 'MacOS', 'qmux-helper'),
     appPath,
-    executablePath: path.join(contentsPath, 'MacOS', 'dmux-helper'),
+    executablePath: path.join(contentsPath, 'MacOS', 'qmux-helper'),
     resourcesPath,
     infoPlistPath: path.join(contentsPath, 'Info.plist'),
-    bundleIconPngPath: path.join(resourcesPath, 'dmux-helper.png'),
-    bundleIconIcnsPath: path.join(resourcesPath, 'dmux-helper.icns'),
+    bundleIconPngPath: path.join(resourcesPath, 'qmux-helper.png'),
+    bundleIconIcnsPath: path.join(resourcesPath, 'qmux-helper.icns'),
     versionPath: path.join(helperBaseDir, 'version.txt'),
-    socketPath: path.join(helperBaseDir, 'run', 'dmux-helper.sock'),
+    socketPath: path.join(helperBaseDir, 'run', 'qmux-helper.sock'),
   };
 }
 
@@ -111,13 +111,13 @@ interface HelperBundleSnapshot {
 
 const HELPER_BUNDLE_BUILD_VERSION = '1';
 const LSREGISTER_PATH = '/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister';
-const LEGACY_NOTIFIER_BASE_DIR = path.join(os.homedir(), '.dmux', 'macos-notifier');
-const LEGACY_NOTIFIER_APP_PATH = path.join(LEGACY_NOTIFIER_BASE_DIR, 'dmux-notifier.app');
+const LEGACY_NOTIFIER_BASE_DIR = path.join(os.homedir(), '.qmux', 'macos-notifier');
+const LEGACY_NOTIFIER_APP_PATH = path.join(LEGACY_NOTIFIER_BASE_DIR, 'qmux-notifier.app');
 
 export function supportsRuntimeHelperSourceBuild(
   packageRoot: string = resolvePackagePath(),
 ): boolean {
-  return existsSync(path.join(packageRoot, 'src', 'services', 'DmuxFocusService.ts'));
+  return existsSync(path.join(packageRoot, 'src', 'services', 'QmuxFocusService.ts'));
 }
 
 function readTmuxGlobalEnvironment(name: string): string | undefined {
@@ -232,7 +232,7 @@ function helperBundleNeedsSync(
 }
 
 async function removeLegacyMacosNotifierArtifacts(): Promise<void> {
-  if (!supportsNativeDmuxHelper() || !existsSync(LEGACY_NOTIFIER_BASE_DIR)) {
+  if (!supportsNativeQmuxHelper() || !existsSync(LEGACY_NOTIFIER_BASE_DIR)) {
     return;
   }
 
@@ -310,8 +310,8 @@ function runBuildTool(executable: string, args: string[]): { ok: boolean; output
 }
 
 async function buildHelperBundleIcon(iconSourcePath: string, iconIcnsPath: string): Promise<void> {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dmux-helper-icon-'));
-  const iconsetDir = path.join(tempDir, 'dmux-helper.iconset');
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'qmux-helper-icon-'));
+  const iconsetDir = path.join(tempDir, 'qmux-helper.iconset');
 
   try {
     await fs.mkdir(iconsetDir, { recursive: true });
@@ -452,13 +452,13 @@ async function ensureHelperBundle(
   await fs.mkdir(helperBaseDir, { recursive: true });
 
   const tempRoot = await fs.mkdtemp(path.join(helperBaseDir, 'build-'));
-  const tempAppPath = path.join(tempRoot, 'dmux-helper.app');
+  const tempAppPath = path.join(tempRoot, 'qmux-helper.app');
   const tempContentsPath = path.join(tempAppPath, 'Contents');
   const tempResourcesPath = path.join(tempContentsPath, 'Resources');
-  const tempExecutablePath = path.join(tempContentsPath, 'MacOS', 'dmux-helper');
+  const tempExecutablePath = path.join(tempContentsPath, 'MacOS', 'qmux-helper');
   const tempInfoPlistPath = path.join(tempContentsPath, 'Info.plist');
-  const tempBundleIconPngPath = path.join(tempResourcesPath, 'dmux-helper.png');
-  const tempBundleIconIcnsPath = path.join(tempResourcesPath, 'dmux-helper.icns');
+  const tempBundleIconPngPath = path.join(tempResourcesPath, 'qmux-helper.png');
+  const tempBundleIconIcnsPath = path.join(tempResourcesPath, 'qmux-helper.icns');
 
   try {
     await fs.mkdir(path.dirname(tempExecutablePath), { recursive: true });
@@ -624,7 +624,7 @@ async function ensureHelperRunning(
   const binaryStatus = await ensureHelperBundle(helperPaths);
 
   if (!binaryStatus.ready) {
-    logger.warn('dmux helper app bundle is unavailable on this system', 'focus-helper');
+    logger.warn('qmux helper app bundle is unavailable on this system', 'focus-helper');
     return null;
   }
 
@@ -636,7 +636,7 @@ async function ensureHelperRunning(
   if (alreadyRunning && binaryStatus.rebuilt) {
     const stopped = await stopRunningHelper(socketPath);
     if (!stopped) {
-      logger.warn('Failed to restart dmux helper after rebuilding it', 'focus-helper');
+      logger.warn('Failed to restart qmux helper after rebuilding it', 'focus-helper');
       return socketPath;
     }
   }
@@ -650,23 +650,23 @@ async function ensureHelperRunning(
 
   const started = await waitForHelperSocket(socketPath, HELPER_SOCKET_WAIT_TIMEOUT_MS);
   if (!started) {
-    logger.warn('Timed out waiting for dmux helper to start', 'focus-helper');
+    logger.warn('Timed out waiting for qmux helper to start', 'focus-helper');
     return null;
   }
 
   return socketPath;
 }
 
-export class DmuxFocusService extends EventEmitter {
+export class QmuxFocusService extends EventEmitter {
   private readonly logger = LogService.getInstance();
   private readonly tmuxService = TmuxService.getInstance();
   private readonly instanceId = randomUUID();
   private readonly token = buildFocusToken(this.instanceId);
-  private readonly terminalProgram = supportsNativeDmuxHelper()
+  private readonly terminalProgram = supportsNativeQmuxHelper()
     ? resolveTerminalProgram()
     : undefined;
   private readonly bundleId = mapTerminalProgramToBundleId(this.terminalProgram);
-  private readonly tmuxSocketPath = supportsNativeDmuxHelper()
+  private readonly tmuxSocketPath = supportsNativeQmuxHelper()
     ? resolveTmuxSocketPath()
     : undefined;
   private readonly terminalTitle: string;
@@ -682,9 +682,9 @@ export class DmuxFocusService extends EventEmitter {
   private fullyFocusedPaneId: string | null = null; // tmux pane id
   private readonly flashingTmuxPaneIds = new Set<string>();
 
-  constructor(private readonly options: DmuxFocusServiceOptions) {
+  constructor(private readonly options: QmuxFocusServiceOptions) {
     super();
-    this.baseTitle = `dmux ${options.projectName}`;
+    this.baseTitle = `qmux ${options.projectName}`;
     this.terminalTitle = buildFocusWindowTitle(options.projectName, this.token);
   }
 
@@ -702,7 +702,7 @@ export class DmuxFocusService extends EventEmitter {
   }
 
   async start(): Promise<void> {
-    if (!supportsNativeDmuxHelper() || !process.env.TMUX || isTestEnvironment()) {
+    if (!supportsNativeQmuxHelper() || !process.env.TMUX || isTestEnvironment()) {
       return;
     }
 
@@ -760,7 +760,7 @@ export class DmuxFocusService extends EventEmitter {
     this.helperSocket = socket;
 
     socket.on('connect', () => {
-      const subscribeMessage: DmuxHelperSubscribeMessage = {
+      const subscribeMessage: QmuxHelperSubscribeMessage = {
         type: 'subscribe',
         instanceId: this.instanceId,
         titleToken: this.token,
@@ -795,7 +795,7 @@ export class DmuxFocusService extends EventEmitter {
 
   private handleHelperMessage(line: string): void {
     try {
-      const message = JSON.parse(line) as DmuxHelperFocusStateMessage;
+      const message = JSON.parse(line) as QmuxHelperFocusStateMessage;
       if (message.type !== 'focus-state' || message.instanceId !== this.instanceId) {
         return;
       }
@@ -836,11 +836,11 @@ export class DmuxFocusService extends EventEmitter {
 
   setPaneAttentionIndicator(tmuxPaneId: string, enabled: boolean): void {
     if (enabled) {
-      this.tmuxService.setPaneOptionSync(tmuxPaneId, '@dmux_attention', '1');
+      this.tmuxService.setPaneOptionSync(tmuxPaneId, '@qmux_attention', '1');
       return;
     }
 
-    this.tmuxService.unsetPaneOptionSync(tmuxPaneId, '@dmux_attention');
+    this.tmuxService.unsetPaneOptionSync(tmuxPaneId, '@qmux_attention');
   }
 
   async getPaneAttentionSurface(tmuxPaneId: string): Promise<PaneAttentionSurface> {
@@ -911,9 +911,9 @@ export class DmuxFocusService extends EventEmitter {
   }
 
   async sendAttentionNotification(
-    request: DmuxAttentionNotificationRequest
+    request: QmuxAttentionNotificationRequest
   ): Promise<boolean> {
-    if (!supportsNativeDmuxHelper() || isTestEnvironment()) {
+    if (!supportsNativeQmuxHelper() || isTestEnvironment()) {
       return false;
     }
 
@@ -926,7 +926,7 @@ export class DmuxFocusService extends EventEmitter {
       return false;
     }
 
-    const payload: DmuxHelperNotifyMessage = {
+    const payload: QmuxHelperNotifyMessage = {
       type: 'notify',
       title: request.title,
       subtitle: request.subtitle,
@@ -1008,7 +1008,7 @@ export class DmuxFocusService extends EventEmitter {
     this.emit('focus-changed', {
       fullyFocusedPaneId: paneId,
       helperFocused: this.helperFocused,
-    } satisfies DmuxFocusChangedEvent);
+    } satisfies QmuxFocusChangedEvent);
   }
 
   private writeTerminalTitle(title: string): void {

@@ -81,10 +81,10 @@ export function buildMissingGitHubCliMessage(
   const installCommand = getGitHubCliInstallCommand(platform, hasCommand);
 
   if (!installCommand) {
-    return 'GitHub CLI (gh) is required to create pull requests from dmux. Install it from https://github.com/cli/cli#installation and then try again.';
+    return 'GitHub CLI (gh) is required to create pull requests from qmux. Install it from https://github.com/cli/cli#installation and then try again.';
   }
 
-  return `GitHub CLI (gh) is required to create pull requests from dmux. Install it first with:\n${installCommand}`;
+  return `GitHub CLI (gh) is required to create pull requests from qmux. Install it first with:\n${installCommand}`;
 }
 
 function runCommandText(

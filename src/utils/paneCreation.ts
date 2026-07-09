@@ -2,7 +2,7 @@ import path from 'path';
 import * as fs from 'fs';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
-import type { DmuxPane, DmuxConfig, MergeTargetReference } from '../types.js';
+import type { QmuxPane, QmuxConfig, MergeTargetReference } from '../types.js';
 import { TmuxService } from '../services/TmuxService.js';
 import {
   ensurePaneBorderStatusForCurrentSession,
@@ -27,7 +27,7 @@ import { resolveProjectColorTheme } from './paneColors.js';
 import type { SidebarProject } from '../types.js';
 import { StateManager } from '../shared/StateManager.js';
 import {
-  DMUX_BOOTSTRAP_PANE_TITLE_PREFIX,
+  QMUX_BOOTSTRAP_PANE_TITLE_PREFIX,
   type PaneBootstrapConfig,
 } from './paneBootstrapConfig.js';
 
@@ -47,15 +47,15 @@ export interface CreatePaneOptions {
   startPointBranch?: string;
   mergeTargetChain?: MergeTargetReference[];
   projectName: string;
-  existingPanes: DmuxPane[];
+  existingPanes: QmuxPane[];
   projectRoot?: string; // Target repository root for the new pane
   skipAgentSelection?: boolean; // Explicitly allow creating pane with no agent
-  sessionConfigPath?: string; // Shared dmux config file for the current session
+  sessionConfigPath?: string; // Shared qmux config file for the current session
   sessionProjectRoot?: string; // Session root that owns sidebar/welcome pane state
 }
 
 export interface CreatePaneResult {
-  pane: DmuxPane;
+  pane: QmuxPane;
   needsAgentChoice: boolean;
 }
 
@@ -82,7 +82,7 @@ function getCurrentWindowPaneIds(tmuxService: TmuxService): string[] {
 }
 
 function getVisibleExistingPaneIds(
-  existingPanes: DmuxPane[],
+  existingPanes: QmuxPane[],
   currentWindowPaneIds: string[]
 ): string[] {
   return existingPanes
@@ -97,7 +97,7 @@ function getVisibleExistingPaneIds(
 }
 
 function getPaneSplitTarget(
-  existingPanes: DmuxPane[],
+  existingPanes: QmuxPane[],
   currentWindowPaneIds: string[],
   controlPaneId: string | undefined
 ): string | undefined {
@@ -124,7 +124,7 @@ function writePaneBootstrapConfig(
   slug: string,
   config: PaneBootstrapConfig
 ): string {
-  const bootstrapDir = path.join(projectRoot, '.dmux', 'bootstrap');
+  const bootstrapDir = path.join(projectRoot, '.qmux', 'bootstrap');
   fs.mkdirSync(bootstrapDir, { recursive: true });
   const configPath = path.join(
     bootstrapDir,
@@ -139,7 +139,7 @@ function buildPaneBootstrapCommand(
   configPath: string,
   worktreePath: string
 ): string {
-  const statusVar = '__dmux_bootstrap_status';
+  const statusVar = '__qmux_bootstrap_status';
   return [
     `${shellQuote(process.execPath)} ${shellQuote(runnerPath)} ${shellQuote(configPath)}`,
     `${statusVar}=$?`,
@@ -242,8 +242,8 @@ export async function createPane(
 
   // Trigger before_pane_create hook
   await triggerHook('before_pane_create', projectRoot, undefined, {
-    DMUX_PROMPT: prompt,
-    DMUX_AGENT: agent || 'unknown',
+    QMUX_PROMPT: prompt,
+    QMUX_AGENT: agent || 'unknown',
   });
 
   // Validate branchPrefix before use
@@ -277,12 +277,12 @@ export async function createPane(
   });
   const slug = existingWorktree ? existingWorktree.slug : naming.slug;
   const branchName = existingWorktree ? existingWorktree.branchName : naming.branchName;
-  const noWorktree = !process.env.DMUX_USE_WORKTREE;
+  const noWorktree = !process.env.QMUX_USE_WORKTREE;
   const effectiveBaseBranch = naming.baseBranch;
   const tmuxService = TmuxService.getInstance();
 
   const worktreePath = existingWorktree?.worktreePath
-    || (noWorktree ? projectRoot : path.join(projectRoot, '.dmux', 'worktrees', slug));
+    || (noWorktree ? projectRoot : path.join(projectRoot, '.qmux', 'worktrees', slug));
   if (!existingWorktree && !noWorktree && fs.existsSync(worktreePath)) {
     throw new Error(
       `Worktree path already exists: ${worktreePath}. Choose a different branch/worktree name.`
@@ -293,13 +293,13 @@ export async function createPane(
 
   // Load config to get control pane info
   const configPath = optionsSessionConfigPath
-    || path.join(sessionProjectRoot, '.dmux', 'dmux.config.json');
+    || path.join(sessionProjectRoot, '.qmux', 'qmux.config.json');
   let controlPaneId: string | undefined;
   let configSidebarProjects: SidebarProject[] = [];
 
   try {
     const configContent = fs.readFileSync(configPath, 'utf-8');
-    const config: DmuxConfig = JSON.parse(configContent);
+    const config: QmuxConfig = JSON.parse(configContent);
     controlPaneId = config.controlPaneId;
     configSidebarProjects = Array.isArray(config.sidebarProjects) ? config.sidebarProjects : [];
 
@@ -355,7 +355,7 @@ export async function createPane(
       // This way we can save the pane to config first, THEN destroy welcome pane
       paneInfo = setupSidebarLayout(controlPaneId, projectRoot);
     } else {
-      // Split from a pane in the active dmux window. Hidden panes live in
+      // Split from a pane in the active qmux window. Hidden panes live in
       // detached tmux windows, so targeting them would create a hidden pane.
       const targetPane = getPaneSplitTarget(
         existingPanes,
@@ -379,7 +379,7 @@ export async function createPane(
 
       try {
         const configContent = fs.readFileSync(configPath, 'utf-8');
-        const config: DmuxConfig = JSON.parse(configContent);
+        const config: QmuxConfig = JSON.parse(configContent);
         config.controlPaneId = currentPaneId;
         config.lastUpdated = new Date().toISOString();
         atomicWriteJsonSync(configPath, config);
@@ -412,13 +412,13 @@ export async function createPane(
 
   await waitForPaneReady(tmuxService, paneInfo);
 
-  // Mark the pane as dmux-owned immediately. Without this, the shell-pane
+  // Mark the pane as qmux-owned immediately. Without this, the shell-pane
   // detector can race the config save and classify a still-bootstrapping
   // worktree pane as a user-created shell pane.
   try {
     await tmuxService.setPaneTitle(
       paneInfo,
-      `${DMUX_BOOTSTRAP_PANE_TITLE_PREFIX}${slug}`
+      `${QMUX_BOOTSTRAP_PANE_TITLE_PREFIX}${slug}`
     );
   } catch {
     // Ignore if setting title fails
@@ -443,17 +443,17 @@ export async function createPane(
 
   // Trigger pane_created hook (after pane created, before worktree)
   await triggerHook('pane_created', projectRoot, undefined, {
-    DMUX_PANE_ID: `dmux-${Date.now()}`,
-    DMUX_SLUG: slug,
-    DMUX_PROMPT: prompt,
-    DMUX_AGENT: agent || 'unknown',
-    DMUX_TMUX_PANE_ID: paneInfo,
+    QMUX_PANE_ID: `qmux-${Date.now()}`,
+    QMUX_SLUG: slug,
+    QMUX_PROMPT: prompt,
+    QMUX_AGENT: agent || 'unknown',
+    QMUX_TMUX_PANE_ID: paneInfo,
   });
 
   // Check if this is a hooks editing session (before worktree creation)
   const isHooksEditingSession = !!prompt && (
-    /(create|edit|modify).*(dmux|\.)?.*hooks/i.test(prompt)
-    || /\.dmux-hooks/i.test(prompt)
+    /(create|edit|modify).*(qmux|\.)?.*hooks/i.test(prompt)
+    || /\.qmux-hooks/i.test(prompt)
   );
 
   // Validate branch settings before handing the slow setup work to the pane.
@@ -462,8 +462,8 @@ export async function createPane(
     throw new Error(`Invalid worktree start-point branch name: ${resolvedStartPoint}`);
   }
 
-  const newPane: DmuxPane = {
-    id: `dmux-${Date.now()}`,
+  const newPane: QmuxPane = {
+    id: `qmux-${Date.now()}`,
     slug,
     displayName: existingWorktreeMetadata?.displayName,
     branchName: noWorktree ? undefined : (branchName !== slug ? branchName : undefined),
@@ -484,7 +484,7 @@ export async function createPane(
   const state = StateManager.getInstance().getState();
   const tmuxTitle = getPaneTmuxTitle(newPane, sessionProjectRoot);
   const hookExtraEnv = state.serverPort
-    ? { DMUX_SERVER_PORT: String(state.serverPort) }
+    ? { QMUX_SERVER_PORT: String(state.serverPort) }
     : undefined;
   const bootstrapConfig: PaneBootstrapConfig = {
     version: 1,
@@ -546,7 +546,7 @@ export async function createPane(
   if (isFirstContentPane) {
     try {
       const configContent = fs.readFileSync(configPath, 'utf-8');
-      const config: DmuxConfig = JSON.parse(configContent);
+      const config: QmuxConfig = JSON.parse(configContent);
 
       // Add the new pane to the config (panesCount becomes 1)
       config.panes = [...existingPanes, newPane];
@@ -571,9 +571,9 @@ export async function createPane(
   // Switch back to the original pane
   await tmuxService.selectPane(originalPaneId);
 
-  // Re-set the title for the dmux pane
+  // Re-set the title for the qmux pane
   try {
-    await tmuxService.setPaneTitle(originalPaneId, "dmux");
+    await tmuxService.setPaneTitle(originalPaneId, "qmux");
   } catch {
     // Ignore if setting title fails
   }

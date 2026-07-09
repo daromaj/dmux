@@ -115,7 +115,7 @@ describe('runControlBlock', () => {
 
   it('unknown verb produces an error note without throwing', async () => {
     const result = await runControlBlock('teleport mars', handlers);
-    expect(result).toBe('Unknown dmux verb: teleport mars');
+    expect(result).toBe('Unknown qmux verb: teleport mars');
   });
 
   it('runs a multi-line block in order and joins notes with newlines', async () => {

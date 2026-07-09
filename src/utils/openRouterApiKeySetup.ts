@@ -16,9 +16,9 @@ interface OnboardingState {
   [key: string]: unknown;
 }
 
-const ONBOARDING_STATE_RELATIVE_PATH = path.join('.dmux', 'onboarding.json');
-const OPENROUTER_BLOCK_START = '# >>> dmux openrouter >>>';
-const OPENROUTER_BLOCK_END = '# <<< dmux openrouter <<<';
+const ONBOARDING_STATE_RELATIVE_PATH = path.join('.qmux', 'onboarding.json');
+const OPENROUTER_BLOCK_START = '# >>> qmux openrouter >>>';
+const OPENROUTER_BLOCK_END = '# <<< qmux openrouter <<<';
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

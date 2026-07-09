@@ -1,15 +1,15 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import type { SettingDefinition, DmuxSettings, SettingsScope } from '../../types.js';
+import type { SettingDefinition, QmuxSettings, SettingsScope } from '../../types.js';
 
 interface SettingsDialogProps {
-  settings: DmuxSettings;
-  globalSettings: DmuxSettings;
-  projectSettings: DmuxSettings;
+  settings: QmuxSettings;
+  globalSettings: QmuxSettings;
+  projectSettings: QmuxSettings;
   settingDefinitions: SettingDefinition[];
   selectedIndex: number;
   mode: 'list' | 'edit' | 'scope';
-  editingKey?: keyof DmuxSettings;
+  editingKey?: keyof QmuxSettings;
   editingValueIndex?: number;
   scopeIndex?: number;
 }
@@ -54,7 +54,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({
               );
             }
 
-            const currentValue = settings[def.key as keyof DmuxSettings];
+            const currentValue = settings[def.key as keyof QmuxSettings];
             const isProjectOverride = def.key in projectSettings;
             const isGlobalSetting = def.key in globalSettings;
 

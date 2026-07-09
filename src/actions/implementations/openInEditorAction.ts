@@ -3,14 +3,14 @@
  */
 
 import { execSync } from 'child_process';
-import type { DmuxPane } from '../../types.js';
+import type { QmuxPane } from '../../types.js';
 import type { ActionResult, ActionContext } from '../types.js';
 
 /**
  * Open worktree in external editor
  */
 export async function openInEditor(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   params?: { editor?: string }
 ): Promise<ActionResult> {

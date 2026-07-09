@@ -27,8 +27,8 @@ function buildHeaders(apiKey: string): Record<string, string> {
   return {
     'Authorization': `Bearer ${apiKey}`,
     'Content-Type': 'application/json',
-    'HTTP-Referer': 'https://github.com/dmux/dmux',
-    'X-Title': 'dmux',
+    'HTTP-Referer': 'https://github.com/qmux/qmux',
+    'X-Title': 'qmux',
   };
 }
 
@@ -177,7 +177,7 @@ export async function callChatCompletion(
 ): Promise<string> {
   const config = getAiConfig(configInput ?? {});
   if (!config.apiKey) {
-    throw new Error('No AI API key configured. Set DMUX_AI_API_KEY or OPENROUTER_API_KEY.');
+    throw new Error('No AI API key configured. Set QMUX_AI_API_KEY or OPENROUTER_API_KEY.');
   }
 
   const temperature = opts.temperature ?? DEFAULT_TEMPERATURE;

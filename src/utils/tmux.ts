@@ -95,7 +95,7 @@ export const getContentPaneIds = (controlPaneId: string): string[] => {
     // Filter out spacer pane
     try {
       const title = tmuxService.getPaneTitleSync(id);
-      return title !== 'dmux-spacer';
+      return title !== 'qmux-spacer';
     } catch {
       return true; // Include pane if we can't get title
     }
@@ -113,7 +113,7 @@ export const ensurePaneBorderStatusForCurrentSession = (): void => {
 
 /**
  * Creates initial sidebar layout by splitting from control pane
- * @param controlPaneId The pane ID running dmux TUI (left sidebar)
+ * @param controlPaneId The pane ID running qmux TUI (left sidebar)
  * @param cwd Optional working directory for the new content pane
  * @returns The newly created content area pane ID
  */
@@ -193,7 +193,7 @@ export const generateSidebarGridLayout = (
     try {
       const lastPaneId = contentPanes[contentPanes.length - 1];
       const title = tmuxService.getPaneTitleSync(lastPaneId);
-      return title === 'dmux-spacer';
+      return title === 'qmux-spacer';
     } catch {
       return false;
     }
@@ -445,7 +445,7 @@ export const enforceControlPaneSize = async (
 
   try {
     // Respect sidebar collapse — don't fight the user
-    const collapsed = tmuxService.getPaneOptionSync(controlPaneId, '@dmux_sidebar_collapsed');
+    const collapsed = tmuxService.getPaneOptionSync(controlPaneId, '@qmux_sidebar_collapsed');
     if (collapsed === '1' && !options?.forceLayout) {
       return;
     }

@@ -282,15 +282,15 @@ class PaneWorker {
     }
 
     if (this.agent === 'codex') {
-      return path.join(this.worktreePath, '.codex', 'dmux', `${this.paneId}.json`);
+      return path.join(this.worktreePath, '.codex', 'qmux', `${this.paneId}.json`);
     }
 
     if (this.agent === 'claude') {
-      return path.join(this.worktreePath, '.claude', 'dmux', `${this.paneId}.json`);
+      return path.join(this.worktreePath, '.claude', 'qmux', `${this.paneId}.json`);
     }
 
     if (this.agent === 'grok') {
-      return path.join(this.worktreePath, '.grok', 'dmux', `${this.paneId}.json`);
+      return path.join(this.worktreePath, '.grok', 'qmux', `${this.paneId}.json`);
     }
 
     return undefined;
@@ -327,7 +327,7 @@ class PaneWorker {
       return false;
     }
 
-    if (event.dmuxPaneId !== this.paneId) {
+    if (event.qmuxPaneId !== this.paneId) {
       return false;
     }
 

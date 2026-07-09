@@ -28,14 +28,14 @@ export interface GitStatus {
   summary: string;
 }
 
-const DMUX_HOOK_SCAFFOLD_PATHS = new Set([
-  '.dmux-hooks',
-  '.dmux-hooks/',
-  '.dmux-hooks/AGENTS.md',
-  '.dmux-hooks/CLAUDE.md',
-  '.dmux-hooks/README.md',
-  '.dmux-hooks/examples',
-  '.dmux-hooks/examples/',
+const QMUX_HOOK_SCAFFOLD_PATHS = new Set([
+  '.qmux-hooks',
+  '.qmux-hooks/',
+  '.qmux-hooks/AGENTS.md',
+  '.qmux-hooks/CLAUDE.md',
+  '.qmux-hooks/README.md',
+  '.qmux-hooks/examples',
+  '.qmux-hooks/examples/',
 ]);
 
 function parseGitStatusLine(line: string): { statusCode: string; filename: string } {
@@ -51,9 +51,9 @@ function parseGitStatusLine(line: string): { statusCode: string; filename: strin
 
 function shouldIgnoreGitStatusEntry(statusCode: string, filename: string): boolean {
   if (
-    filename === '.dmux'
-    || filename === '.dmux/'
-    || filename.startsWith('.dmux/')
+    filename === '.qmux'
+    || filename === '.qmux/'
+    || filename.startsWith('.qmux/')
   ) {
     return true;
   }
@@ -63,8 +63,8 @@ function shouldIgnoreGitStatusEntry(statusCode: string, filename: string): boole
   }
 
   return (
-    DMUX_HOOK_SCAFFOLD_PATHS.has(filename)
-    || filename.startsWith('.dmux-hooks/examples/')
+    QMUX_HOOK_SCAFFOLD_PATHS.has(filename)
+    || filename.startsWith('.qmux-hooks/examples/')
   );
 }
 
@@ -417,7 +417,7 @@ export function commitChanges(
  */
 export function stashChanges(repoPath: string): { success: boolean; error?: string } {
   try {
-    execSync('git stash push -u -m "dmux: auto-stash before merge"', {
+    execSync('git stash push -u -m "qmux: auto-stash before merge"', {
       cwd: repoPath,
       stdio: 'pipe',
     });

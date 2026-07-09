@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import type { DmuxPane, AgentStatus, OptionChoice, PotentialHarm } from '../types.js';
+import type { QmuxPane, AgentStatus, OptionChoice, PotentialHarm } from '../types.js';
 import { WorkerMessageBus } from './WorkerMessageBus.js';
 import { PaneWorkerManager } from './PaneWorkerManager.js';
 import { PaneAnalyzer } from './PaneAnalyzer.js';
@@ -47,7 +47,7 @@ export class StatusDetector extends EventEmitter {
   private paneAnalyzer: PaneAnalyzer;
   private paneStatuses = new Map<string, AgentStatus>();
   private llmRequests = new Map<string, AbortController>();
-  private paneIdMap = new Map<string, string>(); // dmux pane ID -> tmux pane ID
+  private paneIdMap = new Map<string, string>(); // qmux pane ID -> tmux pane ID
   private isShuttingDown = false;
 
   constructor() {
@@ -105,7 +105,7 @@ export class StatusDetector extends EventEmitter {
   /**
    * Start monitoring a set of panes
    */
-  async monitorPanes(panes: DmuxPane[]): Promise<void> {
+  async monitorPanes(panes: QmuxPane[]): Promise<void> {
     if (this.isShuttingDown) return;
 
     // Update pane ID mappings
@@ -251,7 +251,7 @@ export class StatusDetector extends EventEmitter {
           throw new Error(`No tmux pane ID found for ${paneId}`);
         }
 
-        // Run LLM analysis with abort signal (pass dmux pane ID for friendly logging)
+        // Run LLM analysis with abort signal (pass qmux pane ID for friendly logging)
         const analysis = await this.paneAnalyzer.analyzePane(
           tmuxPaneId,
           controller.signal,
@@ -375,7 +375,7 @@ export class StatusDetector extends EventEmitter {
             errorMessage = error.message;
           }
         } else if (error.message.includes('API key')) {
-          errorMessage = 'Set your AI API key env var (OPENROUTER_API_KEY or DMUX_AI_API_KEY)';
+          errorMessage = 'Set your AI API key env var (OPENROUTER_API_KEY or QMUX_AI_API_KEY)';
         } else if (error.message.includes('All models')) {
           errorMessage = 'All models failed - check API key & credits';
         } else if (error.message.includes('fetch')) {
@@ -545,7 +545,7 @@ export class StatusDetector extends EventEmitter {
   }
 
   /**
-   * Get tmux pane ID for a dmux pane
+   * Get tmux pane ID for a qmux pane
    */
   private async getTmuxPaneId(paneId: string): Promise<string | null> {
     return this.paneIdMap.get(paneId) || null;

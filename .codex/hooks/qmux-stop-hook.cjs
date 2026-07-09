@@ -20,8 +20,8 @@ process.stdin.on('end', () => {
 
   const event = {
     source: 'codex-stop-hook',
-    dmuxPaneId: process.env.DMUX_PANE_ID || '',
-    tmuxPaneId: process.env.DMUX_TMUX_PANE_ID || '',
+    qmuxPaneId: process.env.QMUX_PANE_ID || '',
+    tmuxPaneId: process.env.QMUX_TMUX_PANE_ID || '',
     hookEventName: payload.hook_event_name || payload.hookEventName || '',
     turnId: payload.turn_id || payload.turnId || '',
     stopHookActive: payload.stop_hook_active === true || payload.stopHookActive === true,
@@ -36,8 +36,8 @@ process.stdin.on('end', () => {
     return;
   }
 
-  const eventFile = process.env.DMUX_CODEX_HOOK_EVENT_FILE || '';
-  if (!event.dmuxPaneId || !eventFile) {
+  const eventFile = process.env.QMUX_CODEX_HOOK_EVENT_FILE || '';
+  if (!event.qmuxPaneId || !eventFile) {
     finish();
     return;
   }

@@ -27,16 +27,16 @@ describe('openRouterApiKeySetup', () => {
     const exportLine = buildOpenRouterExportLine('sk-test-123', '/bin/zsh');
     const updated = upsertOpenRouterKeyBlock('', exportLine);
 
-    expect(updated).toContain('# >>> dmux openrouter >>>');
+    expect(updated).toContain('# >>> qmux openrouter >>>');
     expect(updated).toContain("export OPENROUTER_API_KEY='sk-test-123'");
-    expect(updated).toContain('# <<< dmux openrouter <<<');
+    expect(updated).toContain('# <<< qmux openrouter <<<');
   });
 
   it('replaces existing managed block', () => {
     const initial = [
-      '# >>> dmux openrouter >>>',
+      '# >>> qmux openrouter >>>',
       "export OPENROUTER_API_KEY='old-key'",
-      '# <<< dmux openrouter <<<',
+      '# <<< qmux openrouter <<<',
       '',
     ].join('\n');
 
@@ -48,7 +48,7 @@ describe('openRouterApiKeySetup', () => {
   });
 
   it('persists key to shell config file', async () => {
-    const homeDir = mkdtempSync(join(tmpdir(), 'dmux-openrouter-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'qmux-openrouter-'));
 
     try {
       const zshrcPath = join(homeDir, '.zshrc');
@@ -68,10 +68,10 @@ describe('openRouterApiKeySetup', () => {
   });
 
   it('writes openrouter onboarding state without clobbering existing keys', async () => {
-    const homeDir = mkdtempSync(join(tmpdir(), 'dmux-openrouter-state-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'qmux-openrouter-state-'));
 
     try {
-      const onboardingDir = join(homeDir, '.dmux');
+      const onboardingDir = join(homeDir, '.qmux');
       mkdirSync(onboardingDir, { recursive: true });
       writeFileSync(
         join(onboardingDir, 'onboarding.json'),

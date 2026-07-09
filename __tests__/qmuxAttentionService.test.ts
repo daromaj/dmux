@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DmuxAttentionService } from '../src/services/DmuxAttentionService.js';
+import { QmuxAttentionService } from '../src/services/QmuxAttentionService.js';
 import { getStatusDetector, resetStatusDetector } from '../src/services/StatusDetector.js';
 
 const originalPlatform = process.platform;
@@ -49,7 +49,7 @@ async function flushAsyncWork(): Promise<void> {
   await new Promise((resolve) => setImmediate(resolve));
 }
 
-describe('DmuxAttentionService', () => {
+describe('QmuxAttentionService', () => {
   beforeEach(() => {
     setPlatform('darwin');
   });
@@ -62,7 +62,7 @@ describe('DmuxAttentionService', () => {
 
   it('suppresses startup attention notifications until pane activity is observed', async () => {
     const focusService = new MockFocusService();
-    const service = new DmuxAttentionService({ focusService: focusService as any });
+    const service = new QmuxAttentionService({ focusService: focusService as any });
 
     service.start();
 
@@ -91,7 +91,7 @@ describe('DmuxAttentionService', () => {
 
   it('notifies once a pane returns to attention after working', async () => {
     const focusService = new MockFocusService();
-    const service = new DmuxAttentionService({ focusService: focusService as any });
+    const service = new QmuxAttentionService({ focusService: focusService as any });
 
     service.start();
 
@@ -134,7 +134,7 @@ describe('DmuxAttentionService', () => {
   it('flashes the pane instead of sending a native notification when the terminal window is focused', async () => {
     const focusService = new MockFocusService();
     focusService.getPaneAttentionSurface.mockResolvedValue('same-window');
-    const service = new DmuxAttentionService({ focusService: focusService as any });
+    const service = new QmuxAttentionService({ focusService: focusService as any });
 
     service.start();
 
@@ -164,17 +164,17 @@ describe('DmuxAttentionService', () => {
   it('does not send a native notification when the tmux pane is already fully focused', async () => {
     const focusService = new MockFocusService();
     focusService.getPaneAttentionSurface.mockResolvedValue('fully-focused');
-    const service = new DmuxAttentionService({ focusService: focusService as any });
+    const service = new QmuxAttentionService({ focusService: focusService as any });
 
     service.start();
 
     emitStatusUpdated({
-      paneId: 'dmux-pane-7',
+      paneId: 'qmux-pane-7',
       status: 'working',
     });
 
     emitAttentionNeeded({
-      paneId: 'dmux-pane-7',
+      paneId: 'qmux-pane-7',
       tmuxPaneId: '%12',
       status: 'idle',
       title: 'Stay here',
@@ -193,7 +193,7 @@ describe('DmuxAttentionService', () => {
   it('still sends a native notification when the pane is selected but the terminal window is in the background', async () => {
     const focusService = new MockFocusService();
     focusService.getPaneAttentionSurface.mockResolvedValue('background');
-    const service = new DmuxAttentionService({ focusService: focusService as any });
+    const service = new QmuxAttentionService({ focusService: focusService as any });
 
     service.start();
 
@@ -228,7 +228,7 @@ describe('DmuxAttentionService', () => {
   it('suppresses all attention surfaces when notifications are disabled', async () => {
     const focusService = new MockFocusService();
     focusService.getPaneAttentionSurface.mockResolvedValue('same-window');
-    const service = new DmuxAttentionService({
+    const service = new QmuxAttentionService({
       focusService: focusService as any,
       notificationsEnabled: () => false,
     });
@@ -260,7 +260,7 @@ describe('DmuxAttentionService', () => {
 
   it('clears pending attention when the user interacts with the pane', async () => {
     const focusService = new MockFocusService();
-    const service = new DmuxAttentionService({ focusService: focusService as any });
+    const service = new QmuxAttentionService({ focusService: focusService as any });
 
     service.start();
 
@@ -299,7 +299,7 @@ describe('DmuxAttentionService', () => {
 
   it('does not notify again while an existing attention alert is still active', async () => {
     const focusService = new MockFocusService();
-    const service = new DmuxAttentionService({ focusService: focusService as any });
+    const service = new QmuxAttentionService({ focusService: focusService as any });
 
     service.start();
 
@@ -338,7 +338,7 @@ describe('DmuxAttentionService', () => {
     let now = 100000;
     vi.spyOn(Date, 'now').mockImplementation(() => now);
     const focusService = new MockFocusService();
-    const service = new DmuxAttentionService({
+    const service = new QmuxAttentionService({
       focusService: focusService as any,
       idleNotificationCooldownMs: 60000,
     });

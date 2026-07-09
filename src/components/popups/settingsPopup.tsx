@@ -9,7 +9,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { render, Box, Text, useInput, useApp } from 'ink';
 import TextInput from 'ink-text-input';
 import { readFileSync } from 'fs';
-import type { SettingDefinition, DmuxSettings } from '../../types.js';
+import type { SettingDefinition, QmuxSettings } from '../../types.js';
 import {
   DEFAULT_COLOR_THEME_SETTING_KEY,
   SettingsManager,
@@ -30,8 +30,8 @@ interface SettingsPopupProps {
   resultFile: string;
   settingDefinitions: SettingDefinition[];
   settings: SettingsPopupValues;
-  globalSettings: DmuxSettings;
-  projectSettings: DmuxSettings;
+  globalSettings: QmuxSettings;
+  projectSettings: QmuxSettings;
   projectRoot: string;
   controlPaneId?: string;
   selectedIndex?: number;
@@ -43,7 +43,7 @@ interface PendingSettingUpdate {
   scope: 'global' | 'project' | 'session';
 }
 
-type SettingsPopupValues = DmuxSettings & Record<string, unknown>;
+type SettingsPopupValues = QmuxSettings & Record<string, unknown>;
 
 const THEME_PREVIEW_COLORS: Record<string, string> = {
   red: '#ff5f5f',
@@ -69,8 +69,8 @@ const SettingsPopupApp: React.FC<SettingsPopupProps> = ({
   const [mode, setMode] = useState<'list' | 'edit' | 'scope'>('list');
   const [selectedIndex, setSelectedIndex] = useState(initialSelectedIndex);
   const [currentSettings, setCurrentSettings] = useState<SettingsPopupValues>({ ...settings });
-  const [currentGlobalSettings, setCurrentGlobalSettings] = useState<DmuxSettings>({ ...globalSettings });
-  const [currentProjectSettings, setCurrentProjectSettings] = useState<DmuxSettings>({ ...projectSettings });
+  const [currentGlobalSettings, setCurrentGlobalSettings] = useState<QmuxSettings>({ ...globalSettings });
+  const [currentProjectSettings, setCurrentProjectSettings] = useState<QmuxSettings>({ ...projectSettings });
   const pendingUpdatesRef = useRef<PendingSettingUpdate[]>([]);
   const previewTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingPreviewUpdateRef = useRef<PendingSettingUpdate | null>(null);
@@ -163,8 +163,8 @@ const SettingsPopupApp: React.FC<SettingsPopupProps> = ({
 
   const applyLocalUpdate = (update: PendingSettingUpdate) => {
     const nextSettings: SettingsPopupValues = { ...currentSettings };
-    const nextGlobalSettings: DmuxSettings = { ...currentGlobalSettings };
-    const nextProjectSettings: DmuxSettings = { ...currentProjectSettings };
+    const nextGlobalSettings: QmuxSettings = { ...currentGlobalSettings };
+    const nextProjectSettings: QmuxSettings = { ...currentProjectSettings };
 
     if (update.key === 'minPaneWidth' || update.key === 'maxPaneWidth') {
       let minPaneWidth = typeof nextSettings.minPaneWidth === 'number' ? nextSettings.minPaneWidth : 50;
@@ -223,13 +223,13 @@ const SettingsPopupApp: React.FC<SettingsPopupProps> = ({
   const persistWidthUpdate = async (update: PendingSettingUpdate): Promise<PendingSettingUpdate> => {
     try {
       const manager = new SettingsManager(projectRoot || process.cwd());
-      manager.updateSetting(update.key as keyof DmuxSettings, update.value, 'global');
+      manager.updateSetting(update.key as keyof QmuxSettings, update.value, 'global');
       const merged = manager.getSettings() as SettingsPopupValues;
       setCurrentSettings(merged);
       setCurrentGlobalSettings(manager.getGlobalSettings());
       setCurrentProjectSettings(manager.getProjectSettings());
 
-      const resolvedValue = merged[update.key as keyof DmuxSettings];
+      const resolvedValue = merged[update.key as keyof QmuxSettings];
       if (typeof resolvedValue === 'number') {
         const resolvedUpdate = {
           ...update,
@@ -764,8 +764,8 @@ function main() {
   let data: {
     settingDefinitions: SettingDefinition[];
     settings: SettingsPopupValues;
-    globalSettings: DmuxSettings;
-    projectSettings: DmuxSettings;
+    globalSettings: QmuxSettings;
+    projectSettings: QmuxSettings;
     projectRoot: string;
     controlPaneId?: string;
     selectedIndex?: number;

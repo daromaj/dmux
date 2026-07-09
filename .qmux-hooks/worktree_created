@@ -6,11 +6,11 @@
 
 set -e  # Exit on error
 
-echo "[Hook] Setting up worktree: $DMUX_SLUG"
+echo "[Hook] Setting up worktree: $QMUX_SLUG"
 
-cd "$DMUX_WORKTREE_PATH"
+cd "$QMUX_WORKTREE_PATH"
 
-# Install dependencies in background (don't block dmux)
+# Install dependencies in background (don't block qmux)
 if [ -f "pnpm-lock.yaml" ]; then
   echo "[Hook] Installing dependencies with pnpm..."
   pnpm install --prefer-offline &
@@ -23,16 +23,16 @@ elif [ -f "yarn.lock" ]; then
 fi
 
 # Copy environment file if it exists
-if [ -f "$DMUX_ROOT/.env.local" ]; then
+if [ -f "$QMUX_ROOT/.env.local" ]; then
   echo "[Hook] Copying .env.local"
-  cp "$DMUX_ROOT/.env.local" "$DMUX_WORKTREE_PATH/.env.local"
+  cp "$QMUX_ROOT/.env.local" "$QMUX_WORKTREE_PATH/.env.local"
 fi
 
 # Keep existing git author identity.
 # Do not set git user.name/user.email in this hook.
 
 # Create a log entry
-echo "[$(date)] Created worktree: $DMUX_SLUG | Agent: $DMUX_AGENT | Prompt: $DMUX_PROMPT" \
-  >> "$DMUX_ROOT/.dmux/worktree_history.log"
+echo "[$(date)] Created worktree: $QMUX_SLUG | Agent: $QMUX_AGENT | Prompt: $QMUX_PROMPT" \
+  >> "$QMUX_ROOT/.qmux/worktree_history.log"
 
 echo "[Hook] Worktree setup complete!"

@@ -8,7 +8,7 @@ import {
   splitPane,
 } from './tmux.js';
 import { SIDEBAR_WIDTH, recalculateAndApplyLayout } from './layoutManager.js';
-import type { DmuxPane, DmuxConfig } from '../types.js';
+import type { QmuxPane, QmuxConfig } from '../types.js';
 import { atomicWriteJsonSync } from './atomicWrite.js';
 import { buildWorktreePaneTitle } from './paneTitle.js';
 import {
@@ -36,13 +36,13 @@ export interface ReopenWorktreeOptions {
   slug: string;
   worktreePath: string;
   projectRoot: string; // Target repo root for the reopened pane
-  sessionConfigPath?: string; // Shared dmux config path for this session
+  sessionConfigPath?: string; // Shared qmux config path for this session
   sessionProjectRoot?: string; // Session root for welcome pane/layout state
-  existingPanes: DmuxPane[];
+  existingPanes: QmuxPane[];
 }
 
 export interface ReopenWorktreeResult {
-  pane: DmuxPane;
+  pane: QmuxPane;
 }
 
 /**
@@ -72,13 +72,13 @@ export async function reopenWorktree(
 
   // Load config to get control pane info
   const configPath = optionsSessionConfigPath
-    || path.join(sessionProjectRoot, '.dmux', 'dmux.config.json');
+    || path.join(sessionProjectRoot, '.qmux', 'qmux.config.json');
   let controlPaneId: string | undefined;
   let configSidebarProjects: SidebarProject[] = [];
 
   try {
     const configContent = fs.readFileSync(configPath, 'utf-8');
-    const config: DmuxConfig = JSON.parse(configContent);
+    const config: QmuxConfig = JSON.parse(configContent);
     controlPaneId = config.controlPaneId;
     configSidebarProjects = Array.isArray(config.sidebarProjects) ? config.sidebarProjects : [];
 
@@ -122,8 +122,8 @@ export async function reopenWorktree(
     await new Promise((resolve) => setTimeout(resolve, 300));
   } else {
     // Subsequent panes - always split horizontally
-    const dmuxPaneIds = existingPanes.map(p => p.paneId);
-    const targetPane = dmuxPaneIds[dmuxPaneIds.length - 1];
+    const qmuxPaneIds = existingPanes.map(p => p.paneId);
+    const targetPane = qmuxPaneIds[qmuxPaneIds.length - 1];
     paneInfo = splitPane({ targetPane });
   }
 
@@ -180,7 +180,7 @@ export async function reopenWorktree(
       : preferredOrder.find((candidate) => candidateAgents.includes(candidate)));
   const permissionMode = metadata?.permissionMode ?? settings.permissionMode;
   const goalMode = metadata?.goalMode ?? settings.enableGoalModeByDefault ?? false;
-  const dmuxPaneId = `dmux-${Date.now()}`;
+  const qmuxPaneId = `qmux-${Date.now()}`;
 
   // Resume the agent session (or start interactive mode when no resume command is available).
   if (agent) {
@@ -194,7 +194,7 @@ export async function reopenWorktree(
       try {
         codexHookEventFile = installCodexPaneHooks({
           worktreePath,
-          dmuxPaneId,
+          qmuxPaneId,
           tmuxPaneId: paneInfo,
         }).eventFile;
       } catch {
@@ -202,7 +202,7 @@ export async function reopenWorktree(
       }
 
       resumeCommand = buildCodexHookedCommand(resumeCommand, {
-        dmuxPaneId,
+        qmuxPaneId,
         tmuxPaneId: paneInfo,
         eventFile: codexHookEventFile,
       }, {
@@ -214,7 +214,7 @@ export async function reopenWorktree(
       try {
         installClaudePaneHooks({
           worktreePath,
-          dmuxPaneId,
+          qmuxPaneId,
           tmuxPaneId: paneInfo,
         });
       } catch {
@@ -226,7 +226,7 @@ export async function reopenWorktree(
       try {
         installGrokPaneHooks({
           worktreePath,
-          dmuxPaneId,
+          qmuxPaneId,
           tmuxPaneId: paneInfo,
         });
       } catch {
@@ -244,8 +244,8 @@ export async function reopenWorktree(
   // Create the pane object
   const currentBranch = getCurrentBranch(worktreePath);
 
-  const newPane: DmuxPane = {
-    id: dmuxPaneId,
+  const newPane: QmuxPane = {
+    id: qmuxPaneId,
     slug,
     displayName: metadata?.displayName,
     branchName: (metadata?.branchName || currentBranch) !== slug
@@ -269,7 +269,7 @@ export async function reopenWorktree(
   if (isFirstContentPane) {
     try {
       const configContent = fs.readFileSync(configPath, 'utf-8');
-      const config: DmuxConfig = JSON.parse(configContent);
+      const config: QmuxConfig = JSON.parse(configContent);
 
       config.panes = [...existingPanes, newPane];
       config.lastUpdated = new Date().toISOString();

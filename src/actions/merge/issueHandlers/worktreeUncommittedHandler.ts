@@ -4,7 +4,7 @@
  */
 
 import type { ActionResult, ActionContext } from '../../types.js';
-import type { DmuxPane } from '../../../types.js';
+import type { QmuxPane } from '../../../types.js';
 import { handleCommitWithOptions } from '../commitMessageHandler.js';
 
 export interface WorktreeUncommittedIssue {
@@ -15,7 +15,7 @@ export interface WorktreeUncommittedIssue {
 
 export async function handleWorktreeUncommitted(
   issue: WorktreeUncommittedIssue,
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   mainBranch: string,
   retryMerge: () => Promise<ActionResult>

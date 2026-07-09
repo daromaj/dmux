@@ -6,10 +6,10 @@ import path from 'node:path';
 import chokidar from 'chokidar';
 
 const cwd = process.cwd();
-const entryRelative = process.env.DMUX_DEV_WATCH_ENTRY || path.join('dist', 'index.js');
+const entryRelative = process.env.QMUX_DEV_WATCH_ENTRY || path.join('dist', 'index.js');
 const entryFile = path.resolve(cwd, entryRelative);
-const watchDirectory = process.env.DMUX_DEV_WATCH_DIR
-  ? path.resolve(cwd, process.env.DMUX_DEV_WATCH_DIR)
+const watchDirectory = process.env.QMUX_DEV_WATCH_DIR
+  ? path.resolve(cwd, process.env.QMUX_DEV_WATCH_DIR)
   : path.dirname(entryFile);
 
 const RESTART_DEBOUNCE_MS = 150;
@@ -22,8 +22,8 @@ let restartTimer = null;
 
 const childEnv = {
   ...process.env,
-  DMUX_DEV: 'true',
-  DMUX_DEV_WATCH: 'true',
+  QMUX_DEV: 'true',
+  QMUX_DEV_WATCH: 'true',
 };
 
 const watcher = chokidar.watch(watchDirectory, {
@@ -99,7 +99,7 @@ const startChild = () => {
       return;
     }
 
-    // dmux quit intentionally; stop the watch loop so the pane returns to shell.
+    // qmux quit intentionally; stop the watch loop so the pane returns to shell.
     if (!signal && code === 0) {
       void shutdown(0);
       return;
@@ -107,12 +107,12 @@ const startChild = () => {
 
     const status = signal ? `signal ${signal}` : `code ${code ?? 1}`;
     console.error(
-      `[dmux dev:watch] dmux exited with ${status}; waiting for rebuilt output to restart...`
+      `[qmux dev:watch] qmux exited with ${status}; waiting for rebuilt output to restart...`
     );
   });
 
   child.once('error', (error) => {
-    console.error(`[dmux dev:watch] failed to start dmux runtime: ${error.message}`);
+    console.error(`[qmux dev:watch] failed to start qmux runtime: ${error.message}`);
   });
 };
 
@@ -156,7 +156,7 @@ watcher.on('all', (event, changedPath) => {
   requestRestart();
 });
 watcher.on('error', (error) => {
-  console.error(`[dmux dev:watch] watcher error: ${error.message}`);
+  console.error(`[qmux dev:watch] watcher error: ${error.message}`);
 });
 
 process.on('SIGINT', () => {
@@ -170,5 +170,5 @@ process.on('SIGTERM', () => {
 if (fs.existsSync(entryFile)) {
   startChild();
 } else {
-  console.log(`[dmux dev:watch] waiting for ${entryRelative}...`);
+  console.log(`[qmux dev:watch] waiting for ${entryRelative}...`);
 }

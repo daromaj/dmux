@@ -18,13 +18,13 @@ describe('tmux session startup', () => {
     spawnSyncMock.mockReset();
   });
 
-  it('starts dmux as the pane command instead of sending keys to a shell', () => {
+  it('starts qmux as the pane command instead of sending keys to a shell', () => {
     spawnSyncMock.mockReturnValue({ status: 0, stderr: '' });
 
     startDetachedTmuxSession({
-      sessionName: 'dmux-demo',
+      sessionName: 'qmux-demo',
       startDirectory: '/repo',
-      command: "env PATH='/usr/local/bin' '/usr/local/bin/dmux'",
+      command: "env PATH='/usr/local/bin' '/usr/local/bin/qmux'",
     });
 
     expect(spawnSyncMock).toHaveBeenCalledWith(
@@ -33,10 +33,10 @@ describe('tmux session startup', () => {
         'new-session',
         '-d',
         '-s',
-        'dmux-demo',
+        'qmux-demo',
         '-c',
         '/repo',
-        "env PATH='/usr/local/bin' '/usr/local/bin/dmux'",
+        "env PATH='/usr/local/bin' '/usr/local/bin/qmux'",
       ],
       {
         encoding: 'utf-8',
@@ -48,11 +48,11 @@ describe('tmux session startup', () => {
   it('attaches to the target session through tmux arguments', () => {
     spawnSyncMock.mockReturnValue({ status: 0 });
 
-    attachTmuxSession('dmux-demo');
+    attachTmuxSession('qmux-demo');
 
     expect(spawnSyncMock).toHaveBeenCalledWith(
       'tmux',
-      ['attach-session', '-t', 'dmux-demo'],
+      ['attach-session', '-t', 'qmux-demo'],
       { stdio: 'inherit' }
     );
   });
@@ -61,9 +61,9 @@ describe('tmux session startup', () => {
     spawnSyncMock.mockReturnValue({ status: 1, stderr: 'duplicate session' });
 
     expect(() => startDetachedTmuxSession({
-      sessionName: 'dmux-demo',
+      sessionName: 'qmux-demo',
       startDirectory: '/repo',
-      command: 'dmux',
-    })).toThrow('Failed to start tmux session dmux-demo: duplicate session');
+      command: 'qmux',
+    })).toThrow('Failed to start tmux session qmux-demo: duplicate session');
   });
 });

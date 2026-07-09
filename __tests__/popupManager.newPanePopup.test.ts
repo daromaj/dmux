@@ -94,7 +94,7 @@ describe('PopupManager launchNewPanePopup', () => {
   });
 
   it('refreshes main project settings before setting the goal mode default', async () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dmux-popup-settings-'));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'qmux-popup-settings-'));
     tempDirs.push(tempRoot);
 
     const staleSettingsManager = new SettingsManager(tempRoot);

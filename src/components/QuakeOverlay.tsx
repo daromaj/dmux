@@ -42,7 +42,7 @@ function entriesToLines(entries: QuakeTranscriptEntry[]): RenderLine[] {
           prefix = '';
           break;
         case 'command':
-          prefix = i === 0 ? (entry.lane === 'dmux' ? 'dmux❯ ' : '$ ') : '  ';
+          prefix = i === 0 ? (entry.lane === 'qmux' ? 'qmux❯ ' : '$ ') : '  ';
           color = 'cyan';
           break;
         case 'output':

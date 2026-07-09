@@ -18,7 +18,7 @@ export interface WorktreeMetadata {
   mergeTargetChain?: MergeTargetReference[];
 }
 
-const METADATA_DIR = '.dmux';
+const METADATA_DIR = '.qmux';
 const METADATA_FILE = 'worktree-metadata.json';
 const PERMISSION_MODES: ReadonlySet<PermissionMode> = new Set([
   '',

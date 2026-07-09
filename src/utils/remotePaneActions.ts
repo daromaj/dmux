@@ -2,12 +2,12 @@ import { spawnSync } from 'child_process';
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
-import { buildRemotePaneActionCommand } from './dmuxCommand.js';
+import { buildRemotePaneActionCommand } from './qmuxCommand.js';
 
-export const DMUX_CONTROLLER_PID_OPTION = '@dmux_controller_pid';
-export const DMUX_CONTROL_PANE_OPTION = '@dmux_control_pane';
-export const DMUX_REMOTE_PANE_ACTION_TABLE = 'dmux-pane-action';
-export const DMUX_REMOTE_PANE_MODE_OPTION = '@dmux_remote_pane_mode';
+export const QMUX_CONTROLLER_PID_OPTION = '@qmux_controller_pid';
+export const QMUX_CONTROL_PANE_OPTION = '@qmux_control_pane';
+export const QMUX_REMOTE_PANE_ACTION_TABLE = 'qmux-pane-action';
+export const QMUX_REMOTE_PANE_MODE_OPTION = '@qmux_remote_pane_mode';
 
 export const REMOTE_PANE_ACTION_SHORTCUTS = [
   'j',
@@ -148,7 +148,7 @@ export function getRemotePaneActionQueuePath(
 ): string {
   return path.join(
     homeDir,
-    '.dmux',
+    '.qmux',
     'run',
     `${sanitizeSessionName(sessionName)}.remote-pane-actions.jsonl`
   );
@@ -253,20 +253,20 @@ export function buildRemotePaneActionCleanupCommands(): string[] {
 
   commands.push(
     buildSafeTmuxCommand(
-      `unbind-key -T ${DMUX_REMOTE_PANE_ACTION_TABLE} Escape`
+      `unbind-key -T ${QMUX_REMOTE_PANE_ACTION_TABLE} Escape`
     ),
     buildSafeTmuxCommand(
-      `unbind-key -T ${DMUX_REMOTE_PANE_ACTION_TABLE} C-c`
+      `unbind-key -T ${QMUX_REMOTE_PANE_ACTION_TABLE} C-c`
     ),
     buildSafeTmuxCommand(
-      `unbind-key -T ${DMUX_REMOTE_PANE_ACTION_TABLE} Any`
+      `unbind-key -T ${QMUX_REMOTE_PANE_ACTION_TABLE} Any`
     )
   );
 
   for (const shortcut of REMOTE_PANE_ACTION_SHORTCUTS) {
     commands.push(
       buildSafeTmuxCommand(
-        `unbind-key -T ${DMUX_REMOTE_PANE_ACTION_TABLE} ${shortcut}`
+        `unbind-key -T ${QMUX_REMOTE_PANE_ACTION_TABLE} ${shortcut}`
       )
     );
   }

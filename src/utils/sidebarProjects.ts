@@ -1,30 +1,30 @@
 import path from 'path';
 import type {
-  DmuxPane,
-  DmuxThemeName,
+  QmuxPane,
+  QmuxThemeName,
   SidebarProject,
 } from '../types.js';
 import {
-  DEFAULT_DMUX_THEME,
-  DMUX_THEME_NAMES,
-  isDmuxThemeName,
+  DEFAULT_QMUX_THEME,
+  QMUX_THEME_NAMES,
+  isQmuxThemeName,
 } from '../theme/themePalette.js';
 import { getPaneProjectName, getPaneProjectRoot } from './paneProject.js';
 
 export const SIDEBAR_PROJECT_COLOR_THEME_SETTING_KEY = 'projectColorTheme';
 export const AUTO_SIDEBAR_PROJECT_COLOR_THEME_VALUE = 'auto';
 
-const AUTO_SIDEBAR_THEME_ORDER: readonly DmuxThemeName[] = [
-  DEFAULT_DMUX_THEME,
-  ...DMUX_THEME_NAMES.filter((themeName) => themeName !== DEFAULT_DMUX_THEME),
+const AUTO_SIDEBAR_THEME_ORDER: readonly QmuxThemeName[] = [
+  DEFAULT_QMUX_THEME,
+  ...QMUX_THEME_NAMES.filter((themeName) => themeName !== DEFAULT_QMUX_THEME),
 ];
 
 function normalizeProjectRoot(projectRoot: string): string {
   return path.resolve(projectRoot);
 }
 
-function normalizeProjectColorTheme(colorTheme: unknown): DmuxThemeName | undefined {
-  return isDmuxThemeName(colorTheme) ? colorTheme : undefined;
+function normalizeProjectColorTheme(colorTheme: unknown): QmuxThemeName | undefined {
+  return isQmuxThemeName(colorTheme) ? colorTheme : undefined;
 }
 
 function normalizeProjectColorThemeSource(
@@ -102,7 +102,7 @@ export function removeSidebarProject(
 export function getSidebarProjectColorTheme(
   projects: SidebarProject[],
   projectRoot: string
-): DmuxThemeName | undefined {
+): QmuxThemeName | undefined {
   return projects.find((project) => sameSidebarProjectRoot(project.projectRoot, projectRoot))?.colorTheme;
 }
 
@@ -116,7 +116,7 @@ function getSidebarProject(
 export function setSidebarProjectColorTheme(
   projects: SidebarProject[],
   projectRoot: string,
-  colorTheme: DmuxThemeName | undefined,
+  colorTheme: QmuxThemeName | undefined,
   colorThemeSource?: SidebarProject['colorThemeSource']
 ): SidebarProject[] {
   const normalizedColorTheme = normalizeProjectColorTheme(colorTheme);
@@ -163,7 +163,7 @@ function getProjectsWithoutProject(
 export function getSidebarProjectColorThemeSettingValue(
   projects: SidebarProject[],
   projectRoot: string,
-  resolveProjectTheme?: (projectRoot: string) => DmuxThemeName | undefined
+  resolveProjectTheme?: (projectRoot: string) => QmuxThemeName | undefined
 ): string {
   const project = getSidebarProject(projects, projectRoot);
   if (!project?.colorTheme) {
@@ -193,7 +193,7 @@ export function setSidebarProjectColorThemeSettingValue(
   projects: SidebarProject[],
   projectRoot: string,
   settingValue: unknown,
-  resolveProjectTheme?: (projectRoot: string) => DmuxThemeName | undefined
+  resolveProjectTheme?: (projectRoot: string) => QmuxThemeName | undefined
 ): SidebarProject[] {
   if (settingValue === AUTO_SIDEBAR_PROJECT_COLOR_THEME_VALUE) {
     const autoTheme = getAutoSidebarProjectColorTheme(
@@ -208,7 +208,7 @@ export function setSidebarProjectColorThemeSettingValue(
     return setSidebarProjectColorTheme(projects, projectRoot, undefined);
   }
 
-  if (isDmuxThemeName(settingValue)) {
+  if (isQmuxThemeName(settingValue)) {
     return setSidebarProjectColorTheme(projects, projectRoot, settingValue, 'manual');
   }
 
@@ -218,9 +218,9 @@ export function setSidebarProjectColorThemeSettingValue(
 export function getAutoSidebarProjectColorTheme(
   projects: SidebarProject[],
   nextProject: Pick<SidebarProject, 'projectRoot' | 'colorTheme'>,
-  resolveProjectTheme?: (projectRoot: string) => DmuxThemeName | undefined
-): DmuxThemeName {
-  const usedThemes = new Set<DmuxThemeName>();
+  resolveProjectTheme?: (projectRoot: string) => QmuxThemeName | undefined
+): QmuxThemeName {
+  const usedThemes = new Set<QmuxThemeName>();
 
   for (const project of projects) {
     const resolvedTheme = normalizeProjectColorTheme(project.colorTheme)
@@ -238,7 +238,7 @@ export function getAutoSidebarProjectColorTheme(
 
   return AUTO_SIDEBAR_THEME_ORDER.find((themeName) => !usedThemes.has(themeName))
     || preferredTheme
-    || DEFAULT_DMUX_THEME;
+    || DEFAULT_QMUX_THEME;
 }
 
 /**
@@ -248,7 +248,7 @@ export function getAutoSidebarProjectColorTheme(
  */
 export function normalizeSidebarProjects(
   sidebarProjects: SidebarProject[] | undefined,
-  panes: DmuxPane[],
+  panes: QmuxPane[],
   fallbackProjectRoot: string,
   fallbackProjectName: string
 ): SidebarProject[] {

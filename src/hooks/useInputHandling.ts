@@ -3,7 +3,7 @@ import fs from "fs/promises"
 import os from "os"
 import path from "path"
 import { useInput } from "ink"
-import type { DmuxPane, NewPaneInput, SidebarProject } from "../types.js"
+import type { QmuxPane, NewPaneInput, SidebarProject } from "../types.js"
 import type { TrackProjectActivity } from "../types/activity.js"
 import { StateManager } from "../shared/StateManager.js"
 import { TmuxService } from "../services/TmuxService.js"
@@ -33,17 +33,17 @@ import {
   getProjectActionByIndex,
   type ProjectActionItem,
 } from "../utils/projectActions.js"
-import { createShellPane, getNextDmuxId } from "../utils/shellPaneDetection.js"
+import { createShellPane, getNextQmuxId } from "../utils/shellPaneDetection.js"
 import type { AgentName } from "../utils/agentLaunch.js"
 import { buildAgentCommand, getAgentDefinitions } from "../utils/agentLaunch.js"
-import { DMUX_THEME_NAMES } from "../theme/themePalette.js"
-import type { DmuxThemeName } from "../types.js"
+import { QMUX_THEME_NAMES } from "../theme/themePalette.js"
+import type { QmuxThemeName } from "../types.js"
 import {
   getBulkVisibilityAction,
   getProjectVisibilityAction,
   partitionPanesByProject,
 } from "../utils/paneVisibility.js"
-import { buildFilesOnlyCommand } from "../utils/dmuxCommand.js"
+import { buildFilesOnlyCommand } from "../utils/qmuxCommand.js"
 import {
   addSidebarProject,
   getAutoSidebarProjectColorTheme,
@@ -72,7 +72,7 @@ import { syncWelcomePaneVisibility } from "../utils/welcomePaneManager.js"
 // Type for the action system returned by useActionSystem hook
 interface ActionSystem {
   actionState: any
-  executeAction: (actionId: any, pane: DmuxPane, params?: any) => Promise<void>
+  executeAction: (actionId: any, pane: QmuxPane, params?: any) => Promise<void>
   executeCallback: (callback: (() => Promise<any>) | null, options?: { showProgress?: boolean; progressMessage?: string }) => Promise<void>
   clearDialog: (dialogType: any) => void
   clearStatus: () => void
@@ -81,7 +81,7 @@ interface ActionSystem {
 
 interface UseInputHandlingParams {
   // State
-  panes: DmuxPane[]
+  panes: QmuxPane[]
   selectedIndex: number
   setSelectedIndex: (index: number) => void
   isCreatingPane: boolean
@@ -107,7 +107,7 @@ interface UseInputHandlingParams {
   projectSettings: any
   saveSettings: (settings: any) => Promise<void>
   settingsManager: any
-  refreshDmuxSettings: (projectRoot?: string) => void
+  refreshQmuxSettings: (projectRoot?: string) => void
 
   // Services
   popupManager: PopupManager
@@ -118,15 +118,15 @@ interface UseInputHandlingParams {
   // Callbacks
   setStatusMessage: (message: string) => void
   copyNonGitFiles: (worktreePath: string, sourceProjectRoot?: string) => Promise<void>
-  runCommandInternal: (type: "test" | "dev", pane: DmuxPane) => Promise<void>
+  runCommandInternal: (type: "test" | "dev", pane: QmuxPane) => Promise<void>
   handlePaneCreationWithAgent: (paneInput: NewPaneInput, targetProjectRoot?: string) => Promise<void>
-  handleCreateChildWorktree: (pane: DmuxPane) => Promise<void>
+  handleCreateChildWorktree: (pane: QmuxPane) => Promise<void>
   handleReopenWorktree: (
     candidate: ResumableBranchCandidate,
     targetProjectRoot?: string
   ) => Promise<void>
-  setDevSourceFromPane: (pane: DmuxPane) => Promise<void>
-  savePanes: (panes: DmuxPane[]) => Promise<void>
+  setDevSourceFromPane: (pane: QmuxPane) => Promise<void>
+  savePanes: (panes: QmuxPane[]) => Promise<void>
   sidebarProjects: SidebarProject[]
   saveSidebarProjects: (projects: SidebarProject[]) => Promise<SidebarProject[]>
   loadPanes: () => Promise<void>
@@ -148,7 +148,7 @@ interface UseInputHandlingParams {
 
 /**
  * Hook that handles all keyboard input for the TUI
- * Extracted from DmuxApp.tsx to reduce component complexity
+ * Extracted from QmuxApp.tsx to reduce component complexity
  */
 export function useInputHandling(params: UseInputHandlingParams) {
   const {
@@ -174,7 +174,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
     projectSettings,
     saveSettings,
     settingsManager,
-    refreshDmuxSettings,
+    refreshQmuxSettings,
     popupManager,
     actionSystem,
     controlPaneId,
@@ -261,7 +261,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
       // Persist shell pane immediately with project metadata so grouping is stable.
       const shellPane = await createShellPane(
         newPaneId,
-        getNextDmuxId(panes)
+        getNextQmuxId(panes)
       )
       shellPane.projectRoot = targetProjectRoot
       shellPane.projectName = path.basename(targetProjectRoot)
@@ -301,7 +301,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
     }
   }
 
-  const openTerminalInWorktree = async (selectedPane: DmuxPane) => {
+  const openTerminalInWorktree = async (selectedPane: QmuxPane) => {
     if (!selectedPane.worktreePath) {
       setStatusMessage("Cannot open terminal: this pane has no worktree")
       setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
@@ -322,7 +322,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
 
       const shellPane = await createShellPane(
         newPaneId,
-        getNextDmuxId(panes)
+        getNextQmuxId(panes)
       )
       shellPane.projectRoot = targetProjectRoot
       shellPane.projectName = path.basename(targetProjectRoot)
@@ -342,7 +342,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
     }
   }
 
-  const openFileBrowserInWorktree = async (selectedPane: DmuxPane) => {
+  const openFileBrowserInWorktree = async (selectedPane: QmuxPane) => {
     if (!selectedPane.worktreePath) {
       setStatusMessage("Cannot open file browser: this pane has no worktree")
       setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
@@ -388,8 +388,8 @@ export function useInputHandling(params: UseInputHandlingParams) {
         suffix += 1
       }
 
-      const browserPane: DmuxPane = {
-        id: `dmux-${getNextDmuxId(panes)}`,
+      const browserPane: QmuxPane = {
+        id: `qmux-${getNextQmuxId(panes)}`,
         slug,
         prompt: "",
         paneId: newPaneId,
@@ -434,10 +434,10 @@ export function useInputHandling(params: UseInputHandlingParams) {
           controlPaneId,
           isBottom ? { height: 1 } : { width: 1 }
         )
-        tmuxService.setPaneOptionSync(controlPaneId, '@dmux_sidebar_collapsed', '1')
+        tmuxService.setPaneOptionSync(controlPaneId, '@qmux_sidebar_collapsed', '1')
         setStatusMessage(isBottom ? "Strip collapsed ([ to expand)" : "Sidebar collapsed ([ to expand)")
       } else {
-        tmuxService.setPaneOptionSync(controlPaneId, '@dmux_sidebar_collapsed', '0')
+        tmuxService.setPaneOptionSync(controlPaneId, '@qmux_sidebar_collapsed', '0')
         await enforceControlPaneSize(controlPaneId, SIDEBAR_WIDTH, { forceLayout: true })
         setStatusMessage(isBottom ? "Strip expanded" : "Sidebar expanded")
       }
@@ -686,7 +686,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
     initializeHooksDirectory(hooksProjectRoot)
 
     const prompt =
-      "I would like to create or edit my dmux hooks in .dmux-hooks. Please read AGENTS.md or CLAUDE.md first, then ask me what I want to create or modify."
+      "I would like to create or edit my qmux hooks in .qmux-hooks. Please read AGENTS.md or CLAUDE.md first, then ask me what I want to create or modify."
     await handlePaneCreationWithAgent({ prompt }, hooksProjectRoot)
   }
 
@@ -702,10 +702,10 @@ export function useInputHandling(params: UseInputHandlingParams) {
   }
 
   // Assign an explicit per-pane color (marks it manual so project-theme sync leaves it alone).
-  const setPaneColor = async (pane: DmuxPane) => {
+  const setPaneColor = async (pane: QmuxPane) => {
     const options = [
       { id: "__auto__", label: "Auto (follow project theme)", description: "Clear the manual color" },
-      ...DMUX_THEME_NAMES.map((themeName) => ({
+      ...QMUX_THEME_NAMES.map((themeName) => ({
         id: themeName,
         label: themeName.charAt(0).toUpperCase() + themeName.slice(1),
       })),
@@ -726,7 +726,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
           colorTheme: resolveProjectColorTheme(getPaneProjectRoot(p, projectRoot), sidebarProjects),
         }
       }
-      return { ...p, colorTheme: chosen as DmuxThemeName, colorThemeSource: "manual" as const }
+      return { ...p, colorTheme: chosen as QmuxThemeName, colorThemeSource: "manual" as const }
     })
     await savePanes(updatedPanes)
     setStatusMessage(
@@ -738,7 +738,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
   }
 
   // Relaunch an existing agent pane with a different agent (fresh session).
-  const changePaneAgent = async (pane: DmuxPane) => {
+  const changePaneAgent = async (pane: QmuxPane) => {
     const targetProjectRoot = getPaneProjectRoot(pane, projectRoot)
     const availableAgents = getAvailableAgentsForProject(targetProjectRoot)
     if (availableAgents.length === 0) {
@@ -800,7 +800,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
   }
 
   // Swap a pane with its neighbor in the list (and in the tmux layout).
-  const movePane = async (pane: DmuxPane, direction: -1 | 1) => {
+  const movePane = async (pane: QmuxPane, direction: -1 | 1) => {
     const index = panes.findIndex((p) => p.id === pane.id)
     if (index === -1) return
     const targetIndex = index + direction
@@ -854,7 +854,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
         parseInt(chosen, 10) as any,
         "global"
       )
-      refreshDmuxSettings(activeProjectRoot)
+      refreshQmuxSettings(activeProjectRoot)
       queueLayoutRefresh()
       const label = chosen === "0" ? "auto" : `${chosen} column${chosen === "1" ? "" : "s"}`
       setStatusMessage(`Grid: ${label}`)
@@ -866,7 +866,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
   }
 
   const syncWelcomePaneForPanes = async (
-    nextPanes: DmuxPane[],
+    nextPanes: QmuxPane[],
     targetProjectRoot: string = getActiveProjectRoot()
   ) => {
     if (!controlPaneId) {
@@ -903,7 +903,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
     }
   }
 
-  const togglePaneVisibility = async (selectedPane: DmuxPane) => {
+  const togglePaneVisibility = async (selectedPane: QmuxPane) => {
     const tmuxService = TmuxService.getInstance()
 
     try {
@@ -923,7 +923,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
       } else {
         await tmuxService.breakPaneToWindow(
           selectedPane.paneId,
-          `dmux-hidden-${selectedPane.id}`
+          `qmux-hidden-${selectedPane.id}`
         )
       }
 
@@ -955,7 +955,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
     }
   }
 
-  const toggleOtherPanesVisibility = async (selectedPane: DmuxPane) => {
+  const toggleOtherPanesVisibility = async (selectedPane: QmuxPane) => {
     const action = getBulkVisibilityAction(panes, selectedPane)
     if (!action) {
       setStatusMessage("No other panes to toggle")
@@ -985,7 +985,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
         if (hidden) {
           await tmuxService.breakPaneToWindow(
             pane.paneId,
-            `dmux-hidden-${pane.id}`
+            `qmux-hidden-${pane.id}`
           )
           continue
         }
@@ -1079,7 +1079,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
       for (const pane of panesToHide) {
         await TmuxService.getInstance().breakPaneToWindow(
           pane.paneId,
-          `dmux-hidden-${pane.id}`
+          `qmux-hidden-${pane.id}`
         )
       }
 
@@ -1118,7 +1118,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
   }
 
   const openPaneMenu = async (
-    pane: DmuxPane,
+    pane: QmuxPane,
     options: { anchorToPane?: boolean } = {}
   ) => {
     const actionId = await popupManager.launchKebabMenuPopup(
@@ -1201,7 +1201,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
     })
   }
 
-  const attachAgentsToPane = async (selectedPane: DmuxPane) => {
+  const attachAgentsToPane = async (selectedPane: QmuxPane) => {
     if (!selectedPane.worktreePath) {
       setStatusMessage("Cannot attach agent: this pane has no worktree")
       setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
@@ -1254,7 +1254,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
       )
 
       const { attachAgentToWorktree } = await import("../utils/attachAgent.js")
-      const createdPanes: DmuxPane[] = []
+      const createdPanes: QmuxPane[] = []
       const failedAgents: AgentName[] = []
 
       for (const agent of selectedAgents) {
@@ -1357,7 +1357,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
 
   const executePaneShortcut = async (
     shortcut: RemotePaneActionShortcut,
-    selectedPane: DmuxPane,
+    selectedPane: QmuxPane,
     options: { anchorMenuToPane?: boolean } = {}
   ) => {
     switch (shortcut) {
@@ -1431,14 +1431,14 @@ export function useInputHandling(params: UseInputHandlingParams) {
 
       for (const action of queuedActions) {
         if (isInteractionBlocked()) {
-          setStatusMessage(`dmux is busy; ignored remote pane action ${action.shortcut}`)
+          setStatusMessage(`qmux is busy; ignored remote pane action ${action.shortcut}`)
           setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_LONG)
           continue
         }
 
         const paneIndex = panes.findIndex((pane) => pane.paneId === action.targetPaneId)
         if (paneIndex === -1) {
-          setStatusMessage(`Focused pane is not managed by dmux: ${action.targetPaneId}`)
+          setStatusMessage(`Focused pane is not managed by qmux: ${action.targetPaneId}`)
           setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_LONG)
           continue
         }
@@ -1465,10 +1465,10 @@ export function useInputHandling(params: UseInputHandlingParams) {
     }
 
     void queueDrain()
-    process.on("dmux-external-command-signal" as any, handleRemoteSignal)
+    process.on("qmux-external-command-signal" as any, handleRemoteSignal)
 
     return () => {
-      process.off("dmux-external-command-signal" as any, handleRemoteSignal)
+      process.off("qmux-external-command-signal" as any, handleRemoteSignal)
     }
   }, [
     actionSystem,
@@ -1501,7 +1501,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
       if (quitConfirmMode) {
         // Second Ctrl+C - tear down the whole session (closes every pane).
         // This is the hard quit; `q` remains the soft quit that leaves the
-        // session alive for `dmux -c` to resume.
+        // session alive for `qmux -c` to resume.
         killSessionExit()
       } else {
         // First Ctrl+C - show confirmation
@@ -1702,7 +1702,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
               )
               await saveSidebarProjects(updatedProjects)
               effectiveSidebarProjects = updatedProjects
-              refreshDmuxSettings(activeProjectRoot)
+              refreshQmuxSettings(activeProjectRoot)
               savedCount += 1
               lastScope = update.scope
               themeSettingsChanged = true
@@ -1717,11 +1717,11 @@ export function useInputHandling(params: UseInputHandlingParams) {
               ? "colorTheme"
               : update.key
             projectSettingsManager.updateSetting(
-              resolvedUpdateKey as keyof import("../types.js").DmuxSettings,
+              resolvedUpdateKey as keyof import("../types.js").QmuxSettings,
               update.value,
               update.scope
             )
-            refreshDmuxSettings(activeProjectRoot)
+            refreshQmuxSettings(activeProjectRoot)
             savedCount += 1
             lastScope = update.scope
             if (resolvedUpdateKey === "colorTheme") {

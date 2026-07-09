@@ -6,8 +6,8 @@ Status: approved (design) — pending spec review
 
 ## Problem
 
-The dmux control pane (the "sidebar") is a fixed 40-column strip anchored to the
-**left**. For a user still learning dmux, a left sidebar is cramped for onboarding
+The qmux control pane (the "sidebar") is a fixed 40-column strip anchored to the
+**left**. For a user still learning qmux, a left sidebar is cramped for onboarding
 help text, and a wide-but-short **bottom** strip reads more like a command/help bar.
 
 Goal: allow the control pane to live at the **bottom** as a full-width, fixed-height
@@ -27,7 +27,7 @@ surfaces prominent onboarding help (real shortcuts to add panes).
 
 **Chosen:** extend the existing custom-layout-string machinery with a *position axis*.
 
-dmux already builds a custom tmux layout string (`generateSidebarGridLayout` in
+qmux already builds a custom tmux layout string (`generateSidebarGridLayout` in
 `src/utils/tmux.ts`) of the form `checksum,WxH,0,0{ leaf, container{grid} }` and applies
 it via `TmuxLayoutApplier`. Left mode is a special case of "control pane on one edge,
 content grid fills the rest". Adding a `bottom` branch reuses all of that: checksum,
@@ -95,7 +95,7 @@ content height. The virtual-grid feature keeps working unchanged.
    - **Every** enforce path must branch on position — a missed path snaps the layout back to
      left. (Same failure class hit during the virtual-grid work; the paths are known.)
 
-6. **UI reflow (Phase 2)** — `src/DmuxApp.tsx`, `src/components/panes/*`, `FooterHelp`
+6. **UI reflow (Phase 2)** — `src/QmuxApp.tsx`, `src/components/panes/*`, `FooterHelp`
    - Bottom mode renders the pane list **horizontally** (wide, short strip) instead of a tall
      column, and promotes the onboarding help line to prominent real-shortcut text
      ("press `n` to add an agent pane, `t` for a terminal, `p` to open a project…").
@@ -123,7 +123,7 @@ Geometry first, verified on its own, then UI reflow.
   - Calculator bottom content-area math: `W × (H − c)`.
   - Settings sanitization: `controlPanePosition` bad value → `'left'`; `controlPaneHeight`
     clamp to `[6, 24]`; layered override.
-- **Manual (needs a live TUI):** run `dmux` with `controlPanePosition: 'bottom'`; confirm the
+- **Manual (needs a live TUI):** run `qmux` with `controlPanePosition: 'bottom'`; confirm the
   strip is bottom-anchored, content tiles above, `g` still cycles columns, pane-jump works,
   enforcement doesn't snap it back to left after refresh/reorder/close.
 

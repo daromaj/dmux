@@ -2,14 +2,14 @@
  * Hooks System
  *
  * Executes user-defined scripts at key lifecycle events.
- * Hook scripts are stored in .dmux/hooks/ and receive context via environment variables.
+ * Hook scripts are stored in .qmux/hooks/ and receive context via environment variables.
  */
 
 import { execSync, spawn, type ChildProcess } from 'child_process';
 import { existsSync, accessSync, constants, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import os from 'os';
-import type { DmuxPane } from '../types.js';
+import type { QmuxPane } from '../types.js';
 import { HOOKS_DOCUMENTATION, HOOKS_README, EXAMPLE_HOOKS } from './hooksDocs.js';
 import { LogService } from '../services/LogService.js';
 
@@ -34,22 +34,22 @@ export type HookType =
  */
 export interface HookEnvironment {
   // Always present
-  DMUX_ROOT: string;
-  DMUX_SERVER_PORT?: string;
+  QMUX_ROOT: string;
+  QMUX_SERVER_PORT?: string;
 
   // Pane-specific (present for most hooks)
-  DMUX_PANE_ID?: string;
-  DMUX_SLUG?: string;
-  DMUX_PROMPT?: string;
-  DMUX_AGENT?: string;
-  DMUX_TMUX_PANE_ID?: string;
+  QMUX_PANE_ID?: string;
+  QMUX_SLUG?: string;
+  QMUX_PROMPT?: string;
+  QMUX_AGENT?: string;
+  QMUX_TMUX_PANE_ID?: string;
 
   // Worktree-specific
-  DMUX_WORKTREE_PATH?: string;
-  DMUX_BRANCH?: string;
+  QMUX_WORKTREE_PATH?: string;
+  QMUX_BRANCH?: string;
 
   // Merge-specific
-  DMUX_TARGET_BRANCH?: string;
+  QMUX_TARGET_BRANCH?: string;
 
   // Additional custom data
   [key: string]: string | undefined;
@@ -62,15 +62,15 @@ export interface HookProgressEvent {
 
 /**
  * Find a hook script with priority resolution:
- * 1. .dmux-hooks/ (version controlled, team hooks)
- * 2. .dmux/hooks/ (gitignored, local overrides)
- * 3. ~/.dmux/hooks/ (global user hooks)
+ * 1. .qmux-hooks/ (version controlled, team hooks)
+ * 2. .qmux/hooks/ (gitignored, local overrides)
+ * 3. ~/.qmux/hooks/ (global user hooks)
  */
 export function findHook(projectRoot: string, hookName: HookType): string | null {
   const searchPaths = [
-    path.join(projectRoot, '.dmux-hooks', hookName),        // Team hooks (VC)
-    path.join(projectRoot, '.dmux', 'hooks', hookName),     // Local override
-    path.join(os.homedir(), '.dmux', 'hooks', hookName),    // Global hooks
+    path.join(projectRoot, '.qmux-hooks', hookName),        // Team hooks (VC)
+    path.join(projectRoot, '.qmux', 'hooks', hookName),     // Local override
+    path.join(os.homedir(), '.qmux', 'hooks', hookName),    // Global hooks
   ];
 
   for (const hookPath of searchPaths) {
@@ -96,11 +96,11 @@ export function findHook(projectRoot: string, hookName: HookType): string | null
  */
 export async function buildHookEnvironment(
   projectRoot: string,
-  pane?: DmuxPane,
+  pane?: QmuxPane,
   extraData?: Record<string, string>
 ): Promise<HookEnvironment> {
   const env: HookEnvironment = {
-    DMUX_ROOT: projectRoot,
+    QMUX_ROOT: projectRoot,
     ...process.env, // Inherit parent environment
   };
 
@@ -108,20 +108,20 @@ export async function buildHookEnvironment(
   const { StateManager } = await import('../shared/StateManager.js');
   const state = StateManager.getInstance().getState();
   if (state.serverPort) {
-    env.DMUX_SERVER_PORT = String(state.serverPort);
+    env.QMUX_SERVER_PORT = String(state.serverPort);
   }
 
   // Add pane-specific data
   if (pane) {
-    env.DMUX_PANE_ID = pane.id;
-    env.DMUX_SLUG = pane.slug;
-    env.DMUX_PROMPT = pane.prompt;
-    env.DMUX_AGENT = pane.agent || 'unknown';
-    env.DMUX_TMUX_PANE_ID = pane.paneId;
+    env.QMUX_PANE_ID = pane.id;
+    env.QMUX_SLUG = pane.slug;
+    env.QMUX_PROMPT = pane.prompt;
+    env.QMUX_AGENT = pane.agent || 'unknown';
+    env.QMUX_TMUX_PANE_ID = pane.paneId;
 
     if (pane.worktreePath) {
-      env.DMUX_WORKTREE_PATH = pane.worktreePath;
-      env.DMUX_BRANCH = pane.branchName || pane.slug; // Branch name (may differ from slug with prefix)
+      env.QMUX_WORKTREE_PATH = pane.worktreePath;
+      env.QMUX_BRANCH = pane.branchName || pane.slug; // Branch name (may differ from slug with prefix)
     }
   }
 
@@ -136,13 +136,13 @@ export async function buildHookEnvironment(
 /**
  * Execute a hook script asynchronously
  *
- * Hooks run in the background and don't block dmux operations.
+ * Hooks run in the background and don't block qmux operations.
  * Errors are logged but don't crash the application.
  */
 export async function triggerHook(
   hookName: HookType,
   projectRoot: string,
-  pane?: DmuxPane,
+  pane?: QmuxPane,
   extraData?: Record<string, string>
 ): Promise<void> {
   // Initialize hooks directory on first use (lazy init)
@@ -209,7 +209,7 @@ export async function triggerHook(
 export async function triggerHookSync(
   hookName: HookType,
   projectRoot: string,
-  pane?: DmuxPane,
+  pane?: QmuxPane,
   extraData?: Record<string, string>,
   timeoutMs: number = 30000
 ): Promise<{ success: boolean; output?: string; error?: string }> {
@@ -254,13 +254,13 @@ export async function triggerHookSync(
 /**
  * Execute a blocking hook with streamed output.
  *
- * This is for lifecycle gates that must complete before dmux can continue,
+ * This is for lifecycle gates that must complete before qmux can continue,
  * while still letting the caller surface live progress in a pane-local UI.
  */
 export async function triggerHookWithProgress(
   hookName: HookType,
   projectRoot: string,
-  pane?: DmuxPane,
+  pane?: QmuxPane,
   extraData?: Record<string, string>,
   onProgress?: (event: HookProgressEvent) => void,
   timeoutMs: number = 30000
@@ -417,11 +417,11 @@ export function listAvailableHooks(projectRoot: string): HookType[] {
 }
 
 /**
- * Initialize .dmux-hooks/ directory with documentation and examples
+ * Initialize .qmux-hooks/ directory with documentation and examples
  * This gets called the first time hooks are accessed or when user explicitly initializes
  */
 export function initializeHooksDirectory(projectRoot: string): void {
-  const hooksDir = path.join(projectRoot, '.dmux-hooks');
+  const hooksDir = path.join(projectRoot, '.qmux-hooks');
   const agentsPath = path.join(hooksDir, 'AGENTS.md');
   const claudePath = path.join(hooksDir, 'CLAUDE.md');
   const readmePath = path.join(hooksDir, 'README.md');
@@ -441,7 +441,7 @@ export function initializeHooksDirectory(projectRoot: string): void {
     return;
   }
 
-  const initMsg = 'Initializing .dmux-hooks/ directory (or repairing missing docs)...';
+  const initMsg = 'Initializing .qmux-hooks/ directory (or repairing missing docs)...';
   LogService.getInstance().debug(initMsg, 'hooks');
 
   try {
@@ -513,13 +513,13 @@ export function initializeHooksDirectory(projectRoot: string): void {
     }
 
     if (madeChanges) {
-      const completeMsg = '✅ Initialized .dmux-hooks/ with documentation and examples';
+      const completeMsg = '✅ Initialized .qmux-hooks/ with documentation and examples';
       const readmeMsg = '📝 Read AGENTS.md or CLAUDE.md to get started';
       LogService.getInstance().debug(completeMsg, 'hooks');
       LogService.getInstance().debug(readmeMsg, 'hooks');
     }
   } catch (error) {
-    const errMsg = `Failed to initialize .dmux-hooks/ directory: ${error instanceof Error ? error.message : String(error)}`;
+    const errMsg = `Failed to initialize .qmux-hooks/ directory: ${error instanceof Error ? error.message : String(error)}`;
     LogService.getInstance().warn(errMsg, 'hooks');
     // Don't throw - hooks initialization is not critical
   }

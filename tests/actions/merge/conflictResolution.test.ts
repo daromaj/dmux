@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createConflictResolutionPaneForMerge } from '../../../src/actions/merge/conflictResolution.js';
-import type { DmuxPane } from '../../../src/types.js';
+import type { QmuxPane } from '../../../src/types.js';
 import type { ActionContext } from '../../../src/actions/types.js';
 
 const findClaudeCommandMock = vi.fn(() => Promise.resolve(true));
@@ -71,7 +71,7 @@ vi.mock('child_process', () => ({
 }));
 
 describe('Conflict Resolution', () => {
-  const mockPane: DmuxPane = {
+  const mockPane: QmuxPane = {
     id: 'test-1',
     slug: 'test-branch',
     prompt: 'test prompt',

@@ -129,7 +129,7 @@ function compareVersions(a: number[], b: number[]): number {
 }
 
 /**
- * Validate all system requirements for dmux
+ * Validate all system requirements for qmux
  * Returns validation result with errors and warnings
  */
 export async function validateSystemRequirements(): Promise<ValidationResult> {

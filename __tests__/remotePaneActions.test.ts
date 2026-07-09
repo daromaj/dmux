@@ -21,7 +21,7 @@ afterEach(async () => {
 });
 
 async function createTempHomeDir(): Promise<string> {
-  tempHomeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dmux-remote-pane-actions-'));
+  tempHomeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'qmux-remote-pane-actions-'));
   return tempHomeDir;
 }
 
@@ -29,10 +29,10 @@ describe('remotePaneActions', () => {
   it('round-trips queued pane action requests without losing order', async () => {
     const homeDir = await createTempHomeDir();
 
-    await enqueueRemotePaneAction('dmux-test', '%10', 'x', homeDir);
-    await enqueueRemotePaneAction('dmux-test', '%11', 'm', homeDir);
+    await enqueueRemotePaneAction('qmux-test', '%10', 'x', homeDir);
+    await enqueueRemotePaneAction('qmux-test', '%11', 'm', homeDir);
 
-    const drained = await drainRemotePaneActions('dmux-test', homeDir);
+    const drained = await drainRemotePaneActions('qmux-test', homeDir);
 
     expect(drained).toHaveLength(2);
     expect(drained[0]).toMatchObject({
@@ -46,12 +46,12 @@ describe('remotePaneActions', () => {
       shortcut: 'm',
     });
 
-    expect(await drainRemotePaneActions('dmux-test', homeDir)).toEqual([]);
+    expect(await drainRemotePaneActions('qmux-test', homeDir)).toEqual([]);
   });
 
   it('ignores malformed queue entries while keeping valid actions', async () => {
     const homeDir = await createTempHomeDir();
-    const queuePath = getRemotePaneActionQueuePath('dmux-test', homeDir);
+    const queuePath = getRemotePaneActionQueuePath('qmux-test', homeDir);
 
     await fs.mkdir(path.dirname(queuePath), { recursive: true });
     await fs.writeFile(
@@ -64,7 +64,7 @@ describe('remotePaneActions', () => {
       'utf-8'
     );
 
-    const drained = await drainRemotePaneActions('dmux-test', homeDir);
+    const drained = await drainRemotePaneActions('qmux-test', homeDir);
 
     expect(drained).toHaveLength(1);
     expect(drained[0]).toMatchObject({
@@ -76,10 +76,10 @@ describe('remotePaneActions', () => {
   it('clears the queue file explicitly', async () => {
     const homeDir = await createTempHomeDir();
 
-    await enqueueRemotePaneAction('dmux-test', '%42', 'P', homeDir);
-    await clearRemotePaneActions('dmux-test', homeDir);
+    await enqueueRemotePaneAction('qmux-test', '%42', 'P', homeDir);
+    await clearRemotePaneActions('qmux-test', homeDir);
 
-    expect(await drainRemotePaneActions('dmux-test', homeDir)).toEqual([]);
+    expect(await drainRemotePaneActions('qmux-test', homeDir)).toEqual([]);
   });
 
   it('builds trigger and cleanup commands for the focused-pane menu shortcut', () => {
@@ -91,6 +91,6 @@ describe('remotePaneActions', () => {
     expect(setupCommands[0]).toContain('--remote-pane-action m');
     expect(cleanupCommands.some((command) => command.includes('unbind-key -n M-M'))).toBe(true);
     expect(cleanupCommands.some((command) => command.includes('unbind-key -n M-D'))).toBe(true);
-    expect(cleanupCommands.some((command) => command.includes('unbind-key -T dmux-pane-action x'))).toBe(true);
+    expect(cleanupCommands.some((command) => command.includes('unbind-key -T qmux-pane-action x'))).toBe(true);
   });
 });

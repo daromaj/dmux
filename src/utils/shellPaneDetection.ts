@@ -4,11 +4,11 @@
  * Detects manually-created tmux panes and determines their shell type.
  */
 
-import type { DmuxPane } from '../types.js';
+import type { QmuxPane } from '../types.js';
 import { LogService } from '../services/LogService.js';
 import { TmuxService } from '../services/TmuxService.js';
 import { resolveProjectRootFromPath } from './projectRoot.js';
-import { DMUX_BOOTSTRAP_PANE_TITLE_PREFIX } from './paneBootstrapConfig.js';
+import { QMUX_BOOTSTRAP_PANE_TITLE_PREFIX } from './paneBootstrapConfig.js';
 
 /**
  * Detects the shell type running in a tmux pane
@@ -88,9 +88,9 @@ export interface UntrackedPaneInfo {
 }
 
 /**
- * Gets all untracked tmux panes (panes not in dmux config)
+ * Gets all untracked tmux panes (panes not in qmux config)
  * @param sessionName The tmux session name
- * @param trackedPaneIds Array of pane IDs already tracked by dmux
+ * @param trackedPaneIds Array of pane IDs already tracked by qmux
  * @param controlPaneId Optional control pane ID to exclude
  * @param welcomePaneId Optional welcome pane ID to exclude
  * @returns Array of untracked pane information
@@ -119,14 +119,14 @@ export async function getUntrackedPanes(
 
       if (!paneId || !paneId.startsWith('%')) continue;
 
-      // CRITICAL: Skip internal dmux panes by title
-      if (title === 'dmux-spacer') {
+      // CRITICAL: Skip internal qmux panes by title
+      if (title === 'qmux-spacer') {
         continue;
       }
-      if (title && title.startsWith(DMUX_BOOTSTRAP_PANE_TITLE_PREFIX)) {
+      if (title && title.startsWith(QMUX_BOOTSTRAP_PANE_TITLE_PREFIX)) {
         continue;
       }
-      if (title && title.startsWith('dmux v')) {
+      if (title && title.startsWith('qmux v')) {
         continue;
       }
       if (title === 'Welcome') {
@@ -141,8 +141,8 @@ export async function getUntrackedPanes(
         continue;
       }
 
-      // CRITICAL: Skip panes running dmux itself (node process running dmux)
-      if (command && (command === 'node' || command.includes('dmux'))) {
+      // CRITICAL: Skip panes running qmux itself (node process running qmux)
+      if (command && (command === 'node' || command.includes('qmux'))) {
         continue;
       }
 
@@ -183,13 +183,13 @@ async function detectPaneProjectInfo(
 }
 
 /**
- * Creates a DmuxPane object for a shell pane
+ * Creates a QmuxPane object for a shell pane
  * @param paneId The tmux pane ID
- * @param nextId The next available dmux ID number
+ * @param nextId The next available qmux ID number
  * @param existingTitle Optional existing title (used for display but not for tracking)
- * @returns DmuxPane object for the shell pane
+ * @returns QmuxPane object for the shell pane
  */
-export async function createShellPane(paneId: string, nextId: number, existingTitle?: string): Promise<DmuxPane> {
+export async function createShellPane(paneId: string, nextId: number, existingTitle?: string): Promise<QmuxPane> {
   const tmuxService = TmuxService.getInstance();
   const shellType = await detectShellType(paneId);
   const paneProjectInfo = await detectPaneProjectInfo(paneId);
@@ -211,7 +211,7 @@ export async function createShellPane(paneId: string, nextId: number, existingTi
   }
 
   return {
-    id: `dmux-${nextId}`,
+    id: `qmux-${nextId}`,
     slug,
     prompt: '', // No prompt for manually created panes
     paneId,
@@ -223,17 +223,17 @@ export async function createShellPane(paneId: string, nextId: number, existingTi
 }
 
 /**
- * Gets the next available dmux ID number
+ * Gets the next available qmux ID number
  * @param existingPanes Array of existing panes
  * @returns Next available ID number
  */
-export function getNextDmuxId(existingPanes: DmuxPane[]): number {
+export function getNextQmuxId(existingPanes: QmuxPane[]): number {
   if (existingPanes.length === 0) return 1;
 
   // Extract numeric IDs from all panes
   const ids = existingPanes
     .map(p => {
-      const match = p.id.match(/^dmux-(\d+)$/);
+      const match = p.id.match(/^qmux-(\d+)$/);
       return match ? parseInt(match[1], 10) : 0;
     })
     .filter(id => id > 0);

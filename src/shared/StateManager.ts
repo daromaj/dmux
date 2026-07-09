@@ -1,11 +1,11 @@
 import { EventEmitter } from 'events';
-import type { DmuxPane, ProjectSettings, LogEntry } from '../types.js';
+import type { QmuxPane, ProjectSettings, LogEntry } from '../types.js';
 import { ConfigWatcher } from '../services/ConfigWatcher.js';
 import { LogService } from '../services/LogService.js';
 import { ToastService, type Toast } from '../services/ToastService.js';
 
-export interface DmuxState {
-  panes: DmuxPane[];
+export interface QmuxState {
+  panes: QmuxPane[];
   projectName: string;
   sessionName: string;
   projectRoot: string;
@@ -23,8 +23,8 @@ export interface DmuxState {
 
 export class StateManager extends EventEmitter {
   private static instance: StateManager;
-  private state: DmuxState;
-  private updateCallbacks: Set<(state: DmuxState) => void> = new Set();
+  private state: QmuxState;
+  private updateCallbacks: Set<(state: QmuxState) => void> = new Set();
   private configWatcher: ConfigWatcher | null = null;
   private debugMessageCallback: ((message: string) => void) | undefined;
   private logService: LogService;
@@ -90,11 +90,11 @@ export class StateManager extends EventEmitter {
     return StateManager.instance;
   }
 
-  getState(): DmuxState {
+  getState(): QmuxState {
     return { ...this.state };
   }
 
-  updatePanes(panes: DmuxPane[]): void {
+  updatePanes(panes: QmuxPane[]): void {
     this.state.panes = [...panes];
     this.notifyListeners();
   }
@@ -140,15 +140,15 @@ export class StateManager extends EventEmitter {
     this.notifyListeners();
   }
 
-  getPaneById(id: string): DmuxPane | undefined {
+  getPaneById(id: string): QmuxPane | undefined {
     return this.state.panes.find(pane => pane.id === id);
   }
 
-  getPanes(): DmuxPane[] {
+  getPanes(): QmuxPane[] {
     return [...this.state.panes];
   }
 
-  subscribe(callback: (state: DmuxState) => void): () => void {
+  subscribe(callback: (state: QmuxState) => void): () => void {
     this.updateCallbacks.add(callback);
     return () => {
       this.updateCallbacks.delete(callback);

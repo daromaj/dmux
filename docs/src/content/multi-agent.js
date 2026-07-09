@@ -6,7 +6,7 @@ export function render() {
     <p class="lead">Run multiple agents on the same task — either as A/B pairs in separate worktrees, or stacked on the same worktree for collaborative work.</p>
 
     <h2>A/B Agent Pairs</h2>
-    <p>When you create a new pane, dmux offers <strong>A/B pair options</strong> alongside the standard single-agent choices. Selecting a pair launches two panes — one per agent — both receiving the same prompt in separate worktrees.</p>
+    <p>When you create a new pane, qmux offers <strong>A/B pair options</strong> alongside the standard single-agent choices. Selecting a pair launches two panes — one per agent — both receiving the same prompt in separate worktrees.</p>
     <p>For example, with Claude Code and opencode installed, you'll see:</p>
     <pre><code data-lang="bash">1. Claude Code
 2. OpenCode
@@ -15,13 +15,13 @@ export function render() {
 
     <h2>Multiple Runs Per Agent</h2>
     <p>The agent chooser can launch up to three panes for each selected agent. It starts with your default agent (or the first available agent) at <code>1x</code>. Use <kbd>Space</kbd> to toggle an agent between <code>0x</code> and <code>1x</code>, and use the left/right arrows to decrease or increase the count. For example, selecting Codex <code>2x</code> and Grok Build <code>1x</code> creates three panes for the same prompt.</p>
-    <p>When an agent runs more than once, dmux appends a cardinal suffix to keep panes and branches distinct, such as <code>fix-auth-codex-1</code> and <code>fix-auth-codex-2</code>.</p>
+    <p>When an agent runs more than once, qmux appends a cardinal suffix to keep panes and branches distinct, such as <code>fix-auth-codex-1</code> and <code>fix-auth-codex-2</code>.</p>
 
     <h2>How It Works</h2>
     <ol>
       <li>Press <kbd>n</kbd> and enter your prompt</li>
       <li>Select an A/B pair from the agent list</li>
-      <li>dmux generates a shared base slug from your prompt (e.g. <code>fix-auth</code>)</li>
+      <li>qmux generates a shared base slug from your prompt (e.g. <code>fix-auth</code>)</li>
       <li>Two panes are created with agent-specific suffixes:
         <ul>
           <li><code>fix-auth-claude-code</code> &mdash; running Claude Code</li>
@@ -32,7 +32,7 @@ export function render() {
     </ol>
 
     <h2>Slug Suffixes</h2>
-    <p>When creating a pair, dmux appends the agent name to the shared slug:</p>
+    <p>When creating a pair, qmux appends the agent name to the shared slug:</p>
     <table>
       <thead>
         <tr><th>Agent</th><th>Suffix</th></tr>
@@ -75,6 +75,6 @@ export function render() {
     <p>Press <kbd>A</kbd> (Shift+A) to open a plain shell in the selected pane's worktree. This is handy for running manual commands, inspecting files, or monitoring builds alongside an agent.</p>
 
     <h3>Closing Shared Worktrees</h3>
-    <p>When you close a pane whose worktree is still in use by other panes, dmux will warn you and only offer to close the pane itself — the worktree stays intact until the last pane using it is closed.</p>
+    <p>When you close a pane whose worktree is still in use by other panes, qmux will warn you and only offer to close the pane itself — the worktree stays intact until the last pane using it is closed.</p>
   `;
 }

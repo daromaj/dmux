@@ -1,18 +1,18 @@
 import React, { memo } from 'react';
 import { Box, Text } from 'ink';
 import stringWidth from 'string-width';
-import type { DmuxPane, DmuxThemeName } from '../../types.js';
+import type { QmuxPane, QmuxThemeName } from '../../types.js';
 import { COLORS } from '../../theme/colors.js';
-import { getDmuxThemeAccent } from '../../theme/colors.js';
+import { getQmuxThemeAccent } from '../../theme/colors.js';
 import { getAgentShortLabel } from '../../utils/agentLaunch.js';
 import { getPaneDisplayName } from '../../utils/paneTitle.js';
 
 interface PaneCardProps {
-  pane: DmuxPane;
+  pane: QmuxPane;
   isDevSource: boolean;
   selected: boolean;
   themeName?: string;
-  projectThemeName?: DmuxThemeName;
+  projectThemeName?: QmuxThemeName;
 }
 
 const ROW_WIDTH = 40;
@@ -80,10 +80,10 @@ const PaneCard: React.FC<PaneCardProps> = memo(({
   const maxSlugWidth = Math.max(0, LEFT_COLUMN_WIDTH - fixedLeftWidth);
   const slugText = clipToWidth(paneName, maxSlugWidth);
   const projectSelectedColor = projectThemeName
-    ? getDmuxThemeAccent(projectThemeName)
+    ? getQmuxThemeAccent(projectThemeName)
     : COLORS.selected;
   const paneSelectedColor = pane.colorTheme
-    ? getDmuxThemeAccent(pane.colorTheme)
+    ? getQmuxThemeAccent(pane.colorTheme)
     : projectSelectedColor;
   const slugColor = isFileBrowserPane
     ? 'cyan'

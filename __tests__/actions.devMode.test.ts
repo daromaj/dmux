@@ -1,13 +1,13 @@
 import { describe, it, expect } from "vitest"
 import { getAvailableActions, PaneAction } from "../src/actions/types.js"
-import type { DmuxPane } from "../src/types.js"
+import type { QmuxPane } from "../src/types.js"
 
-const pane: DmuxPane = {
+const pane: QmuxPane = {
   id: "1",
   slug: "feature-a",
   prompt: "test",
   paneId: "%1",
-  worktreePath: "/tmp/repo/.dmux/worktrees/feature-a",
+  worktreePath: "/tmp/repo/.qmux/worktrees/feature-a",
 }
 
 describe("dev-only action visibility", () => {
@@ -57,7 +57,7 @@ describe("dev-only action visibility", () => {
   })
 
   it("hides open_terminal_in_worktree for shell panes", () => {
-    const shellPane: DmuxPane = {
+    const shellPane: QmuxPane = {
       id: "2",
       slug: "shell-1",
       prompt: "",

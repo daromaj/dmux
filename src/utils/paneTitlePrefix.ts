@@ -1,18 +1,18 @@
-import type { DmuxPane, SidebarProject } from '../types.js';
-import { getDmuxThemeAccent } from '../theme/colors.js';
+import type { QmuxPane, SidebarProject } from '../types.js';
+import { getQmuxThemeAccent } from '../theme/colors.js';
 import { getPaneColorTheme } from './paneColors.js';
 
 export const PANE_TITLE_BUSY_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'] as const;
 export const PANE_TITLE_IDLE_MARKER = '⠿';
-export const TMUX_PANE_TITLE_PREFIX_FORMAT = '#{?@dmux_title_prefix,#{@dmux_title_prefix} ,}';
-export const TMUX_PANE_TITLE_LABEL_FORMAT = '#{?@dmux_title_label,#{@dmux_title_label},#{s|__dmux__.*$||:pane_title}}';
+export const TMUX_PANE_TITLE_PREFIX_FORMAT = '#{?@qmux_title_prefix,#{@qmux_title_prefix} ,}';
+export const TMUX_PANE_TITLE_LABEL_FORMAT = '#{?@qmux_title_label,#{@qmux_title_label},#{s|__qmux__.*$||:pane_title}}';
 
-function isBusyPane(pane: DmuxPane): boolean {
+function isBusyPane(pane: QmuxPane): boolean {
   return pane.agentStatus === 'working';
 }
 
 export function getPaneTitlePrefixValue(
-  pane: DmuxPane,
+  pane: QmuxPane,
   sidebarProjects: SidebarProject[],
   fallbackProjectRoot: string,
   spinnerFrameIndex: number = 0
@@ -21,9 +21,9 @@ export function getPaneTitlePrefixValue(
   const marker = isBusyPane(pane)
     ? PANE_TITLE_BUSY_FRAMES[spinnerFrameIndex % PANE_TITLE_BUSY_FRAMES.length]
     : PANE_TITLE_IDLE_MARKER;
-  return `#[fg=${getDmuxThemeAccent(themeName)}]${marker}#[default]`;
+  return `#[fg=${getQmuxThemeAccent(themeName)}]${marker}#[default]`;
 }
 
-export function paneNeedsAnimatedTitlePrefix(pane: DmuxPane): boolean {
+export function paneNeedsAnimatedTitlePrefix(pane: QmuxPane): boolean {
   return isBusyPane(pane);
 }

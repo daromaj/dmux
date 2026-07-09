@@ -12,10 +12,10 @@ describe('SettingsManager persisted git options setting', () => {
       return {
         ...actual,
         existsSync: vi.fn((filePath: string) =>
-          String(filePath) === '/tmp/test-project/.dmux/settings.json'
+          String(filePath) === '/tmp/test-project/.qmux/settings.json'
         ),
         readFileSync: vi.fn((filePath: string) => {
-          if (String(filePath) === '/tmp/test-project/.dmux/settings.json') {
+          if (String(filePath) === '/tmp/test-project/.qmux/settings.json') {
             return JSON.stringify({ promptForGitOptionsOnCreate: true });
           }
           return '{}';

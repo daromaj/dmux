@@ -37,11 +37,11 @@ import {
 import { SettingsManager } from "./utils/settingsManager.js"
 import { useServices } from "./hooks/useServices.js"
 import { PaneLifecycleManager } from "./services/PaneLifecycleManager.js"
-import { DmuxFocusService } from "./services/DmuxFocusService.js"
+import { QmuxFocusService } from "./services/QmuxFocusService.js"
 import {
-  DmuxAttentionService,
+  QmuxAttentionService,
   type PaneAttentionChangedEvent,
-} from "./services/DmuxAttentionService.js"
+} from "./services/QmuxAttentionService.js"
 import { reopenWorktree } from "./utils/reopenWorktree.js"
 import {
   resumeBranchWorkspace,
@@ -72,10 +72,10 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const ACTIVE_PANE_SYNC_INTERVAL_MS = 125
 import type {
-  DmuxPane,
-  DmuxAppProps,
+  QmuxPane,
+  QmuxAppProps,
   NewPaneInput,
-  DmuxThemeName,
+  QmuxThemeName,
   MergeTargetReference,
 } from "./types.js"
 import PanesGrid from "./components/panes/PanesGrid.js"
@@ -95,8 +95,8 @@ import {
 } from "./utils/projectActions.js"
 import { getPaneProjectRoot } from "./utils/paneProject.js"
 import {
-  applyDmuxTheme,
-  getDmuxThemePalette,
+  applyQmuxTheme,
+  getQmuxThemePalette,
 } from "./theme/colors.js"
 import {
   applyTmuxThemeToSession,
@@ -114,7 +114,7 @@ import {
 } from "./utils/paneTitlePrefix.js"
 import { getPaneTmuxDisplayTitle } from "./utils/paneTitle.js"
 
-const DmuxApp: React.FC<DmuxAppProps> = ({
+const QmuxApp: React.FC<QmuxAppProps> = ({
   panesFile,
   projectName,
   sessionName,
@@ -124,7 +124,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
 }) => {
   const { stdout } = useStdout()
   const terminalHeight = stdout?.rows || 40
-  const isDevMode = process.env.DMUX_DEV === "true"
+  const isDevMode = process.env.QMUX_DEV === "true"
   const sessionProjectRoot = projectRoot || process.cwd()
 
   /* panes state moved to usePanes */
@@ -211,9 +211,9 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
   const [hooksPromptIndex, setHooksPromptIndex] = useState(0)
   // undefined = not yet determined, true = use hooks, false = use polling
   const [useHooks, setUseHooks] = useState<boolean | undefined>(undefined)
-  const [focusService] = useState(() => new DmuxFocusService({ projectName, projectRoot }))
+  const [focusService] = useState(() => new QmuxFocusService({ projectName, projectRoot }))
   const [attentionService] = useState(
-    () => new DmuxAttentionService({
+    () => new QmuxAttentionService({
       focusService,
       notificationsEnabled: () =>
         new SettingsManager(projectRoot).getSettings().enableNotifications !== false,
@@ -299,7 +299,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
         setUseHooks(true)
         // Save the preference
         settingsManager.updateSetting('useTmuxHooks', true, 'global')
-        refreshDmuxSettings()
+        refreshQmuxSettings()
       } else {
         // Need to ask user - show prompt
         setShowHooksPrompt(true)
@@ -330,7 +330,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
           return prevPanes
         }
 
-        const updatedPane: DmuxPane = {
+        const updatedPane: QmuxPane = {
           ...pane,
           needsAttention: event.needsAttention,
         }
@@ -420,7 +420,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
         if (paneIndex === -1) return prevPanes
 
         const pane = prevPanes[paneIndex]
-        const updated: DmuxPane = {
+        const updated: QmuxPane = {
           ...pane,
           agentStatus: event.status,
         }
@@ -518,7 +518,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
     const popupSupport = supportsPopups()
     setPopupsSupported(popupSupport)
     if (popupSupport) {
-      // Enable mouse mode only for this dmux session (not global)
+      // Enable mouse mode only for this qmux session (not global)
     }
   }, [])
 
@@ -592,11 +592,11 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
     [panes]
   )
   const controlPaneActiveBorderStyle = useMemo(
-    () => `fg=colour${getDmuxThemePalette(selectedThemeName).activeBorder}`,
+    () => `fg=colour${getQmuxThemePalette(selectedThemeName).activeBorder}`,
     [selectedThemeName]
   )
   const projectThemeByRoot = useMemo(() => {
-    const themeMap = new Map<string, DmuxThemeName>()
+    const themeMap = new Map<string, QmuxThemeName>()
 
     for (const group of projectActionLayout.groups) {
       const paneTheme = group.panes.find((entry) => entry.pane.colorTheme)?.pane.colorTheme
@@ -608,9 +608,9 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
 
     return themeMap
   }, [projectActionLayout.groups, resolveProjectThemeName, themeRefreshNonce])
-  applyDmuxTheme(selectedThemeName)
+  applyQmuxTheme(selectedThemeName)
 
-  const refreshDmuxSettings = (_activeProjectRoot: string = selectedProjectRoot) => {
+  const refreshQmuxSettings = (_activeProjectRoot: string = selectedProjectRoot) => {
     setSettings(new SettingsManager(sessionProjectRoot).getSettings())
     setThemeRefreshNonce((current) => current + 1)
   }
@@ -677,19 +677,19 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
 
       for (const paneId of Array.from(cachedPrefixes.keys())) {
         if (!activePaneIds.has(paneId)) {
-          tmuxService.unsetPaneOptionSync(paneId, '@dmux_title_prefix')
+          tmuxService.unsetPaneOptionSync(paneId, '@qmux_title_prefix')
           cachedPrefixes.delete(paneId)
         }
       }
       for (const paneId of Array.from(cachedLabels.keys())) {
         if (!activePaneIds.has(paneId)) {
-          tmuxService.unsetPaneOptionSync(paneId, '@dmux_title_label')
+          tmuxService.unsetPaneOptionSync(paneId, '@qmux_title_label')
           cachedLabels.delete(paneId)
         }
       }
       for (const paneId of Array.from(cachedActiveBorderStyles.keys())) {
         if (!activeBorderStylePaneIds.has(paneId)) {
-          tmuxService.unsetPaneOptionSync(paneId, '@dmux_active_border_style')
+          tmuxService.unsetPaneOptionSync(paneId, '@qmux_active_border_style')
           cachedActiveBorderStyles.delete(paneId)
         }
       }
@@ -711,22 +711,22 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
           sessionProjectRoot,
           projectName
         )
-        const activeBorderStyle = `fg=colour${getDmuxThemePalette(paneThemeName).activeBorder}`
+        const activeBorderStyle = `fg=colour${getQmuxThemePalette(paneThemeName).activeBorder}`
 
         if (cachedPrefixes.get(pane.paneId) !== prefixValue) {
-          tmuxService.setPaneOptionSync(pane.paneId, '@dmux_title_prefix', prefixValue)
+          tmuxService.setPaneOptionSync(pane.paneId, '@qmux_title_prefix', prefixValue)
           cachedPrefixes.set(pane.paneId, prefixValue)
         }
 
         if (cachedLabels.get(pane.paneId) !== labelValue) {
-          tmuxService.setPaneOptionSync(pane.paneId, '@dmux_title_label', labelValue)
+          tmuxService.setPaneOptionSync(pane.paneId, '@qmux_title_label', labelValue)
           cachedLabels.set(pane.paneId, labelValue)
         }
 
         if (cachedActiveBorderStyles.get(pane.paneId) !== activeBorderStyle) {
           tmuxService.setPaneOptionSync(
             pane.paneId,
-            '@dmux_active_border_style',
+            '@qmux_active_border_style',
             activeBorderStyle
           )
           cachedActiveBorderStyles.set(pane.paneId, activeBorderStyle)
@@ -744,7 +744,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
       if (controlPaneId && cachedActiveBorderStyles.get(controlPaneId) !== controlPaneActiveBorderStyle) {
         tmuxService.setPaneOptionSync(
           controlPaneId,
-          '@dmux_active_border_style',
+          '@qmux_active_border_style',
           controlPaneActiveBorderStyle
         )
         cachedActiveBorderStyles.set(controlPaneId, controlPaneActiveBorderStyle)
@@ -937,7 +937,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
     )
   }
 
-  const handleCreateChildWorktree = async (parentPane: DmuxPane) => {
+  const handleCreateChildWorktree = async (parentPane: QmuxPane) => {
     if (!parentPane.worktreePath) {
       setStatusMessage("Selected pane has no worktree path")
       setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
@@ -1134,7 +1134,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
     )
   }
 
-  const handleSetDevSourceFromPane = async (pane: DmuxPane) => {
+  const handleSetDevSourceFromPane = async (pane: QmuxPane) => {
     if (!isDevMode) {
       setStatusMessage("Source switching is only available in dev mode")
       setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
@@ -1456,7 +1456,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
       process.stdout.write("\x1b[0m") // Reset all attributes
 
       // Never inject control keys into the pane during shutdown.
-      // An orphaned dmux dev process can outlive the UI and replay them forever.
+      // An orphaned qmux dev process can outlive the UI and replay them forever.
       if (process.env.TMUX) {
         try {
           const tmuxService = TmuxService.getInstance()
@@ -1468,15 +1468,15 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
       process.stdout.write("\x1b[2J\x1b[H")
 
       // Show clean goodbye message
-      process.stdout.write("\n  Run dmux again to resume. Goodbye 👋\n\n")
+      process.stdout.write("\n  Run qmux again to resume. Goodbye 👋\n\n")
 
       // Exit process
       process.exit(0)
     }, 100)
   }
 
-  // Hard-quit: tear down the whole dmux session, closing every pane. Unlike
-  // cleanExit (which leaves the session alive so `dmux -c` can resume it), this
+  // Hard-quit: tear down the whole qmux session, closing every pane. Unlike
+  // cleanExit (which leaves the session alive so `qmux -c` can resume it), this
   // kills the tmux session outright. Wired to a double Ctrl+C.
   const killSessionExit = () => {
     if (!claimProcessShutdown("app-kill-session")) {
@@ -1489,7 +1489,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
     // index.ts's `waitUntilExit().then(() => process.exit(0))`, which preempts
     // any deferred kill and leaves the other panes alive. Killing the session
     // while still inside tmux sends SIGHUP to every pane — including this one —
-    // so the whole dmux comes down and nothing after this needs to run.
+    // so the whole qmux comes down and nothing after this needs to run.
     if (process.env.TMUX && sessionName) {
       try {
         TmuxService.getInstance().killSessionSync(sessionName)
@@ -1516,20 +1516,20 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
         setShowHooksPrompt(false)
         setUseHooks(true)
         settingsManager.updateSetting('useTmuxHooks', true, 'global')
-        refreshDmuxSettings()
+        refreshQmuxSettings()
       } else if (input === 'n') {
         // No - use polling
         setShowHooksPrompt(false)
         setUseHooks(false)
         settingsManager.updateSetting('useTmuxHooks', false, 'global')
-        refreshDmuxSettings()
+        refreshQmuxSettings()
       } else if (key.return) {
         // Select current option
         setShowHooksPrompt(false)
         const selected = hooksPromptIndex === 0
         setUseHooks(selected)
         settingsManager.updateSetting('useTmuxHooks', selected, 'global')
-        refreshDmuxSettings()
+        refreshQmuxSettings()
       }
     },
     { isActive: showHooksPrompt }
@@ -1559,7 +1559,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
     projectSettings,
     saveSettings,
     settingsManager,
-    refreshDmuxSettings,
+    refreshQmuxSettings,
     popupManager,
     actionSystem,
     controlPaneId,
@@ -1593,7 +1593,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
   //   - Footer tip: +1 line when footer tips are enabled
   //   - Toast (active): wrapped lines + header + marginBottom
   //   - Toast (queued, transitioning): header + marginBottom (2 lines)
-  //   - Debug info: +1 line if DEBUG_DMUX
+  //   - Debug info: +1 line if DEBUG_QMUX
   //   - Status line: +1 line if currentBranch/debugMessage
   //   - Status messages: +1 line per active message
   const showFooterHelp = !showCommandPrompt
@@ -1629,7 +1629,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
       }
 
       // Add debug info
-      if (process.env.DEBUG_DMUX) {
+      if (process.env.DEBUG_QMUX) {
         footerLines += 1
       }
     }
@@ -1736,7 +1736,7 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
           toastQueuePosition={toastQueuePosition}
           footerTip={currentFooterTip}
           gridInfo={(() => {
-            if (!process.env.DEBUG_DMUX) return undefined
+            if (!process.env.DEBUG_QMUX) return undefined
             const rows = navigationRows.length
             const cols = Math.max(1, ...navigationRows.map((row) => row.length))
             const pos = getCardGridPosition(selectedIndex)
@@ -1765,4 +1765,4 @@ const DmuxApp: React.FC<DmuxAppProps> = ({
   )
 }
 
-export default DmuxApp
+export default QmuxApp

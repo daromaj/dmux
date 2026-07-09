@@ -162,8 +162,8 @@ export class PaneAnalyzer {
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://github.com/dmux/dmux',
-        'X-Title': 'dmux',
+        'HTTP-Referer': 'https://github.com/qmux/qmux',
+        'X-Title': 'qmux',
       },
       body: JSON.stringify({
         model,
@@ -550,7 +550,7 @@ ${content}`,
     tmuxPaneId: string,
     content: string,
     context: PaneContext,
-    dmuxPaneId: string | undefined,
+    qmuxPaneId: string | undefined,
     signal?: AbortSignal
   ): Promise<PaneAnalysis> {
     const logService = LogService.getInstance();
@@ -562,7 +562,7 @@ ${content}`,
 
       // If it's an option dialog, extract option details
       if (state === 'option_dialog') {
-        logService.debug(`PaneAnalyzer: Detected option_dialog for "${paneName}", extracting options...`, 'paneAnalyzer', dmuxPaneId);
+        logService.debug(`PaneAnalyzer: Detected option_dialog for "${paneName}", extracting options...`, 'paneAnalyzer', qmuxPaneId);
         const optionDetails = await this.extractOptions(content, context, signal);
         return {
           state,
@@ -572,7 +572,7 @@ ${content}`,
 
       // If it's open_prompt (idle), extract summary
       if (state === 'open_prompt') {
-        logService.debug(`PaneAnalyzer: Detected open_prompt for "${paneName}", extracting summary...`, 'paneAnalyzer', dmuxPaneId);
+        logService.debug(`PaneAnalyzer: Detected open_prompt for "${paneName}", extracting summary...`, 'paneAnalyzer', qmuxPaneId);
         const summaryDetails = await this.extractSummary(content, context, signal);
         return {
           state,
@@ -583,7 +583,7 @@ ${content}`,
       // Otherwise just return the state (in_progress)
       return { state };
     } catch (error) {
-      logService.error(`PaneAnalyzer: Analysis failed for "${paneName}": ${error}`, 'paneAnalyzer', dmuxPaneId, error instanceof Error ? error : undefined);
+      logService.error(`PaneAnalyzer: Analysis failed for "${paneName}": ${error}`, 'paneAnalyzer', qmuxPaneId, error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -594,12 +594,12 @@ ${content}`,
    *
    * @param tmuxPaneId - The tmux pane ID (e.g., "%38")
    * @param signal - Optional abort signal
-   * @param dmuxPaneId - Optional dmux pane ID for friendly logging (e.g., "dmux-123")
+   * @param qmuxPaneId - Optional qmux pane ID for friendly logging (e.g., "qmux-123")
    */
   async analyzePane(
     tmuxPaneId: string,
     signal?: AbortSignal,
-    dmuxPaneId?: string,
+    qmuxPaneId?: string,
     capturedSnapshot?: string
   ): Promise<PaneAnalysis> {
     const logService = LogService.getInstance();
@@ -608,20 +608,20 @@ ${content}`,
     let paneName = tmuxPaneId;
     let panePrompt: string | undefined;
     let agentLabel: string | undefined;
-    if (dmuxPaneId) {
+    if (qmuxPaneId) {
       try {
         // Import dynamically to avoid circular dependency
         const { StateManager } = await import('../shared/StateManager.js');
-        const pane = StateManager.getInstance().getPaneById(dmuxPaneId);
-        paneName = pane ? getPaneDisplayName(pane) : dmuxPaneId;
+        const pane = StateManager.getInstance().getPaneById(qmuxPaneId);
+        paneName = pane ? getPaneDisplayName(pane) : qmuxPaneId;
         panePrompt = pane?.prompt;
         agentLabel = pane?.agent;
       } catch {
-        paneName = dmuxPaneId;
+        paneName = qmuxPaneId;
       }
     }
 
-    logService.debug(`PaneAnalyzer: Starting analysis for "${paneName}"`, 'paneAnalyzer', dmuxPaneId);
+    logService.debug(`PaneAnalyzer: Starting analysis for "${paneName}"`, 'paneAnalyzer', qmuxPaneId);
 
     // Normalize the analyzer input to the last 50 trimmed lines so every LLM stage
     // sees the same bounded pane snapshot.
@@ -634,7 +634,7 @@ ${content}`,
     );
 
     if (!content) {
-      logService.debug(`PaneAnalyzer: No content captured for "${paneName}", defaulting to in_progress`, 'paneAnalyzer', dmuxPaneId);
+      logService.debug(`PaneAnalyzer: No content captured for "${paneName}", defaulting to in_progress`, 'paneAnalyzer', qmuxPaneId);
       return { state: 'in_progress' };
     }
 
@@ -642,14 +642,14 @@ ${content}`,
     const contentHash = this.hashContent(content);
     const cached = this.getCached(contentHash);
     if (cached) {
-      logService.debug(`PaneAnalyzer: Cache hit for "${paneName}"`, 'paneAnalyzer', dmuxPaneId);
+      logService.debug(`PaneAnalyzer: Cache hit for "${paneName}"`, 'paneAnalyzer', qmuxPaneId);
       return cached;
     }
 
     // Check for pending request (deduplication)
     const pendingKey = `${tmuxPaneId}:${contentHash}`;
     if (this.pendingRequests.has(pendingKey)) {
-      logService.debug(`PaneAnalyzer: Deduplicating request for "${paneName}"`, 'paneAnalyzer', dmuxPaneId);
+      logService.debug(`PaneAnalyzer: Deduplicating request for "${paneName}"`, 'paneAnalyzer', qmuxPaneId);
       return this.pendingRequests.get(pendingKey)!;
     }
 
@@ -662,13 +662,13 @@ ${content}`,
         panePrompt,
         agentLabel,
       },
-      dmuxPaneId,
+      qmuxPaneId,
       signal
     )
       .then(result => {
         // Cache successful result
         this.setCache(contentHash, result);
-        logService.debug(`PaneAnalyzer: Analysis complete for "${paneName}": ${result.state}`, 'paneAnalyzer', dmuxPaneId);
+        logService.debug(`PaneAnalyzer: Analysis complete for "${paneName}": ${result.state}`, 'paneAnalyzer', qmuxPaneId);
         return result;
       })
       .finally(() => {

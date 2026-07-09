@@ -4,7 +4,7 @@
  */
 
 import type { ActionResult, ActionContext } from '../../types.js';
-import type { DmuxPane } from '../../../types.js';
+import type { QmuxPane } from '../../../types.js';
 import { handleCommitWithOptions } from '../commitMessageHandler.js';
 import { LogService } from '../../../services/LogService.js';
 
@@ -18,7 +18,7 @@ export async function handleMainDirty(
   issue: MainDirtyIssue,
   mainBranch: string,
   mainRepoPath: string,
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   retryMerge: () => Promise<ActionResult>
 ): Promise<ActionResult> {

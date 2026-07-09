@@ -1,4 +1,4 @@
-# dmux — custom fork TODO
+# qmux — custom fork TODO
 
 > Based on personal workflow needs. Quick hacks first, proper features later.
 
@@ -15,22 +15,22 @@
 
 - [~] **Quake-mode assistant** (`Ctrl+\``) — IMPLEMENTED (pending live tmux smoke test). A top-drawer
       chat that talks to the app's configured LLM
-      (`aiProvider`/`aiModel`/`aiBaseUrl`, key from `DMUX_AI_API_KEY`/`OPENROUTER_API_KEY`). Basic
+      (`aiProvider`/`aiModel`/`aiBaseUrl`, key from `QMUX_AI_API_KEY`/`OPENROUTER_API_KEY`). Basic
       agentic harness: the model streams prose and emits ` ```run ` shell/tmux blocks (executed) and
-      ` ```dmux ` control verbs (grid/control-position/color).
-      Full-auto, no confirm gate; Esc aborts; forensic transcript to `.dmux/quake-history.jsonl`.
-      System prompt is the operating manual (what dmux is + how to send-keys/read panes + live
+      ` ```qmux ` control verbs (grid/control-position/color).
+      Full-auto, no confirm gate; Esc aborts; forensic transcript to `.qmux/quake-history.jsonl`.
+      System prompt is the operating manual (what qmux is + how to send-keys/read panes + live
       pane/settings context). Decisions resolved: free-form send-keys (not tool-calls); no guardrails;
       history in-memory + jsonl.
       - **Architecture:** runs as its own `tmux display-popup` drawer anchored to the top at ~50%
         height (a separate process), leaving the small control pane untouched — it does NOT hijack or
         zoom the control pane. The popup reconstructs `QuakeAssistantService`; AI config is passed in
-        via a data file since a tmux popup doesn't inherit the dmux env. Control verbs persist to disk
+        via a data file since a tmux popup doesn't inherit the qmux env. Control verbs persist to disk
         (best-effort) rather than hot-applying to the live UI.
       - Files: `src/utils/{aiClient,quakeCommands,quakeControlVerbs,quakeSystemPrompt,quakeShell,quakeTypes}.ts`,
         `src/services/QuakeAssistantService.ts`, `src/components/QuakeOverlay.tsx`,
         `src/components/popups/quakePopup.tsx`, `src/services/PopupManager.ts` (`launchQuakePopup`),
-        `src/hooks/useQuakeAssistant.ts`, wired in `DmuxApp.tsx`. Spec:
+        `src/hooks/useQuakeAssistant.ts`, wired in `QmuxApp.tsx`. Spec:
         `docs/superpowers/specs/2026-07-09-quake-mode-assistant-design.md`.
       - **Needs live verification:** the `Ctrl+\`` key encoding (defensive matching for `key.ctrl+\``,
         raw `\x1c`, and the `Ctrl+b` `` ` `` chord — confirm which fires in your terminal) and that the
@@ -38,12 +38,12 @@
 - [ ] **`/loop` command** — bind a repeatable action to run against the LLM agent on demand/interval
       (re-invoke the same prompt/step N times or until a condition). Overlaps with the assistant
       above; decide whether `/loop` is a slash command inside the quake chat or a standalone control.
-- [ ] **`/new` command** — start a fresh dmux session from the assistant/command surface (parity with
-      plain `dmux` scratch-start). Sketch a slash-command palette (`/new`, `/loop`, …) that the quake
+- [ ] **`/new` command** — start a fresh qmux session from the assistant/command surface (parity with
+      plain `qmux` scratch-start). Sketch a slash-command palette (`/new`, `/loop`, …) that the quake
       assistant and/or the main TUI both expose.
 
-- [ ] **`dmux --quick`** — start with no sidebar TUI, just a tmux session + keybindings
-- [ ] **Session restore** — `dmux --resume` reopens last session
+- [ ] **`qmux --quick`** — start with no sidebar TUI, just a tmux session + keybindings
+- [ ] **Session restore** — `qmux --resume` reopens last session
 - [ ] **Multi-monitor** — spawn panes in different tmux windows
 - [ ] **Log tailing** — built-in log viewer pane (tail -f with search)
 
@@ -53,7 +53,7 @@
       control pane wasted space and the rotating `Tip:` line never showed. Three problems: (1) the shortcut
       hints rendered twice in `PanesStrip` — a static hint row (`n new agent / t terminal / p open project
       ...`) plus the selectable action cards saying the same thing; (2) `FooterHelp` is the only component
-      that renders `Tip:`, and it's hard-excluded in bottom mode (`DmuxApp.tsx`, `!isBottomControlPane`), so
+      that renders `Tip:`, and it's hard-excluded in bottom mode (`QmuxApp.tsx`, `!isBottomControlPane`), so
       the tip was structurally unreachable there; (3) the pane was 4 rows but the content is only 3 lines,
       leaving an empty row. Fix: deleted the static hint row and made the selectable action cards the single
       row-1 shortcuts line (with `m menu / [ collapse / ? all keys` appended inline); threaded
@@ -101,9 +101,9 @@
       `useInputHandling`. Post-close selection and `selectProjectAction` now prefer the terminal action.
 
 - [x] **Double Ctrl+C closes the whole session** — a second Ctrl+C in the control pane now tears down
-      the entire dmux tmux session (every pane), instead of only exiting the control-pane TUI and
+      the entire qmux tmux session (every pane), instead of only exiting the control-pane TUI and
       leaving the other panes running. `q` stays the soft quit (exits the TUI, keeps the session so
-      `dmux -c` can resume). New `TmuxService.killSessionSync()` + `killSessionExit()` in DmuxApp,
+      `qmux -c` can resume). New `TmuxService.killSessionSync()` + `killSessionExit()` in QmuxApp,
       wired to the second Ctrl+C; the confirm prompt now says it closes all panes.
       **Race fix:** `killSessionExit()` now kills the session BEFORE `exit()` — previously a post-`exit()`
       `setTimeout` did the kill, but Ink's `waitUntilExit().then(process.exit(0))` in `index.ts`
@@ -136,21 +136,21 @@
       Design spec: `docs/superpowers/specs/2026-07-08-bottom-control-pane-design.md`.
       Note: web-server embedded layout path stays left-only.
 
-- [x] **`dmux` = scratch, `dmux -c` = continue** — plain `dmux` always starts from a clean single
-      pane. If a previous project session is still alive in tmux, plain `dmux` **kills it** and creates
+- [x] **`qmux` = scratch, `qmux -c` = continue** — plain `qmux` always starts from a clean single
+      pane. If a previous project session is still alive in tmux, plain `qmux` **kills it** and creates
       a fresh one (no more reattaching to old panes, no cd-into-worktree, no auto `claude --continue`).
-      `dmux -c` / `--continue` reopens the last session: live panes reattach as-is; panes lost to a
+      `qmux -c` / `--continue` reopens the last session: live panes reattach as-is; panes lost to a
       killed tmux server are recreated with **fresh** agent sessions (never resumed). The continue flag
       is forwarded to the control-pane process so a killed-server `-c` still restores. Implemented in
       `index.ts` (session teardown + flag forward + welcome-pane count) and `usePaneLoading.ts`
       (`shouldContinueSession` / `selectMissingPanesToRecreate`, fresh-launch restore).
 
-- [x] Configurable AI provider (env vars: `DMUX_AI_PROVIDER`, `DMUX_AI_MODEL`, `DMUX_AI_BASE_URL`, `DMUX_AI_API_KEY`)
+- [x] Configurable AI provider (env vars: `QMUX_AI_PROVIDER`, `QMUX_AI_MODEL`, `QMUX_AI_BASE_URL`, `QMUX_AI_API_KEY`)
 - [x] DeepSeek provider preset (`deepseek-v4-pro` model, `api.deepseek.com` endpoint)
 - [x] Settings UI for AI config (`aiProvider`, `aiModel`, `aiBaseUrl`)
-- [x] `DMUX_USE_WORKTREE=1` opt-in — no worktrees by default
+- [x] `QMUX_USE_WORKTREE=1` opt-in — no worktrees by default
 - [x] Safe defaults — no auto-agent-selection, `permissionMode` defaults to ask
-- [x] Live dev via `npm link` in `~/git/dmux`
+- [x] Live dev via `npm link` in `~/git/qmux`
 - [x] `p` shortcut — quick-open project from ~/git (MRU-sorted), opens terminal pane
 - [x] `[` shortcut — toggle sidebar collapse/expand
 - [x] `ccc` alias — `cc -c` (non-interactive Claude)
@@ -163,7 +163,7 @@
 - [x] **Resize panes** — `Ctrl+↑↓←→` resizes the selected pane (best-effort; auto-layout re-tiles on next refresh)
 - [x] **Per-pane agent override** — menu `🔀 Change Agent` relaunches the pane with a different agent (fresh session)
 - [x] **Pane colors** — menu `🎨 Set Pane Color`; manual color sticks (not overwritten by project-theme sync)
-- [x] Verified: pane rename works without worktree; worktree cleanup on close works; config schema exists; tmux prefix is a non-issue (dmux uses no-prefix `M-` bindings, never hardcodes `C-b`)
+- [x] Verified: pane rename works without worktree; worktree cleanup on close works; config schema exists; tmux prefix is a non-issue (qmux uses no-prefix `M-` bindings, never hardcodes `C-b`)
 
 ## Priority 1 — Layout Control
 
@@ -180,14 +180,14 @@
 
 - [x] **Pane reordering** — menu Move Up/Down + `Shift+↑↓` (swaps list order + tmux geometry)
 - [x] **Pane renaming** from sidebar (verified: works without worktree via menu → Rename)
-- [x] **Resize panes** via dmux shortcuts — `Ctrl+↑↓←→` (best-effort under auto-layout)
+- [x] **Resize panes** via qmux shortcuts — `Ctrl+↑↓←→` (best-effort under auto-layout)
 
 ## Priority 3 — Agent Integration
 
 - [x] **pi CLI** as first-class agent (registered + default-enabled)
 - [x] **Favourite startup commands** — `favoriteCommands` setting (default `cc`/`cc -c`/`pi`/`pi -c`); the
       `p` project-open picker offers them after Shell, runs the chosen one in the fresh terminal. Edit the list
-      in `.dmux/settings.json` (layered global/project). Was described as "custom agent commands"; the real need
+      in `.qmux/settings.json` (layered global/project). Was described as "custom agent commands"; the real need
       was a per-project favourites list, not a full agent-registry rewrite.
 - [x] **Per-pane agent override** — menu `🔀 Change Agent` relaunches pane with a new agent
 - [x] **Goal mode** per-pane toggle from sidebar (menu action `🎯 Toggle Goal Mode`)
@@ -197,16 +197,16 @@
 
 - [x] **Single-pane mode** — `disableWelcomePane` setting suppresses the auto welcome pane
 - [x] **Better shortcut discoverability** — key hints shown in sidebar footer
-- [x] **Configurable tmux prefix** — N/A: dmux uses no-prefix `M-` bindings, never hardcodes `C-b`
+- [x] **Configurable tmux prefix** — N/A: qmux uses no-prefix `M-` bindings, never hardcodes `C-b`
 - [x] **Pane colors** — menu `🎨 Set Pane Color` (manual override persists)
 
 ## Priority 5 — Git / Worktree
 
-Decision: **dmux does not manage git.** Agents own their branches/worktrees/merges; dmux is just a
+Decision: **qmux does not manage git.** Agents own their branches/worktrees/merges; qmux is just a
 pane manager. So the merge/branch-oversight items are dropped rather than built.
 
-- [x] Worktree mode (`DMUX_USE_WORKTREE=1`) documented — README "Worktrees (opt-in)" section
-- [~] ~~Merge without worktree~~ — **won't do.** dmux shouldn't orchestrate merges at all; the agent
+- [x] Worktree mode (`QMUX_USE_WORKTREE=1`) documented — README "Worktrees (opt-in)" section
+- [~] ~~Merge without worktree~~ — **won't do.** qmux shouldn't orchestrate merges at all; the agent
       running in the pane handles its own git. The upstream merge flow is simply unused in this fork.
 - [x] Worktree cleanup on close — verified working (`closeAction.ts`; skips deletion when siblings
-      still share the worktree). Only relevant when `DMUX_USE_WORKTREE=1`.
+      still share the worktree). Only relevant when `QMUX_USE_WORKTREE=1`.

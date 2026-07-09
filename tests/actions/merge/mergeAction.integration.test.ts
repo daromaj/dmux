@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mergePane } from '../../../src/actions/implementations/mergeAction.js';
-import type { DmuxPane } from '../../../src/types.js';
+import type { QmuxPane } from '../../../src/types.js';
 import type { ActionContext } from '../../../src/actions/types.js';
 
 // Mock all dependencies
@@ -32,7 +32,7 @@ vi.mock('../../../src/utils/hooks.js', () => ({
 vi.mock('../../../src/utils/worktreeDiscovery.js', () => ({
   detectAllWorktrees: vi.fn(() => ([
     {
-      worktreePath: '/test/main/.dmux/worktrees/test-branch',
+      worktreePath: '/test/main/.qmux/worktrees/test-branch',
       parentRepoPath: '/test/main',
       branch: 'test-branch',
       repoName: 'main',
@@ -94,12 +94,12 @@ vi.mock('../../../src/services/LogService.js', () => ({
 }));
 
 describe('Merge Action Integration', () => {
-  const mockPane: DmuxPane = {
+  const mockPane: QmuxPane = {
     id: 'test-1',
     slug: 'test-branch',
     prompt: 'test prompt',
     paneId: '%1',
-    worktreePath: '/test/main/.dmux/worktrees/test-branch',
+    worktreePath: '/test/main/.qmux/worktrees/test-branch',
   };
 
   const mockContext: ActionContext = {
@@ -144,7 +144,7 @@ describe('Merge Action Integration', () => {
       if (result.type === 'confirm' && result.onConfirm) {
         await result.onConfirm();
         expect(triggerHook).toHaveBeenCalledWith('pre_merge', '/test/main', mockPane, {
-          DMUX_TARGET_BRANCH: 'main',
+          QMUX_TARGET_BRANCH: 'main',
         });
       }
     });

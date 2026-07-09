@@ -1,5 +1,5 @@
 import path from "path";
-import type { DmuxPane } from "../types.js";
+import type { QmuxPane } from "../types.js";
 import { getPaneProjectRoot } from "./paneProject.js";
 
 export type PaneBulkVisibilityAction = "hide-others" | "show-others";
@@ -9,14 +9,14 @@ function sameProjectRoot(a: string, b: string): boolean {
   return path.resolve(a) === path.resolve(b);
 }
 
-export function getVisiblePanes(panes: DmuxPane[]): DmuxPane[] {
+export function getVisiblePanes(panes: QmuxPane[]): QmuxPane[] {
   return panes.filter((pane) => !pane.hidden);
 }
 
 export function syncHiddenStateFromCurrentWindow(
-  panes: DmuxPane[],
+  panes: QmuxPane[],
   currentWindowPaneIds: string[]
-): DmuxPane[] {
+): QmuxPane[] {
   if (currentWindowPaneIds.length === 0) {
     return panes;
   }
@@ -28,8 +28,8 @@ export function syncHiddenStateFromCurrentWindow(
 }
 
 export function getBulkVisibilityAction(
-  panes: DmuxPane[],
-  selectedPane: DmuxPane
+  panes: QmuxPane[],
+  selectedPane: QmuxPane
 ): PaneBulkVisibilityAction | null {
   const otherPanes = panes.filter((pane) => pane.id !== selectedPane.id);
   if (otherPanes.length === 0) {
@@ -48,12 +48,12 @@ export function getBulkVisibilityAction(
 }
 
 export function partitionPanesByProject(
-  panes: DmuxPane[],
+  panes: QmuxPane[],
   targetProjectRoot: string,
   fallbackProjectRoot: string
-): { projectPanes: DmuxPane[]; otherPanes: DmuxPane[] } {
-  const projectPanes: DmuxPane[] = [];
-  const otherPanes: DmuxPane[] = [];
+): { projectPanes: QmuxPane[]; otherPanes: QmuxPane[] } {
+  const projectPanes: QmuxPane[] = [];
+  const otherPanes: QmuxPane[] = [];
 
   for (const pane of panes) {
     const paneProjectRoot = getPaneProjectRoot(pane, fallbackProjectRoot);
@@ -68,7 +68,7 @@ export function partitionPanesByProject(
 }
 
 export function getProjectVisibilityAction(
-  panes: DmuxPane[],
+  panes: QmuxPane[],
   targetProjectRoot: string,
   fallbackProjectRoot: string
 ): PaneProjectVisibilityAction | null {

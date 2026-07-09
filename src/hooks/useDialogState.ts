@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 /**
- * Hook to manage all dialog-related state in DmuxApp
+ * Hook to manage all dialog-related state in QmuxApp
  * Centralizes: command prompts, file copy dialog, running status, quit confirmation
  */
 export function useDialogState() {

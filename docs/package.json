@@ -1,5 +1,5 @@
 {
-  "name": "dmux-docs",
+  "name": "qmux-docs",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -7,7 +7,7 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite build && vite preview",
-    "deploy": "vite build && wrangler deploy -c src/dist/dmux/wrangler.json"
+    "deploy": "vite build && wrangler deploy -c src/dist/qmux/wrangler.json"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.25.1",

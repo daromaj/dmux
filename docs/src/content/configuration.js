@@ -3,7 +3,7 @@ export const meta = { title: 'Configuration' };
 export function render() {
   return `
     <h1>Configuration</h1>
-    <p class="lead">dmux uses a layered configuration system with global, team, and project-level settings. Project settings override global settings, and global settings override optional team defaults committed in the repo.</p>
+    <p class="lead">qmux uses a layered configuration system with global, team, and project-level settings. Project settings override global settings, and global settings override optional team defaults committed in the repo.</p>
 
     <h2>Configuration Files</h2>
     <table>
@@ -11,10 +11,10 @@ export function render() {
         <tr><th>File</th><th>Scope</th><th>Purpose</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>~/.dmux.global.json</code></td><td>Global</td><td>Default settings for all projects</td></tr>
-        <tr><td><code>.dmux.defaults.json</code></td><td>Team</td><td>Repo-committed defaults shared across the project</td></tr>
-        <tr><td><code>.dmux/settings.json</code></td><td>Project</td><td>Project-specific overrides</td></tr>
-        <tr><td><code>.dmux/dmux.config.json</code></td><td>Project</td><td>Pane tracking (managed by dmux)</td></tr>
+        <tr><td><code>~/.qmux.global.json</code></td><td>Global</td><td>Default settings for all projects</td></tr>
+        <tr><td><code>.qmux.defaults.json</code></td><td>Team</td><td>Repo-committed defaults shared across the project</td></tr>
+        <tr><td><code>.qmux/settings.json</code></td><td>Project</td><td>Project-specific overrides</td></tr>
+        <tr><td><code>.qmux/qmux.config.json</code></td><td>Project</td><td>Pane tracking (managed by qmux)</td></tr>
       </tbody>
     </table>
 
@@ -43,7 +43,7 @@ export function render() {
       <tbody>
         <tr><td><strong>Type</strong></td><td><code>boolean</code></td></tr>
         <tr><td><strong>Default</strong></td><td><code>true</code></td></tr>
-        <tr><td><strong>Description</strong></td><td>Allow dmux attention notifications, including native macOS alerts and same-window attention flashes. Disable this for a completely quiet attention-notification mode.</td></tr>
+        <tr><td><strong>Description</strong></td><td>Allow qmux attention notifications, including native macOS alerts and same-window attention flashes. Disable this for a completely quiet attention-notification mode.</td></tr>
       </tbody>
     </table>
 
@@ -52,7 +52,7 @@ export function render() {
       <tbody>
         <tr><td><strong>Type</strong></td><td><code>'' | 'plan' | 'acceptEdits' | 'bypassPermissions'</code></td></tr>
         <tr><td><strong>Default</strong></td><td><code>'bypassPermissions'</code></td></tr>
-        <tr><td><strong>Description</strong></td><td>Controls the permission flags dmux passes to launched agents. Use empty string to defer to each agent's own defaults.</td></tr>
+        <tr><td><strong>Description</strong></td><td>Controls the permission flags qmux passes to launched agents. Use empty string to defer to each agent's own defaults.</td></tr>
       </tbody>
     </table>
 
@@ -79,7 +79,7 @@ export function render() {
       <tbody>
         <tr><td><strong>Type</strong></td><td><code>NotificationSoundId[]</code></td></tr>
         <tr><td><strong>Default</strong></td><td><code>['default-system-sound']</code></td></tr>
-        <tr><td><strong>Description</strong></td><td>Select which macOS notification sounds dmux randomizes between for background attention notifications. If the list is empty or invalid, dmux falls back to the default system sound.</td></tr>
+        <tr><td><strong>Description</strong></td><td>Select which macOS notification sounds qmux randomizes between for background attention notifications. If the list is empty or invalid, qmux falls back to the default system sound.</td></tr>
       </tbody>
     </table>
 
@@ -159,10 +159,10 @@ export function render() {
   "minPaneWidth": 50,
   "maxPaneWidth": 80
 }</code></pre>
-    <p><code>.dmux.defaults.json</code> lives at the repo root and is intended for safe, team-wide defaults that you want in version control. Personal overrides still belong in <code>.dmux/settings.json</code> or <code>~/.dmux.global.json</code>.</p>
+    <p><code>.qmux.defaults.json</code> lives at the repo root and is intended for safe, team-wide defaults that you want in version control. Personal overrides still belong in <code>.qmux/settings.json</code> or <code>~/.qmux.global.json</code>.</p>
 
     <h2>macOS Attention Notifications</h2>
-    <p>On macOS, dmux ships with a native helper that can send attention notifications for background panes. This is progressive enhancement only: dmux continues working on Linux and Windows without it.</p>
+    <p>On macOS, qmux ships with a native helper that can send attention notifications for background panes. This is progressive enhancement only: qmux continues working on Linux and Windows without it.</p>
     <ul>
       <li>Notifications are only sent for panes that are not currently fully focused</li>
       <li><code>enableNotifications</code> disables native alerts and same-window attention flashes when set to <code>false</code></li>
@@ -171,16 +171,16 @@ export function render() {
     </ul>
 
     <h2>Setting Precedence</h2>
-    <p>When the same key is defined in multiple places, dmux resolves it in this order:</p>
+    <p>When the same key is defined in multiple places, qmux resolves it in this order:</p>
     <ol>
-      <li>Project settings (<code>.dmux/settings.json</code>) — highest priority</li>
-      <li>Global settings (<code>~/.dmux.global.json</code>) — fallback</li>
-      <li>Team defaults (<code>.dmux.defaults.json</code>) — shared repo baseline</li>
+      <li>Project settings (<code>.qmux/settings.json</code>) — highest priority</li>
+      <li>Global settings (<code>~/.qmux.global.json</code>) — fallback</li>
+      <li>Team defaults (<code>.qmux.defaults.json</code>) — shared repo baseline</li>
       <li>Built-in defaults — if neither file defines the setting</li>
     </ol>
 
     <h2>OpenRouter Configuration</h2>
-    <p>dmux uses <a href="https://openrouter.ai" target="_blank" rel="noopener">OpenRouter</a> for AI-powered features like smart branch naming and commit message generation.</p>
+    <p>qmux uses <a href="https://openrouter.ai" target="_blank" rel="noopener">OpenRouter</a> for AI-powered features like smart branch naming and commit message generation.</p>
 
     <h3>Setting Up</h3>
     <ol>
@@ -208,16 +208,16 @@ echo 'export OPENROUTER_API_KEY="sk-or-v1-..."' >> ~/.zshrc</code></pre>
     </table>
 
     <h3>Without OpenRouter</h3>
-    <p>If <code>OPENROUTER_API_KEY</code> is not set, dmux still works but with reduced functionality:</p>
+    <p>If <code>OPENROUTER_API_KEY</code> is not set, qmux still works but with reduced functionality:</p>
     <ul>
-      <li>Branch names fall back to <code>dmux-{timestamp}</code></li>
-      <li>Commit messages fall back to <code>dmux: auto-commit changes</code></li>
+      <li>Branch names fall back to <code>qmux-{timestamp}</code></li>
+      <li>Commit messages fall back to <code>qmux: auto-commit changes</code></li>
       <li>Pane status detection uses heuristics instead of LLM analysis</li>
     </ul>
 
     <div class="callout callout-tip">
       <div class="callout-title">Tip</div>
-      OpenRouter provides free credits for new accounts, and the paid models dmux prefers for AI features are very inexpensive. Pane status detection also has a zero-cost fallback for capped or unavailable paid models.
+      OpenRouter provides free credits for new accounts, and the paid models qmux prefers for AI features are very inexpensive. Pane status detection also has a zero-cost fallback for capped or unavailable paid models.
     </div>
 
     <h2>Environment Variables</h2>
@@ -227,7 +227,7 @@ echo 'export OPENROUTER_API_KEY="sk-or-v1-..."' >> ~/.zshrc</code></pre>
       </thead>
       <tbody>
         <tr><td><code>OPENROUTER_API_KEY</code></td><td>API key for OpenRouter AI features</td></tr>
-        <tr><td><code>DMUX_SESSION</code></td><td>Override the tmux session name</td></tr>
+        <tr><td><code>QMUX_SESSION</code></td><td>Override the tmux session name</td></tr>
       </tbody>
     </table>
   `;

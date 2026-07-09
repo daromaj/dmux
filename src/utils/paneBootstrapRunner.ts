@@ -86,7 +86,7 @@ function updateViewState(patch: Partial<ViewState>): void {
 
 function normalizeProgressLine(line: string): string {
   return line
-    .replace(/^\s*(DMUX_STATUS:|dmux:|status:)\s*/i, '')
+    .replace(/^\s*(QMUX_STATUS:|qmux:|status:)\s*/i, '')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 180);
@@ -211,7 +211,7 @@ function BootstrapApp(props: { config: PaneBootstrapConfig }): React.ReactElemen
         React.createElement(
           Text,
           null,
-          React.createElement(Text, { bold: true, color: borderColor }, 'dmux'),
+          React.createElement(Text, { bold: true, color: borderColor }, 'qmux'),
           React.createElement(Text, { dimColor: true }, '  ·  '),
           React.createElement(Text, null, headline)
         ),
@@ -367,7 +367,7 @@ function buildSteps(config: PaneBootstrapConfig): Step[] {
     ...(noWorktree ? [] : [
       {
         id: 'metadata',
-        label: 'Writing dmux metadata',
+        label: 'Writing qmux metadata',
         state: 'pending' as const,
       },
     ]),
@@ -527,7 +527,7 @@ async function sendInteractivePrompt(config: PaneBootstrapConfig): Promise<void>
     await sleep(readyDelayMs);
   }
 
-  const bufferName = `dmux-prompt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const bufferName = `qmux-prompt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   try {
     for (const key of getSendKeysPrePrompt(config.agent)) {
       await tmuxService.sendTmuxKeys(config.pane.paneId, key);
@@ -580,7 +580,7 @@ async function buildLaunchCommand(config: PaneBootstrapConfig): Promise<string |
       const promptBootstrap = buildPromptReadAndDeleteSnippet(promptFilePath);
       launchCommand = `${promptBootstrap}; ${buildInitialPromptCommand(
         config.agent,
-        '"$DMUX_PROMPT_CONTENT"',
+        '"$QMUX_PROMPT_CONTENT"',
         config.permissionMode
       )}`;
     } else {
@@ -603,7 +603,7 @@ async function buildLaunchCommand(config: PaneBootstrapConfig): Promise<string |
     try {
       installClaudePaneHooks({
         worktreePath: config.worktreePath,
-        dmuxPaneId: config.pane.id,
+        qmuxPaneId: config.pane.id,
         tmuxPaneId: config.pane.paneId,
       });
     } catch {
@@ -616,7 +616,7 @@ async function buildLaunchCommand(config: PaneBootstrapConfig): Promise<string |
     try {
       codexHookEventFile = installCodexPaneHooks({
         worktreePath: config.worktreePath,
-        dmuxPaneId: config.pane.id,
+        qmuxPaneId: config.pane.id,
         tmuxPaneId: config.pane.paneId,
       }).eventFile;
     } catch {
@@ -624,7 +624,7 @@ async function buildLaunchCommand(config: PaneBootstrapConfig): Promise<string |
     }
 
     launchCommand = buildCodexHookedCommand(launchCommand, {
-      dmuxPaneId: config.pane.id,
+      qmuxPaneId: config.pane.id,
       tmuxPaneId: config.pane.paneId,
       eventFile: codexHookEventFile,
     }, {
@@ -636,7 +636,7 @@ async function buildLaunchCommand(config: PaneBootstrapConfig): Promise<string |
     try {
       installGrokPaneHooks({
         worktreePath: config.worktreePath,
-        dmuxPaneId: config.pane.id,
+        qmuxPaneId: config.pane.id,
         tmuxPaneId: config.pane.paneId,
       });
     } catch {
@@ -656,15 +656,15 @@ async function runAgent(config: PaneBootstrapConfig, launchCommand: string | nul
   await enforcePaneTitle(config);
   updateViewState({ currentDetail: launchCommand });
   process.stdout.write('\x1b[2J\x1b[H');
-  process.stdout.write(`dmux setup complete. Launching ${getAgentLabel(config.agent!)}...\n\n`);
+  process.stdout.write(`qmux setup complete. Launching ${getAgentLabel(config.agent!)}...\n\n`);
 
   return new Promise((resolve, reject) => {
     const child = spawn(launchCommand, {
       cwd: config.worktreePath,
       env: {
         ...process.env,
-        DMUX_PANE_ID: config.pane.id,
-        DMUX_TMUX_PANE_ID: config.pane.paneId,
+        QMUX_PANE_ID: config.pane.id,
+        QMUX_TMUX_PANE_ID: config.pane.paneId,
       },
       shell: true,
       stdio: 'inherit',
@@ -739,8 +739,8 @@ async function main(): Promise<number> {
         config.pane,
         {
           ...config.hookExtraEnv,
-          DMUX_PROGRESS: '1',
-          DMUX_STATUS_PREFIX: 'DMUX_STATUS:',
+          QMUX_PROGRESS: '1',
+          QMUX_STATUS_PREFIX: 'QMUX_STATUS:',
         },
         (event) => appendProgressLine(event.line, event.stream),
         BOOTSTRAP_HOOK_TIMEOUT_MS
@@ -781,9 +781,9 @@ async function main(): Promise<number> {
     inkInstance?.unmount();
     inkInstance = null;
     process.stdout.write('\n');
-    process.stdout.write('dmux setup failed. The agent was not launched.\n');
+    process.stdout.write('qmux setup failed. The agent was not launched.\n');
     process.stdout.write(`${message}\n`);
-    process.stdout.write('Fix the issue above, then close this pane or retry from dmux.\n');
+    process.stdout.write('Fix the issue above, then close this pane or retry from qmux.\n');
     return 1;
   }
 }

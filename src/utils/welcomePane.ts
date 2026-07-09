@@ -4,15 +4,15 @@ import { LogService } from '../services/LogService.js';
 import { TmuxService } from '../services/TmuxService.js';
 import { SIDEBAR_WIDTH } from './layoutManager.js';
 import { getControlPanePlacement } from './controlPanePlacement.js';
-import type { DmuxConfig, DmuxThemeName } from '../types.js';
+import type { QmuxConfig, QmuxThemeName } from '../types.js';
 import {
-  applyDmuxTheme,
-  syncDmuxThemeFromSettings,
+  applyQmuxTheme,
+  syncQmuxThemeFromSettings,
   TMUX_COLORS,
 } from '../theme/colors.js';
 import { execSync } from 'child_process';
 
-export const WELCOME_PANE_THEME_OPTION = '@dmux_welcome_theme';
+export const WELCOME_PANE_THEME_OPTION = '@qmux_welcome_theme';
 
 /**
  * Creates a welcome pane in the tmux session
@@ -25,7 +25,7 @@ export const WELCOME_PANE_THEME_OPTION = '@dmux_welcome_theme';
 export async function createWelcomePane(
   controlPaneId: string,
   cwd?: string,
-  themeName?: DmuxThemeName
+  themeName?: QmuxThemeName
 ): Promise<string | undefined> {
   const logService = LogService.getInstance();
   const tmuxService = TmuxService.getInstance();
@@ -98,7 +98,7 @@ export async function createWelcomePane(
       // Silently ignore layout errors
     }
 
-    // Switch focus back to the control pane (dmux sidebar)
+    // Switch focus back to the control pane (qmux sidebar)
     try {
       execSync(`tmux select-pane -t '${controlPaneId}'`, { stdio: 'pipe' });
     } catch {
@@ -155,15 +155,15 @@ export async function welcomePaneExists(welcomePaneId: string | undefined): Prom
   return await tmuxService.paneExists(welcomePaneId);
 }
 
-function applyThemeForSession(projectRoot?: string, themeName?: DmuxThemeName): DmuxThemeName {
+function applyThemeForSession(projectRoot?: string, themeName?: QmuxThemeName): QmuxThemeName {
   if (themeName) {
-    return applyDmuxTheme(themeName);
+    return applyQmuxTheme(themeName);
   }
 
-  return syncDmuxThemeFromSettings(projectRoot);
+  return syncQmuxThemeFromSettings(projectRoot);
 }
 
-function setWelcomePaneTheme(paneId: string, themeName: DmuxThemeName): void {
+function setWelcomePaneTheme(paneId: string, themeName: QmuxThemeName): void {
   TmuxService.getInstance().setPaneOptionSync(
     paneId,
     WELCOME_PANE_THEME_OPTION,
@@ -174,7 +174,7 @@ function setWelcomePaneTheme(paneId: string, themeName: DmuxThemeName): void {
 export function applyTmuxThemeToSession(
   sessionName: string,
   projectRoot?: string,
-  themeName?: DmuxThemeName
+  themeName?: QmuxThemeName
 ): void {
   applyThemeForSession(projectRoot, themeName);
   execSync(
@@ -186,10 +186,10 @@ export function applyTmuxThemeToSession(
 export async function refreshWelcomePaneTheme(
   panesFile: string,
   projectRoot?: string,
-  themeName?: DmuxThemeName
+  themeName?: QmuxThemeName
 ): Promise<void> {
   try {
-    const config = JSON.parse(readFileSync(panesFile, 'utf8')) as DmuxConfig;
+    const config = JSON.parse(readFileSync(panesFile, 'utf8')) as QmuxConfig;
     if (!config.welcomePaneId) {
       return;
     }

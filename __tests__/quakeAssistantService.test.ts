@@ -7,7 +7,7 @@ import type {
 } from '../src/utils/quakeTypes.js';
 
 const ctx: QuakeWorkspaceContext = {
-  sessionName: 'dmux-test',
+  sessionName: 'qmux-test',
   projectRoot: '/tmp/project',
   gridColumns: 0,
   controlPanePosition: 'bottom',
@@ -86,10 +86,10 @@ describe('QuakeAssistantService', () => {
     expect(fedBack).toBe(true);
   });
 
-  it('routes dmux control blocks through the injected handlers', async () => {
+  it('routes qmux control blocks through the injected handlers', async () => {
     const handlers = makeHandlers();
     const { service } = makeService(
-      ['```dmux\ngrid 2\n```', 'Grid updated.'],
+      ['```qmux\ngrid 2\n```', 'Grid updated.'],
       { handlers },
     );
     await service.sendUserMessage('two columns please');

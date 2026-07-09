@@ -9,8 +9,8 @@ All build artifacts are now consolidated into a **single `dist/` directory** in 
 When published, the npm package contains only:
 
 ```
-dmux/
-├── dmux           # Executable wrapper (46 bytes)
+qmux/
+├── qmux           # Executable wrapper (46 bytes)
 └── dist/          # All compiled code (2.0MB, 299 files)
     ├── *.js       # Compiled TypeScript from src/
     ├── *.d.ts     # Type definitions
@@ -88,7 +88,7 @@ All assets are served from memory (embedded strings), **no file system access ne
 ✅ **Single dist/ directory** - No confusion with multiple build outputs
 ✅ **Self-contained** - Everything needed is in `dist/`
 ✅ **Embedded assets** - Frontend files bundled into JavaScript
-✅ **Simple publishing** - Just `./dmux` + `dist/`
+✅ **Simple publishing** - Just `./qmux` + `dist/`
 ✅ **No external dependencies** - Works anywhere Node.js runs
 ✅ **Fast startup** - No disk reads for HTML/CSS/JS
 ✅ **Modern Vue 3** - Composition API with `<script setup>` and TypeScript
@@ -133,7 +133,7 @@ npm run dev
 - `dist/` - All build output
 
 ### Published to npm
-- `dmux` - Executable wrapper
+- `qmux` - Executable wrapper
 - `dist/` - Compiled code + embedded assets
 
 ## Size Breakdown
@@ -181,7 +181,7 @@ export const embeddedAssets: Record<string, EmbeddedAsset> = {
 2. **Portability** - No relative paths, no file system dependencies
 3. **Performance** - Assets loaded from memory, not disk
 4. **Publishing** - Clean npm package with minimal files
-5. **Distribution** - `./dmux` binary is truly self-contained
+5. **Distribution** - `./qmux` binary is truly self-contained
 6. **Modern Stack** - Vue 3 with Composition API and TypeScript
 7. **Type Safety** - Full TypeScript coverage for maintainability
 

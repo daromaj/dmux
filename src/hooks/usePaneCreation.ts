@@ -1,14 +1,14 @@
 import path from 'path';
 import * as os from 'os';
-import type { DmuxPane, NewPaneInput, MergeTargetReference } from '../types.js';
+import type { QmuxPane, NewPaneInput, MergeTargetReference } from '../types.js';
 import { createPane } from '../utils/paneCreation.js';
 import { LogService } from '../services/LogService.js';
 import { buildAgentLaunchInstances, type AgentName } from '../utils/agentLaunch.js';
 import { generateSlug } from '../utils/slug.js';
 
 interface Params {
-  panes: DmuxPane[];
-  savePanes: (p: DmuxPane[]) => Promise<void>;
+  panes: QmuxPane[];
+  savePanes: (p: QmuxPane[]) => Promise<void>;
   projectName: string;
   sessionProjectRoot: string;
   panesFile: string;
@@ -19,7 +19,7 @@ interface Params {
 }
 
 interface CreateNewPaneOptions {
-  existingPanes?: DmuxPane[];
+  existingPanes?: QmuxPane[];
   slugSuffix?: string;
   slugBase?: string;
   baseBranchOverride?: string;
@@ -38,7 +38,7 @@ function getParallelPaneCreationLimit(totalAgents: number): number {
     return 1;
   }
 
-  const overrideRaw = process.env.DMUX_PANE_CREATE_CONCURRENCY;
+  const overrideRaw = process.env.QMUX_PANE_CREATE_CONCURRENCY;
   if (overrideRaw) {
     const override = Number.parseInt(overrideRaw, 10);
     if (Number.isFinite(override) && override > 0) {
@@ -72,7 +72,7 @@ export default function usePaneCreation({
   const openInEditor = async (currentPrompt: string, setPrompt: (v: string) => void) => {
     try {
       const fs = await import('fs');
-      const tmpFile = path.join(os.tmpdir(), `dmux-prompt-${Date.now()}.md`);
+      const tmpFile = path.join(os.tmpdir(), `qmux-prompt-${Date.now()}.md`);
       fs.writeFileSync(tmpFile, currentPrompt || '# Enter your Claude prompt here\n\n');
       const editor = process.env.EDITOR || process.env.VISUAL || 'nano';
       process.stdout.write('\x1b[2J\x1b[H');
@@ -93,7 +93,7 @@ export default function usePaneCreation({
     prompt: string,
     agent?: AgentName,
     options: CreateNewPaneOptions = {}
-  ): Promise<DmuxPane> => {
+  ): Promise<QmuxPane> => {
     const panesForCreation = options.existingPanes ?? panes;
     const result = await createPane(
       {
@@ -127,7 +127,7 @@ export default function usePaneCreation({
     paneInput: NewPaneInput,
     agent?: AgentName,
     options: CreateNewPaneOptions = {}
-  ): Promise<DmuxPane | null> => {
+  ): Promise<QmuxPane | null> => {
     const prompt = paneInput.prompt;
     const panesForCreation = options.existingPanes ?? panes;
     const resolvedOptions: CreateNewPaneOptions = {
@@ -169,7 +169,7 @@ export default function usePaneCreation({
       CreateNewPaneOptions,
       'existingPanes' | 'targetProjectRoot' | 'startPointBranch' | 'mergeTargetChain'
     > = {}
-  ): Promise<DmuxPane[]> => {
+  ): Promise<QmuxPane[]> => {
     const prompt = paneInput.prompt;
     const panesForCreation = options.existingPanes ?? panes;
     const agentLaunches = buildAgentLaunchInstances(selectedAgents);
@@ -192,7 +192,7 @@ export default function usePaneCreation({
         setStatusMessage(`Creating ${agentLaunches.length} pane${agentLaunches.length === 1 ? '' : 's'}...`);
       }
 
-      const createdByIndex: Array<DmuxPane | null> = new Array(agentLaunches.length).fill(null);
+      const createdByIndex: Array<QmuxPane | null> = new Array(agentLaunches.length).fill(null);
 
       const firstLaunch = agentLaunches[0];
       const firstPane = await createPaneInternal(prompt, firstLaunch.agent, {
@@ -222,7 +222,7 @@ export default function usePaneCreation({
 
           try {
             const createdSoFar = createdByIndex.filter(
-              (pane): pane is DmuxPane => pane !== null
+              (pane): pane is QmuxPane => pane !== null
             );
             const pane = await createPaneInternal(prompt, launch.agent, {
               existingPanes: [...panesForCreation, ...createdSoFar],
@@ -251,7 +251,7 @@ export default function usePaneCreation({
       await Promise.all(workers);
 
       const createdPanes = createdByIndex.filter(
-        (pane): pane is DmuxPane => pane !== null
+        (pane): pane is QmuxPane => pane !== null
       );
 
       if (createdPanes.length > 0) {

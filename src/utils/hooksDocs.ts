@@ -1,11 +1,11 @@
 /**
  * Embedded Hooks Documentation
  *
- * This file contains all documentation that gets written to .dmux-hooks/
+ * This file contains all documentation that gets written to .qmux-hooks/
  * when the directory is initialized. The AGENTS_MD content is auto-generated
  * and imported from generated-agents-doc.ts when available.
  */
-const AGENTS_MD_FALLBACK = `# dmux Hooks
+const AGENTS_MD_FALLBACK = `# qmux Hooks
 
 Full AGENTS.md hook documentation has not been generated in this checkout yet.
 
@@ -15,7 +15,7 @@ Run:
 pnpm run generate:hooks-docs
 \`\`\`
 
-Then restart dmux.
+Then restart qmux.
 `;
 
 let AGENTS_MD: string;
@@ -36,11 +36,11 @@ try {
 export const HOOKS_DOCUMENTATION = AGENTS_MD;
 
 /**
- * README for the .dmux-hooks/ directory
+ * README for the .qmux-hooks/ directory
  */
-export const HOOKS_README = `# dmux Hooks
+export const HOOKS_README = `# qmux Hooks
 
-This directory contains hooks that run automatically at key lifecycle events in dmux.
+This directory contains hooks that run automatically at key lifecycle events in qmux.
 
 ## Quick Start
 
@@ -60,8 +60,8 @@ This directory contains hooks that run automatically at key lifecycle events in 
 
 4. **Test it**:
    \`\`\`bash
-   export DMUX_ROOT="\$(pwd)"
-   export DMUX_WORKTREE_PATH="\$(pwd)"
+   export QMUX_ROOT="\$(pwd)"
+   export QMUX_WORKTREE_PATH="\$(pwd)"
    ./worktree_created
    \`\`\`
 
@@ -102,21 +102,21 @@ export const EXAMPLE_WORKTREE_CREATED = `#!/bin/bash
 # This hook runs after a new worktree is created and before the agent launches.
 # Use it to set up the worktree environment (install deps, copy configs, etc.)
 # Stdout/stderr is streamed into the new pane's setup UI while this hook runs.
-# dmux waits for this hook without a fixed timeout.
+# qmux waits for this hook without a fixed timeout.
 
 set -e  # Exit on error
 
 status() {
-  if [ "\${DMUX_PROGRESS:-0}" = "1" ]; then
-    echo "\${DMUX_STATUS_PREFIX:-DMUX_STATUS:} $*"
+  if [ "\${QMUX_PROGRESS:-0}" = "1" ]; then
+    echo "\${QMUX_STATUS_PREFIX:-QMUX_STATUS:} $*"
   else
     echo "[Hook] $*"
   fi
 }
 
-status "Setting up worktree: $DMUX_SLUG"
+status "Setting up worktree: $QMUX_SLUG"
 
-cd "$DMUX_WORKTREE_PATH"
+cd "$QMUX_WORKTREE_PATH"
 
 # Install dependencies before the agent launches.
 if [ -f "pnpm-lock.yaml" ]; then
@@ -131,17 +131,17 @@ elif [ -f "yarn.lock" ]; then
 fi
 
 # Copy environment file if it exists
-if [ -f "$DMUX_ROOT/.env.local" ]; then
+if [ -f "$QMUX_ROOT/.env.local" ]; then
   status "Copying .env.local"
-  cp "$DMUX_ROOT/.env.local" "$DMUX_WORKTREE_PATH/.env.local"
+  cp "$QMUX_ROOT/.env.local" "$QMUX_WORKTREE_PATH/.env.local"
 fi
 
 # Keep existing git author identity.
 # Do not set git user.name/user.email in this hook.
 
 # Create a log entry
-echo "[\$(date)] Created worktree: $DMUX_SLUG | Agent: $DMUX_AGENT | Prompt: $DMUX_PROMPT" \\
-  >> "$DMUX_ROOT/.dmux/worktree_history.log"
+echo "[\$(date)] Created worktree: $QMUX_SLUG | Agent: $QMUX_AGENT | Prompt: $QMUX_PROMPT" \\
+  >> "$QMUX_ROOT/.qmux/worktree_history.log"
 
 status "Worktree setup complete"
 `;
@@ -153,14 +153,14 @@ export const EXAMPLE_RUN_DEV = `#!/bin/bash
 # Example: run_dev hook
 #
 # This hook starts a dev server and optionally creates a tunnel for sharing.
-# It reports the server URL back to dmux via the HTTP API.
+# It reports the server URL back to qmux via the HTTP API.
 
 set -e
 
-echo "[Hook] Starting dev server for $DMUX_SLUG"
+echo "[Hook] Starting dev server for $QMUX_SLUG"
 
-cd "$DMUX_WORKTREE_PATH"
-API_URL="http://localhost:$DMUX_SERVER_PORT/api/panes/$DMUX_PANE_ID/dev"
+cd "$QMUX_WORKTREE_PATH"
+API_URL="http://localhost:$QMUX_SERVER_PORT/api/panes/$QMUX_PANE_ID/dev"
 
 # Update status: starting
 curl -s -X PUT "$API_URL" \\
@@ -169,7 +169,7 @@ curl -s -X PUT "$API_URL" \\
 
 # Start dev server in background
 # Adjust the command for your project (pnpm dev, npm run dev, vite, etc.)
-LOG_FILE="/tmp/dmux-dev-$DMUX_PANE_ID.log"
+LOG_FILE="/tmp/qmux-dev-$QMUX_PANE_ID.log"
 pnpm dev > "$LOG_FILE" 2>&1 &
 DEV_PID=$!
 
@@ -203,7 +203,7 @@ echo "[Hook] Dev server running at $LOCAL_URL"
 # For now, just use local URL (uncomment tunnel code above to enable)
 FINAL_URL="$LOCAL_URL"
 
-# Report status back to dmux
+# Report status back to qmux
 curl -s -X PUT "$API_URL" \\
   -H "Content-Type: application/json" \\
   -d "{\\"status\\": \\"running\\", \\"url\\": \\"$FINAL_URL\\"}" > /dev/null
@@ -219,15 +219,15 @@ echo "[Hook] Log file: $LOG_FILE"
 export const EXAMPLE_RUN_TEST = `#!/bin/bash
 # Example: run_test hook
 #
-# This hook runs tests and reports the status back to dmux via the HTTP API.
-# Status updates appear in real-time in the dmux UI.
+# This hook runs tests and reports the status back to qmux via the HTTP API.
+# Status updates appear in real-time in the qmux UI.
 
 set -e
 
-echo "[Hook] Running tests for $DMUX_SLUG"
+echo "[Hook] Running tests for $QMUX_SLUG"
 
-cd "$DMUX_WORKTREE_PATH"
-API_URL="http://localhost:$DMUX_SERVER_PORT/api/panes/$DMUX_PANE_ID/test"
+cd "$QMUX_WORKTREE_PATH"
+API_URL="http://localhost:$QMUX_SERVER_PORT/api/panes/$QMUX_PANE_ID/test"
 
 # Update status: running
 curl -s -X PUT "$API_URL" \\
@@ -237,7 +237,7 @@ curl -s -X PUT "$API_URL" \\
 echo "[Hook] Running test suite..."
 
 # Capture test output
-OUTPUT_FILE="/tmp/dmux-test-$DMUX_PANE_ID.txt"
+OUTPUT_FILE="/tmp/qmux-test-$QMUX_PANE_ID.txt"
 
 # Run tests (adjust command for your project)
 # Examples:
@@ -258,7 +258,7 @@ fi
 # Get output (truncate if too long)
 OUTPUT=\$(head -c 5000 "$OUTPUT_FILE")
 
-# Report results back to dmux
+# Report results back to qmux
 curl -s -X PUT "$API_URL" \\
   -H "Content-Type: application/json" \\
   -d "\$(jq -n \\
@@ -269,7 +269,7 @@ curl -s -X PUT "$API_URL" \\
 # Cleanup
 rm -f "$OUTPUT_FILE"
 
-echo "[Hook] Test results reported to dmux"
+echo "[Hook] Test results reported to qmux"
 
 # Exit with test status
 if [ "$STATUS" = "passed" ]; then
@@ -290,14 +290,14 @@ export const EXAMPLE_POST_MERGE = `#!/bin/bash
 
 set -e
 
-echo "[Hook] Post-merge processing for $DMUX_SLUG → $DMUX_TARGET_BRANCH"
+echo "[Hook] Post-merge processing for $QMUX_SLUG → $QMUX_TARGET_BRANCH"
 
-cd "$DMUX_ROOT"
+cd "$QMUX_ROOT"
 
 # Push to remote if merging to main/master
-if [ "$DMUX_TARGET_BRANCH" = "main" ] || [ "$DMUX_TARGET_BRANCH" = "master" ]; then
-  echo "[Hook] Pushing to origin/$DMUX_TARGET_BRANCH"
-  git push origin "$DMUX_TARGET_BRANCH"
+if [ "$QMUX_TARGET_BRANCH" = "main" ] || [ "$QMUX_TARGET_BRANCH" = "master" ]; then
+  echo "[Hook] Pushing to origin/$QMUX_TARGET_BRANCH"
+  git push origin "$QMUX_TARGET_BRANCH"
 
   # Optional: Trigger deployment
   # if [ -n "$VERCEL_TOKEN" ]; then
@@ -316,12 +316,12 @@ if [ "$DMUX_TARGET_BRANCH" = "main" ] || [ "$DMUX_TARGET_BRANCH" = "master" ]; t
 fi
 
 # Close related GitHub issue (if prompt contains #123 format)
-ISSUE_NUM=\$(echo "$DMUX_PROMPT" | grep -oP '#\\K\\d+' | head -1)
+ISSUE_NUM=\$(echo "$QMUX_PROMPT" | grep -oP '#\\K\\d+' | head -1)
 if [ -n "$ISSUE_NUM" ]; then
   echo "[Hook] Closing GitHub issue #$ISSUE_NUM"
   if command -v gh &> /dev/null; then
     gh issue close "$ISSUE_NUM" \\
-      -c "Resolved in branch $DMUX_SLUG, merged to $DMUX_TARGET_BRANCH" \\
+      -c "Resolved in branch $QMUX_SLUG, merged to $QMUX_TARGET_BRANCH" \\
       2>/dev/null || echo "[Hook] Warning: Failed to close issue (maybe already closed?)"
   else
     echo "[Hook] GitHub CLI (gh) not found, skipping issue close"
@@ -334,13 +334,13 @@ fi
 #   curl -s -X POST "$SLACK_WEBHOOK" \\
 #     -H "Content-Type: application/json" \\
 #     -d "{
-#       \\"text\\": \\"Merged: $DMUX_SLUG → $DMUX_TARGET_BRANCH\\",
+#       \\"text\\": \\"Merged: $QMUX_SLUG → $QMUX_TARGET_BRANCH\\",
 #       \\"blocks\\": [
 #         {
 #           \\"type\\": \\"section\\",
 #           \\"text\\": {
 #             \\"type\\": \\"mrkdwn\\",
-#             \\"text\\": \\"*Branch Merged* :rocket:\\n\\n*From:* \\\`$DMUX_SLUG\\\`\\n*To:* \\\`$DMUX_TARGET_BRANCH\\\`\\n*Task:* $DMUX_PROMPT\\"
+#             \\"text\\": \\"*Branch Merged* :rocket:\\n\\n*From:* \\\`$QMUX_SLUG\\\`\\n*To:* \\\`$QMUX_TARGET_BRANCH\\\`\\n*Task:* $QMUX_PROMPT\\"
 #           }
 #         }
 #       ]

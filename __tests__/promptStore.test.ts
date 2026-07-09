@@ -11,11 +11,11 @@ import {
 } from '../src/utils/promptStore.js';
 
 async function makeTempProjectRoot(): Promise<string> {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'dmux-prompt-store-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'qmux-prompt-store-'));
 }
 
 describe('promptStore', () => {
-  it('writes prompt files under .dmux/prompts', async () => {
+  it('writes prompt files under .qmux/prompts', async () => {
     const projectRoot = await makeTempProjectRoot();
     const promptPath = await writePromptFile(projectRoot, 'feature/test', 'hello world');
 
@@ -42,9 +42,9 @@ describe('promptStore', () => {
     const quoted = shellQuote(`/tmp/o'clock`);
     expect(quoted).toBe(`'/tmp/o'\\''clock'`);
 
-    const snippet = buildPromptReadAndDeleteSnippet('/tmp/dmux prompt.txt');
-    expect(snippet).toContain('DMUX_PROMPT_FILE=');
-    expect(snippet).toContain('cat "$DMUX_PROMPT_FILE"');
-    expect(snippet).toContain('rm -f "$DMUX_PROMPT_FILE"');
+    const snippet = buildPromptReadAndDeleteSnippet('/tmp/qmux prompt.txt');
+    expect(snippet).toContain('QMUX_PROMPT_FILE=');
+    expect(snippet).toContain('cat "$QMUX_PROMPT_FILE"');
+    expect(snippet).toContain('rm -f "$QMUX_PROMPT_FILE"');
   });
 });

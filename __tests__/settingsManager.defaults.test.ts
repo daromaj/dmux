@@ -42,9 +42,9 @@ describe('SettingsManager defaults', () => {
       const actual = await importOriginal<typeof import('fs')>();
       return {
         ...actual,
-        existsSync: vi.fn((path: string) => path.endsWith('.dmux.global.json')),
+        existsSync: vi.fn((path: string) => path.endsWith('.qmux.global.json')),
         readFileSync: vi.fn((path: string) => {
-          if (path.endsWith('.dmux.global.json')) {
+          if (path.endsWith('.qmux.global.json')) {
             return JSON.stringify({ language: 'ja' });
           }
           throw new Error(`Unexpected path: ${path}`);
@@ -450,12 +450,12 @@ describe('SettingsManager defaults', () => {
       return {
         ...actual,
         existsSync: vi.fn((path: string) => (
-          path.endsWith('.dmux.defaults.json')
-          || path.endsWith('.dmux.global.json')
-          || path.endsWith('/.dmux/settings.json')
+          path.endsWith('.qmux.defaults.json')
+          || path.endsWith('.qmux.global.json')
+          || path.endsWith('/.qmux/settings.json')
         )),
         readFileSync: vi.fn((path: string) => {
-          if (path.endsWith('.dmux.defaults.json')) {
+          if (path.endsWith('.qmux.defaults.json')) {
             return JSON.stringify({
               defaultAgent: 'codex',
               branchPrefix: 'feat/',
@@ -463,13 +463,13 @@ describe('SettingsManager defaults', () => {
             });
           }
 
-          if (path.endsWith('.dmux.global.json')) {
+          if (path.endsWith('.qmux.global.json')) {
             return JSON.stringify({
               colorTheme: 'red',
             });
           }
 
-          if (path.endsWith('/.dmux/settings.json')) {
+          if (path.endsWith('/.qmux/settings.json')) {
             return JSON.stringify({
               branchPrefix: 'fix/',
             });
@@ -505,7 +505,7 @@ describe('SettingsManager defaults', () => {
       const actual = await importOriginal<typeof import('fs')>();
       return {
         ...actual,
-        existsSync: vi.fn((path: string) => path.endsWith('.dmux.defaults.json')),
+        existsSync: vi.fn((path: string) => path.endsWith('.qmux.defaults.json')),
         readFileSync: vi.fn(() => JSON.stringify({
           permissionMode: 'fullAuto',
           enableAutopilotByDefault: true,
@@ -577,9 +577,9 @@ describe('SettingsManager defaults', () => {
       const actual = await importOriginal<typeof import('fs')>();
       return {
         ...actual,
-        existsSync: vi.fn((path: string) => path.endsWith('/.dmux/settings.json')),
+        existsSync: vi.fn((path: string) => path.endsWith('/.qmux/settings.json')),
         readFileSync: vi.fn((path: string) => {
-          if (path.endsWith('/.dmux/settings.json')) {
+          if (path.endsWith('/.qmux/settings.json')) {
             return JSON.stringify({
               favoriteCommands: ['  cc -c  ', 'cc -c', '', 42, 'pi', 'pi'],
             });
@@ -604,7 +604,7 @@ describe('SettingsManager defaults', () => {
       const actual = await importOriginal<typeof import('fs')>();
       return {
         ...actual,
-        existsSync: vi.fn((path: string) => path.endsWith('.dmux.defaults.json')),
+        existsSync: vi.fn((path: string) => path.endsWith('.qmux.defaults.json')),
         readFileSync: vi.fn(() => '{ invalid json'),
         writeFileSync: vi.fn(),
         mkdirSync: vi.fn(),

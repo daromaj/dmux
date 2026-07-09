@@ -11,7 +11,7 @@ function escapeForSingleQuotedJs(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
-function mergeDmuxStopHook(settingsPath: string, hookCommand: string): void {
+function mergeQmuxStopHook(settingsPath: string, hookCommand: string): void {
   let settingsConfig: any = {};
   if (fs.existsSync(settingsPath)) {
     try {
@@ -34,7 +34,7 @@ function mergeDmuxStopHook(settingsPath: string, hookCommand: string): void {
     const handlers = Array.isArray(group?.hooks) ? group.hooks : [];
     return !handlers.some((handler: any) => (
       typeof handler?.command === 'string'
-      && handler.command.includes('dmux-stop-hook.cjs')
+      && handler.command.includes('qmux-stop-hook.cjs')
     ));
   });
   nextStopHooks.push({
@@ -53,17 +53,17 @@ function mergeDmuxStopHook(settingsPath: string, hookCommand: string): void {
 
 export function installClaudePaneHooks(opts: {
   worktreePath: string;
-  dmuxPaneId: string;
+  qmuxPaneId: string;
   tmuxPaneId: string;
 }): ClaudeHookInstallResult {
   const claudeDir = path.join(opts.worktreePath, '.claude');
   const hookDir = path.join(claudeDir, 'hooks');
-  const stateDir = path.join(claudeDir, 'dmux');
+  const stateDir = path.join(claudeDir, 'qmux');
   fs.mkdirSync(hookDir, { recursive: true });
   fs.mkdirSync(stateDir, { recursive: true });
 
-  const eventFile = path.join(stateDir, `${opts.dmuxPaneId}.json`);
-  const hookScriptPath = path.join(hookDir, 'dmux-stop-hook.cjs');
+  const eventFile = path.join(stateDir, `${opts.qmuxPaneId}.json`);
+  const hookScriptPath = path.join(hookDir, 'qmux-stop-hook.cjs');
   const hookScript = `#!/usr/bin/env node
 const fs = require('fs');
 
@@ -82,9 +82,9 @@ process.stdin.on('end', () => {
 
   const event = {
     source: 'claude-stop-hook',
-    dmuxPaneId: process.env.DMUX_PANE_ID || '',
-    tmuxPaneId: process.env.DMUX_TMUX_PANE_ID || '',
-    expectedDmuxPaneId: '${escapeForSingleQuotedJs(opts.dmuxPaneId)}',
+    qmuxPaneId: process.env.QMUX_PANE_ID || process.env.DMUX_PANE_ID || '',
+    tmuxPaneId: process.env.QMUX_TMUX_PANE_ID || process.env.DMUX_TMUX_PANE_ID || '',
+    expectedQmuxPaneId: '${escapeForSingleQuotedJs(opts.qmuxPaneId)}',
     expectedTmuxPaneId: '${escapeForSingleQuotedJs(opts.tmuxPaneId)}',
     hookEventName: payload.hook_event_name || payload.hookEventName || '',
     stopHookActive: payload.stop_hook_active === true || payload.stopHookActive === true,
@@ -99,7 +99,7 @@ process.stdin.on('end', () => {
     process.exit(0);
   }
 
-  if (event.dmuxPaneId !== event.expectedDmuxPaneId) {
+  if (event.qmuxPaneId !== event.expectedQmuxPaneId) {
     process.exit(0);
   }
 
@@ -116,7 +116,7 @@ process.stdin.on('end', () => {
   fs.chmodSync(hookScriptPath, 0o755);
 
   const settingsPath = path.join(claudeDir, 'settings.local.json');
-  mergeDmuxStopHook(settingsPath, `node ${shellQuote(hookScriptPath)}`);
+  mergeQmuxStopHook(settingsPath, `node ${shellQuote(hookScriptPath)}`);
 
   return { eventFile };
 }

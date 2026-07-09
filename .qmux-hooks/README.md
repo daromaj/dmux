@@ -1,6 +1,6 @@
-# dmux Hooks
+# qmux Hooks
 
-This directory contains hooks that run automatically at key lifecycle events in dmux.
+This directory contains hooks that run automatically at key lifecycle events in qmux.
 
 ## Quick Start
 
@@ -20,8 +20,8 @@ This directory contains hooks that run automatically at key lifecycle events in 
 
 4. **Test it**:
    ```bash
-   export DMUX_ROOT="$(pwd)"
-   export DMUX_WORKTREE_PATH="$(pwd)"
+   export QMUX_ROOT="$(pwd)"
+   export QMUX_WORKTREE_PATH="$(pwd)"
    ./worktree_created
    ```
 

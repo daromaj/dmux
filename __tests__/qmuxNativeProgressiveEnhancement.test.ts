@@ -21,7 +21,7 @@ vi.mock('child_process', () => ({
   }),
 }));
 
-describe('dmux native helper progressive enhancement', () => {
+describe('qmux native helper progressive enhancement', () => {
   beforeEach(() => {
     vi.resetModules();
     setPlatform('linux');
@@ -52,8 +52,8 @@ describe('dmux native helper progressive enhancement', () => {
   });
 
   it('skips native notification delivery entirely on non-macOS platforms', async () => {
-    const { DmuxFocusService } = await import('../src/services/DmuxFocusService.js');
-    const service = new DmuxFocusService({ projectName: 'dmux' });
+    const { QmuxFocusService } = await import('../src/services/QmuxFocusService.js');
+    const service = new QmuxFocusService({ projectName: 'qmux' });
 
     await expect(service.start()).resolves.toBeUndefined();
     await expect(

@@ -4,7 +4,7 @@
  */
 
 import type { ActionResult, ActionContext } from '../../types.js';
-import type { DmuxPane } from '../../../types.js';
+import type { QmuxPane } from '../../../types.js';
 import { getPaneDisplayName } from '../../../utils/paneTitle.js';
 
 export interface MergeConflictIssue {
@@ -17,7 +17,7 @@ export async function handleMergeConflict(
   issue: MergeConflictIssue,
   mainBranch: string,
   mainRepoPath: string,
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext
 ): Promise<ActionResult> {
   const paneName = getPaneDisplayName(pane);

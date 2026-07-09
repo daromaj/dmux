@@ -39,7 +39,7 @@ function getProjectRoot() {
 function buildSessionName(projectRoot) {
   const projectName = path.basename(projectRoot);
   const projectHash = createHash('md5').update(projectRoot).digest('hex').slice(0, 8);
-  return `dmux-${`${projectName}-${projectHash}`.replace(/\./g, '-')}`;
+  return `qmux-${`${projectName}-${projectHash}`.replace(/\./g, '-')}`;
 }
 
 function readJson(filePath) {
@@ -85,10 +85,10 @@ function pathEq(a, b) {
 const projectRoot = getProjectRoot();
 const cwd = process.cwd();
 const sessionName = buildSessionName(projectRoot);
-const configPath = path.join(projectRoot, '.dmux', 'dmux.config.json');
+const configPath = path.join(projectRoot, '.qmux', 'qmux.config.json');
 const config = readJson(configPath);
 
-console.log('dmux dev doctor');
+console.log('qmux dev doctor');
 console.log(`project root: ${projectRoot}`);
 console.log(`working dir:  ${cwd}`);
 console.log(`session:      ${sessionName}`);
@@ -184,12 +184,12 @@ if (generatedDocsPath) {
 }
 
 const hookDirCandidates = [
-  path.join(cwd, '.dmux-hooks'),
-  path.join(projectRoot, '.dmux-hooks'),
+  path.join(cwd, '.qmux-hooks'),
+  path.join(projectRoot, '.qmux-hooks'),
 ];
 const hookDir = hookDirCandidates.find((candidate) => fs.existsSync(candidate));
 if (!hookDir) {
-  status('warn', 'Local hooks', '.dmux-hooks not found');
+  status('warn', 'Local hooks', '.qmux-hooks not found');
 } else {
   const requiredHooks = ['worktree_created', 'pre_merge'];
   const missingHooks = requiredHooks.filter((hook) => !fs.existsSync(path.join(hookDir, hook)));
@@ -203,8 +203,8 @@ if (!hookDir) {
 console.log('');
 if (hasCriticalIssue) {
   console.log('Suggested fixes:');
-  console.log('1. Run `pnpm dev` from the dmux worktree you want to use as source.');
-  console.log('2. In dmux DEV mode, use [DEV] Use as Source (or S) to toggle source/root.');
+  console.log('1. Run `pnpm dev` from the qmux worktree you want to use as source.');
+  console.log('2. In qmux DEV mode, use [DEV] Use as Source (or S) to toggle source/root.');
   console.log('3. Re-run `pnpm dev:doctor` to confirm watch + source health.');
   process.exitCode = 1;
 } else {

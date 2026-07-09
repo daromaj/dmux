@@ -1,7 +1,7 @@
-import type { DmuxPane } from '../types.js';
+import type { QmuxPane } from '../types.js';
 import type { AgentName, PermissionMode } from './agentLaunch.js';
 
-export const DMUX_BOOTSTRAP_PANE_TITLE_PREFIX = 'dmux-bootstrap:';
+export const QMUX_BOOTSTRAP_PANE_TITLE_PREFIX = 'qmux-bootstrap:';
 
 export interface PaneBootstrapConfig {
   version: 1;
@@ -13,7 +13,7 @@ export interface PaneBootstrapConfig {
   agent?: AgentName;
   permissionMode?: PermissionMode;
   goalMode?: boolean;
-  pane: DmuxPane;
+  pane: QmuxPane;
   tmuxTitle: string;
   existingWorktree: boolean;
   resolvedStartPoint?: string;
@@ -24,7 +24,7 @@ export interface PaneBootstrapConfig {
     goalMode?: boolean;
     displayName?: string;
     branchName?: string;
-    mergeTargetChain?: DmuxPane['mergeTargetChain'];
+    mergeTargetChain?: QmuxPane['mergeTargetChain'];
   };
   hookExtraEnv?: Record<string, string>;
 }

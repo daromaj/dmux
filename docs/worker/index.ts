@@ -1,4 +1,4 @@
-const GITHUB_API = 'https://api.github.com/repos/formkit/dmux';
+const GITHUB_API = 'https://api.github.com/repos/formkit/qmux';
 const WAITLIST_API = 'https://agents.standardagentbuilder.com/api/waitlist';
 const CACHE_TTL = 60; // 1 minute in seconds
 
@@ -36,7 +36,7 @@ async function handleStars(request: Request): Promise<Response> {
   try {
     const res = await fetch(GITHUB_API, {
       headers: {
-        'User-Agent': 'dmux-docs',
+        'User-Agent': 'qmux-docs',
         Accept: 'application/vnd.github.v3+json',
       },
     });
@@ -83,7 +83,7 @@ async function handleEarlyAccess(request: Request, env: Env): Promise<Response> 
         'Content-Type': 'application/json',
         Authorization: `Bearer ${env.WAITLIST_API_TOKEN}`,
       },
-      body: JSON.stringify({ email: body.email, name: body.name, source: 'dmux-docs' }),
+      body: JSON.stringify({ email: body.email, name: body.name, source: 'qmux-docs' }),
     });
 
     const responseBody = await res.text();

@@ -1,6 +1,6 @@
-import type { DmuxThemeName } from '../types.js';
+import type { QmuxThemeName } from '../types.js';
 
-export const DMUX_THEME_NAMES = [
+export const QMUX_THEME_NAMES = [
   'red',
   'blue',
   'yellow',
@@ -9,14 +9,14 @@ export const DMUX_THEME_NAMES = [
   'purple',
   'cyan',
   'magenta',
-] as const satisfies readonly DmuxThemeName[];
+] as const satisfies readonly QmuxThemeName[];
 
-export const DEFAULT_DMUX_THEME: DmuxThemeName = 'orange';
+export const DEFAULT_QMUX_THEME: QmuxThemeName = 'orange';
 
-export function isDmuxThemeName(value: unknown): value is DmuxThemeName {
-  return typeof value === 'string' && (DMUX_THEME_NAMES as readonly string[]).includes(value);
+export function isQmuxThemeName(value: unknown): value is QmuxThemeName {
+  return typeof value === 'string' && (QMUX_THEME_NAMES as readonly string[]).includes(value);
 }
 
-export function normalizeDmuxTheme(value: unknown): DmuxThemeName {
-  return isDmuxThemeName(value) ? value : DEFAULT_DMUX_THEME;
+export function normalizeQmuxTheme(value: unknown): QmuxThemeName {
+  return isQmuxThemeName(value) ? value : DEFAULT_QMUX_THEME;
 }

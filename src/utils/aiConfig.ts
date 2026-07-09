@@ -2,14 +2,14 @@
  * AI Provider Configuration
  *
  * Resolves AI provider, model, and API endpoint from environment variables
- * and dmux settings. Supports OpenRouter (default), DeepSeek, and custom providers.
+ * and qmux settings. Supports OpenRouter (default), DeepSeek, and custom providers.
  *
  * Environment variables (highest priority):
- *   DMUX_AI_BASE_URL  - Full API endpoint URL
- *   DMUX_AI_MODEL     - Model name (comma-separated for fallback stack)
- *   DMUX_AI_API_KEY   - API key (falls back to OPENROUTER_API_KEY)
+ *   QMUX_AI_BASE_URL  - Full API endpoint URL
+ *   QMUX_AI_MODEL     - Model name (comma-separated for fallback stack)
+ *   QMUX_AI_API_KEY   - API key (falls back to OPENROUTER_API_KEY)
  *
- * Settings (dmux.config.json / .dmux.global.json):
+ * Settings (qmux.config.json / .qmux.global.json):
  *   aiProvider - 'openrouter' | 'deepseek' | 'custom'
  *   aiModel    - Model name(s)
  *   aiBaseUrl  - API endpoint URL
@@ -18,6 +18,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { getQmuxEnv } from './qmuxEnv.js';
 
 export interface AiConfig {
   /** Resolved API key (may be undefined if not set) */
@@ -55,7 +56,7 @@ export interface AiConfigInput {
 }
 
 function resolveProvider(input: AiConfigInput): 'openrouter' | 'deepseek' | 'custom' {
-  const fromEnv = process.env.DMUX_AI_PROVIDER?.toLowerCase();
+  const fromEnv = getQmuxEnv('AI_PROVIDER')?.toLowerCase();
   if (fromEnv === 'deepseek') return 'deepseek';
   if (fromEnv === 'openrouter') return 'openrouter';
   if (fromEnv === 'custom') return 'custom';
@@ -66,7 +67,7 @@ function resolveProvider(input: AiConfigInput): 'openrouter' | 'deepseek' | 'cus
   if (fromSettings === 'custom') return 'custom';
 
   // Detect from URL if set
-  const url = process.env.DMUX_AI_BASE_URL || input.aiBaseUrl;
+  const url = getQmuxEnv('AI_BASE_URL') || input.aiBaseUrl;
   if (url) {
     if (url.includes('deepseek.com')) return 'deepseek';
     if (url.includes('openrouter.ai') || url.includes('l.ai')) return 'openrouter';
@@ -81,7 +82,7 @@ function resolveModelStack(
   input: AiConfigInput,
 ): string[] {
   // Env var takes highest priority
-  const envModel = process.env.DMUX_AI_MODEL;
+  const envModel = getQmuxEnv('AI_MODEL');
   if (envModel) {
     return envModel.split(',').map(s => s.trim()).filter(Boolean);
   }
@@ -104,7 +105,7 @@ function resolveBaseUrl(
   provider: 'openrouter' | 'deepseek' | 'custom',
   input: AiConfigInput,
 ): string {
-  const envUrl = process.env.DMUX_AI_BASE_URL;
+  const envUrl = getQmuxEnv('AI_BASE_URL');
   if (envUrl) return envUrl;
 
   if (input.aiBaseUrl) return input.aiBaseUrl;
@@ -113,9 +114,9 @@ function resolveBaseUrl(
   return OPENROUTER_DEFAULT_URL;
 }
 
-const GLOBAL_SETTINGS_PATH = path.join(os.homedir() || '', '.dmux.global.json');
+const GLOBAL_SETTINGS_PATH = path.join(os.homedir() || '', '.qmux.global.json');
 
-/** Read the AI-related fields from a single dmux settings JSON file. */
+/** Read the AI-related fields from a single qmux settings JSON file. */
 function readAiSettingsFromFile(filePath: string): AiConfigInput {
   let raw: string;
   try {
@@ -140,21 +141,21 @@ function readAiSettingsFromFile(filePath: string): AiConfigInput {
 }
 
 /**
- * Read AI settings (provider/model/baseUrl/apiKey) from dmux settings files.
- * This is the persisted fallback for the tmux-stale-environment case: a dmux
+ * Read AI settings (provider/model/baseUrl/apiKey) from qmux settings files.
+ * This is the persisted fallback for the tmux-stale-environment case: a qmux
  * process spawned by a long-lived tmux server inherits an environment without
  * the AI env vars even when the shell defines them, so it must resolve config
- * from disk. Storing these in the settings file makes dmux work regardless of
+ * from disk. Storing these in the settings file makes qmux work regardless of
  * the process environment.
  *
- * Project settings (<cwd>/.dmux/settings.json) override global
- * (~/.dmux.global.json). Exported for testing; synchronous.
+ * Project settings (<cwd>/.qmux/settings.json) override global
+ * (~/.qmux.global.json). Exported for testing; synchronous.
  */
 export function readAiSettingsSync(
   cwd: string,
   globalPath: string = GLOBAL_SETTINGS_PATH,
 ): AiConfigInput {
-  const projectPath = path.join(cwd, '.dmux', 'settings.json');
+  const projectPath = path.join(cwd, '.qmux', 'settings.json');
   const globalSettings = readAiSettingsFromFile(globalPath);
   const projectSettings = readAiSettingsFromFile(projectPath);
   // Project overrides global; drop undefined so they don't clobber.
@@ -196,9 +197,10 @@ function getDiskAiSettings(): AiConfigInput {
 }
 
 function resolveApiKey(input: AiConfigInput): string | undefined {
-  // Environment (explicit override) wins; DMUX_AI_API_KEY then OPENROUTER_API_KEY.
+  // Environment (explicit override) wins; QMUX_AI_API_KEY (falling back to
+  // legacy DMUX_AI_API_KEY) then OPENROUTER_API_KEY.
   return (
-    process.env.DMUX_AI_API_KEY ||
+    getQmuxEnv('AI_API_KEY') ||
     process.env.OPENROUTER_API_KEY ||
     input.aiApiKey ||
     undefined
@@ -207,7 +209,7 @@ function resolveApiKey(input: AiConfigInput): string | undefined {
 
 /**
  * Resolve the full AI configuration. Priority for every field:
- *   environment  >  explicit `input`  >  dmux settings files  >  built-in default
+ *   environment  >  explicit `input`  >  qmux settings files  >  built-in default
  *
  * Disk settings are folded UNDER `input` so callers that already loaded merged
  * settings behave identically, while callers passing nothing (slug, merge, the
@@ -253,7 +255,7 @@ export function getOpenRouterFreeFallbackStack(): string[] {
  * Quick check: is a custom AI provider configured?
  */
 export function hasCustomAiConfig(): boolean {
-  return !!(process.env.DMUX_AI_BASE_URL ||
-    process.env.DMUX_AI_MODEL ||
-    process.env.DMUX_AI_PROVIDER);
+  return !!(getQmuxEnv('AI_BASE_URL') ||
+    getQmuxEnv('AI_MODEL') ||
+    getQmuxEnv('AI_PROVIDER'));
 }

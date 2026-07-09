@@ -1,10 +1,10 @@
-# dmux API Documentation
+# qmux API Documentation
 
 ## Overview
 
-The dmux HTTP API allows you to interact with dmux programmatically, including creating new panes, listing existing panes, and monitoring their status.
+The qmux HTTP API allows you to interact with qmux programmatically, including creating new panes, listing existing panes, and monitoring their status.
 
-The server automatically starts when you run `dmux` and selects an available port (typically starting at 3000). The server URL is displayed in the dmux TUI.
+The server automatically starts when you run `qmux` and selects an available port (typically starting at 3000). The server URL is displayed in the qmux TUI.
 
 ## Base URL
 
@@ -12,10 +12,10 @@ The server automatically starts when you run `dmux` and selects an available por
 http://127.0.0.1:{port}
 ```
 
-The port is auto-selected when dmux starts. You can find it by:
-1. Looking at the dmux TUI (shows server URL)
+The port is auto-selected when qmux starts. You can find it by:
+1. Looking at the qmux TUI (shows server URL)
 2. Checking ports 3000-3010 for `/api/health` endpoint
-3. Reading from the dmux config files
+3. Reading from the qmux config files
 
 ## Authentication
 
@@ -41,16 +41,16 @@ Check if the server is running.
 
 ### Session Information
 
-Get information about the current dmux session.
+Get information about the current qmux session.
 
 **Endpoint:** `GET /api/session`
 
 **Response:**
 ```json
 {
-  "projectName": "dmux",
-  "sessionName": "dmux-dmux",
-  "projectRoot": "/Users/user/Projects/dmux",
+  "projectName": "qmux",
+  "sessionName": "qmux-qmux",
+  "projectRoot": "/Users/user/Projects/qmux",
   "serverUrl": "http://127.0.0.1:3000",
   "settings": {
     "testCommand": "npm test",
@@ -74,19 +74,19 @@ Get a list of all panes in the current session.
 {
   "panes": [
     {
-      "id": "dmux-1234567890",
+      "id": "qmux-1234567890",
       "slug": "add-feature",
       "prompt": "Add a new feature to the dashboard",
       "paneId": "%1",
-      "worktreePath": "/Users/user/Projects/dmux/.dmux/worktrees/add-feature",
+      "worktreePath": "/Users/user/Projects/qmux/.qmux/worktrees/add-feature",
       "agent": "claude",
       "agentStatus": "idle",
       "testStatus": null,
       "devStatus": null
     }
   ],
-  "projectName": "dmux",
-  "sessionName": "dmux-dmux",
+  "projectName": "qmux",
+  "sessionName": "qmux-qmux",
   "timestamp": 1234567890
 }
 ```
@@ -113,8 +113,8 @@ Get real-time updates for all panes via Server-Sent Events (SSE). This endpoint 
   "type": "init" | "update" | "heartbeat",
   "data": {
     "panes": [...],
-    "projectName": "dmux",
-    "sessionName": "dmux-dmux",
+    "projectName": "qmux",
+    "sessionName": "qmux-qmux",
     "timestamp": 1234567890
   },
   "timestamp": 1234567890
@@ -159,7 +159,7 @@ eventSource.onerror = (error) => {
 
 ### Create New Pane
 
-Create a new dmux pane with a worktree and optional agent.
+Create a new qmux pane with a worktree and optional agent.
 
 **Endpoint:** `POST /api/panes`
 
@@ -180,11 +180,11 @@ Create a new dmux pane with a worktree and optional agent.
 {
   "success": true,
   "pane": {
-    "id": "dmux-1234567890",
+    "id": "qmux-1234567890",
     "slug": "your-feature",
     "prompt": "Your prompt for the AI agent",
     "paneId": "%2",
-    "worktreePath": "/Users/user/Projects/dmux/.dmux/worktrees/your-feature",
+    "worktreePath": "/Users/user/Projects/qmux/.qmux/worktrees/your-feature",
     "agent": "claude",
     "agentStatus": "idle"
   },
@@ -270,11 +270,11 @@ Get detailed information about a specific pane.
 **Response:**
 ```json
 {
-  "id": "dmux-1234567890",
+  "id": "qmux-1234567890",
   "slug": "add-feature",
   "prompt": "Add a new feature to the dashboard",
   "paneId": "%1",
-  "worktreePath": "/Users/user/Projects/dmux/.dmux/worktrees/add-feature",
+  "worktreePath": "/Users/user/Projects/qmux/.qmux/worktrees/add-feature",
   "agent": "claude",
   "agentStatus": "working",
   "optionsQuestion": "Would you like me to proceed?",
@@ -426,7 +426,7 @@ This script tests:
 ### Server Not Running
 
 If you get connection errors:
-1. Ensure dmux is running in a tmux session
+1. Ensure qmux is running in a tmux session
 2. Check if the server started successfully (look for "Server running at..." message)
 3. Try different ports (3000-3010)
 

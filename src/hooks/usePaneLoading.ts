@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import type { DmuxPane, SidebarProject } from '../types.js';
+import type { QmuxPane, SidebarProject } from '../types.js';
 import { splitPane } from '../utils/tmux.js';
 import { rebindPaneByTitle } from '../utils/paneRebinding.js';
 import { LogService } from '../services/LogService.js';
@@ -27,10 +27,10 @@ import {
 import { normalizeSidebarProjects } from '../utils/sidebarProjects.js';
 
 // Separate config structure to match new format
-export interface DmuxConfig {
+export interface QmuxConfig {
   projectName?: string;
   projectRoot?: string;
-  panes: DmuxPane[];
+  panes: QmuxPane[];
   sidebarProjects?: SidebarProject[];
   settings?: any;
   lastUpdated?: string;
@@ -39,16 +39,16 @@ export interface DmuxConfig {
 }
 
 interface PaneLoadResult {
-  panes: DmuxPane[];
+  panes: QmuxPane[];
   allPaneIds: string[];
   titleToId: Map<string, string>;
 }
 
 /**
- * Whether dmux was launched in "continue" mode (`dmux -c` / `dmux --continue`).
+ * Whether qmux was launched in "continue" mode (`qmux -c` / `qmux --continue`).
  *
- * Default `dmux` starts fresh: saved panes that are no longer live in tmux are NOT
- * recreated. `dmux -c` reopens the last session — live panes are reattached, and any
+ * Default `qmux` starts fresh: saved panes that are no longer live in tmux are NOT
+ * recreated. `qmux -c` reopens the last session — live panes are reattached, and any
  * that were lost (e.g. the tmux server was killed) are recreated with fresh agent
  * sessions.
  */
@@ -66,14 +66,14 @@ export function shouldContinueSession(
  *   fresh agent, and shell panes restore as a fresh shell in their recorded directory.
  *   Both are recreated below, which rebinds their (dead) paneId to a live one — so
  *   keeping them here does not leave dangling IDs.
- * - In fresh mode (plain `dmux`), ALL non-live panes are dropped — this is what stops a
+ * - In fresh mode (plain `qmux`), ALL non-live panes are dropped — this is what stops a
  *   later poll from reloading them and recreating them in an old worktree dir.
  */
 export function selectStalePanesToDrop(
-  panes: DmuxPane[],
+  panes: QmuxPane[],
   allPaneIds: string[],
   continueSession: boolean
-): DmuxPane[] {
+): QmuxPane[] {
   if (continueSession) return [];
   return panes.filter((pane) => !allPaneIds.includes(pane.paneId));
 }
@@ -85,11 +85,11 @@ export function selectStalePanesToDrop(
  * is active. Without `-c`, nothing is recreated (start-fresh behavior).
  */
 export function selectMissingPanesToRecreate(
-  panes: DmuxPane[],
+  panes: QmuxPane[],
   allPaneIds: string[],
   isInitialLoad: boolean,
   continueSession: boolean
-): DmuxPane[] {
+): QmuxPane[] {
   if (!isInitialLoad || !continueSession || allPaneIds.length === 0 || panes.length === 0) {
     return [];
   }
@@ -98,7 +98,7 @@ export function selectMissingPanesToRecreate(
 
 async function restoreAgentSessionForPane(
   tmuxService: TmuxService,
-  pane: DmuxPane,
+  pane: QmuxPane,
   paneId: string
 ): Promise<void> {
   if (!pane.agent) {
@@ -110,8 +110,8 @@ async function restoreAgentSessionForPane(
   }
 
   await new Promise((resolve) => setTimeout(resolve, 200));
-  // Restore panes with a FRESH agent session (no --continue/resume). dmux does not
-  // silently resume an old agent session behind the user's back; `dmux -c` recreates
+  // Restore panes with a FRESH agent session (no --continue/resume). qmux does not
+  // silently resume an old agent session behind the user's back; `qmux -c` recreates
   // the pane structure and starts the agent clean.
   let command = buildAgentCommand(pane.agent, pane.permissionMode);
 
@@ -120,7 +120,7 @@ async function restoreAgentSessionForPane(
     try {
       codexHookEventFile = installCodexPaneHooks({
         worktreePath: pane.worktreePath,
-        dmuxPaneId: pane.id,
+        qmuxPaneId: pane.id,
         tmuxPaneId: paneId,
       }).eventFile;
     } catch {
@@ -128,7 +128,7 @@ async function restoreAgentSessionForPane(
     }
 
     command = buildCodexHookedCommand(command, {
-      dmuxPaneId: pane.id,
+      qmuxPaneId: pane.id,
       tmuxPaneId: paneId,
       eventFile: codexHookEventFile,
     }, {
@@ -140,7 +140,7 @@ async function restoreAgentSessionForPane(
     try {
       installClaudePaneHooks({
         worktreePath: pane.worktreePath,
-        dmuxPaneId: pane.id,
+        qmuxPaneId: pane.id,
         tmuxPaneId: paneId,
       });
     } catch {
@@ -172,7 +172,7 @@ export async function fetchTmuxPaneIds(maxRetries = 2): Promise<{
       const titleToId = new Map<string, string>();
 
       for (const pane of paneInfo) {
-        if (!pane.paneId || !pane.paneId.startsWith('%') || pane.title === 'dmux-spacer') {
+        if (!pane.paneId || !pane.paneId.startsWith('%') || pane.title === 'qmux-spacer') {
           continue;
         }
         allPaneIds.push(pane.paneId);
@@ -202,7 +202,7 @@ export async function fetchTmuxPaneIds(maxRetries = 2): Promise<{
  * Reads and parses the panes config file
  * Handles both old array format and new config format
  */
-export async function loadPanesFromFile(panesFile: string): Promise<DmuxPane[]> {
+export async function loadPanesFromFile(panesFile: string): Promise<QmuxPane[]> {
   const fallbackProjectRoot = path.dirname(path.dirname(panesFile));
 
   try {
@@ -210,9 +210,9 @@ export async function loadPanesFromFile(panesFile: string): Promise<DmuxPane[]> 
     const parsed: any = JSON.parse(content);
 
     if (Array.isArray(parsed)) {
-      return syncPaneColorThemes(parsed as DmuxPane[], [], fallbackProjectRoot);
+      return syncPaneColorThemes(parsed as QmuxPane[], [], fallbackProjectRoot);
     } else {
-      const config = parsed as DmuxConfig;
+      const config = parsed as QmuxConfig;
       const projectRoot = config.projectRoot || fallbackProjectRoot;
       const panes = Array.isArray(config.panes) ? config.panes : [];
       const sidebarProjects = Array.isArray(config.sidebarProjects) ? config.sidebarProjects : [];
@@ -231,7 +231,7 @@ export async function loadPanesFromFile(panesFile: string): Promise<DmuxPane[]> 
 
 export async function loadSidebarProjectsFromFile(
   panesFile: string,
-  panes?: DmuxPane[]
+  panes?: QmuxPane[]
 ): Promise<SidebarProject[]> {
   const fallbackProjectRoot = path.dirname(path.dirname(panesFile));
 
@@ -239,8 +239,8 @@ export async function loadSidebarProjectsFromFile(
     const content = await fs.readFile(panesFile, 'utf-8');
     const parsed: any = JSON.parse(content);
     const config = Array.isArray(parsed)
-      ? { panes: parsed as DmuxPane[] }
-      : parsed as DmuxConfig;
+      ? { panes: parsed as QmuxPane[] }
+      : parsed as QmuxConfig;
     const configPanes = Array.isArray(config.panes) ? config.panes : [];
     const effectivePanes = panes || configPanes;
     const projectRoot = config.projectRoot || fallbackProjectRoot;
@@ -267,7 +267,7 @@ export async function loadSidebarProjectsFromFile(
  * Only called on initial load
  */
 export async function recreateMissingPanes(
-  missingPanes: DmuxPane[],
+  missingPanes: QmuxPane[],
   panesFile: string
 ): Promise<void> {
   if (missingPanes.length === 0) return;
@@ -319,10 +319,10 @@ export async function recreateMissingPanes(
  * being intentionally closed (prevents race condition with close/merge actions)
  */
 export async function recreateKilledWorktreePanes(
-  panes: DmuxPane[],
+  panes: QmuxPane[],
   allPaneIds: string[],
   panesFile: string
-): Promise<DmuxPane[]> {
+): Promise<QmuxPane[]> {
   const lifecycleManager = PaneLifecycleManager.getInstance();
   const sessionProjectRoot = path.dirname(path.dirname(panesFile));
 
@@ -431,7 +431,7 @@ export async function recreateKilledWorktreePanes(
  *
  * CRITICAL FIX: On initial load, stale shell panes are removed immediately.
  * Shell panes have no worktreePath so they cannot be recreated - keeping them
- * with stale paneIds causes dmux to hang when trying to interact with them.
+ * with stale paneIds causes qmux to hang when trying to interact with them.
  */
 export async function loadAndProcessPanes(
   panesFile: string,
@@ -446,7 +446,7 @@ export async function loadAndProcessPanes(
     currentWindowPaneIds
   );
 
-  // Continue mode (`dmux -c`) gates whether saved panes get restored at all.
+  // Continue mode (`qmux -c`) gates whether saved panes get restored at all.
   const continueSession = shouldContinueSession();
 
   // On initial load, drop stale panes and PERSIST the cleaned config so a later poll
@@ -454,10 +454,10 @@ export async function loadAndProcessPanes(
   //
   // - Always: stale shell panes (no worktreePath, cannot be recreated) — keeping them
   //   with dead IDs causes hangs and "Invalid layout" errors.
-  // - Fresh start (no -c): ALSO drop stale worktree/agent panes. `dmux` starts from
+  // - Fresh start (no -c): ALSO drop stale worktree/agent panes. `qmux` starts from
   //   scratch, so a saved worktree pane that isn't live must not be recreated. Removing
   //   it from config on disk is what stops the polling recreation path from bringing it
-  //   back (e.g. after a click triggers a sync). `dmux -c` keeps them so they restore.
+  //   back (e.g. after a click triggers a sync). `qmux -c` keeps them so they restore.
   if (isInitialLoad && allPaneIds.length > 0) {
     const stalePanes = selectStalePanesToDrop(reboundPanes, allPaneIds, continueSession);
     const staleIds = new Set(stalePanes.map(p => p.id));

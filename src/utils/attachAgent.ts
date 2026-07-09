@@ -2,13 +2,13 @@
  * Attach a second (or Nth) agent to an existing worktree pane.
  *
  * Creates a new tmux pane that `cd`s into the same worktree directory,
- * launches the chosen agent, and returns a sibling DmuxPane that shares
+ * launches the chosen agent, and returns a sibling QmuxPane that shares
  * the same worktreePath/branchName/projectRoot.
  */
 
 import * as fs from 'fs';
 import path from 'path';
-import type { DmuxPane, DmuxConfig } from '../types.js';
+import type { QmuxPane, QmuxConfig } from '../types.js';
 import type { AgentName } from './agentLaunch.js';
 import { launchAgentInPane } from './agentLaunch.js';
 import { autoApproveTrustPrompt } from './paneCreation.js';
@@ -24,11 +24,11 @@ import { installGrokPaneHooks } from './grokHooks.js';
 import { resolveProjectColorTheme } from './paneColors.js';
 
 export interface AttachAgentOptions {
-  targetPane: DmuxPane;
+  targetPane: QmuxPane;
   prompt: string;
   agent: AgentName;
   goalMode?: boolean;
-  existingPanes: DmuxPane[];
+  existingPanes: QmuxPane[];
   sessionProjectRoot: string;
   sessionConfigPath: string;
 }
@@ -37,8 +37,8 @@ export interface AttachAgentOptions {
  * Generate a unique sibling slug like `fix-auth-a2`, `fix-auth-a3`, etc.
  */
 export function generateSiblingSlugForTargetPane(
-  targetPane: Pick<DmuxPane, 'slug' | 'worktreePath'>,
-  existingPanes: ReadonlyArray<Pick<DmuxPane, 'slug'>>,
+  targetPane: Pick<QmuxPane, 'slug' | 'worktreePath'>,
+  existingPanes: ReadonlyArray<Pick<QmuxPane, 'slug'>>,
 ): string {
   // Always anchor attached-agent slugs to the real worktree directory name.
   // This avoids repeated suffixes when attaching from an already attached pane.
@@ -62,7 +62,7 @@ export function generateSiblingSlugForTargetPane(
 
 export async function attachAgentToWorktree(
   options: AttachAgentOptions
-): Promise<{ pane: DmuxPane }> {
+): Promise<{ pane: QmuxPane }> {
   const {
     targetPane,
     prompt,
@@ -91,15 +91,15 @@ export async function attachAgentToWorktree(
   let controlPaneId: string | undefined;
   try {
     const configContent = fs.readFileSync(sessionConfigPath, 'utf-8');
-    const config: DmuxConfig = JSON.parse(configContent);
+    const config: QmuxConfig = JSON.parse(configContent);
     controlPaneId = config.controlPaneId;
   } catch {
     controlPaneId = originalPaneId;
   }
 
   // Split from the last existing pane (standard grid placement)
-  const dmuxPaneIds = existingPanes.map(p => p.paneId);
-  const splitTarget = dmuxPaneIds[dmuxPaneIds.length - 1];
+  const qmuxPaneIds = existingPanes.map(p => p.paneId);
+  const splitTarget = qmuxPaneIds[qmuxPaneIds.length - 1];
   const paneInfo = splitPane({ targetPane: splitTarget, cwd: projectRoot });
 
   // Wait for pane to be ready
@@ -141,21 +141,21 @@ export async function attachAgentToWorktree(
   // Small delay for cd to complete
   await new Promise(r => setTimeout(r, 300));
 
-  const dmuxPaneId = `dmux-${Date.now()}`;
+  const qmuxPaneId = `qmux-${Date.now()}`;
   const goalMode = goalModeOverride ?? settings.enableGoalModeByDefault ?? false;
   let codexHookEventFile: string | undefined;
   if (agent === 'codex') {
     try {
       codexHookEventFile = installCodexPaneHooks({
         worktreePath: targetPane.worktreePath,
-        dmuxPaneId,
+        qmuxPaneId,
         tmuxPaneId: paneInfo,
       }).eventFile;
     } catch (error) {
       LogService.getInstance().warn(
         `Failed to install Codex hooks for ${slug}: ${error instanceof Error ? error.message : String(error)}`,
         'attachAgent',
-        dmuxPaneId
+        qmuxPaneId
       );
     }
   }
@@ -163,14 +163,14 @@ export async function attachAgentToWorktree(
     try {
       installClaudePaneHooks({
         worktreePath: targetPane.worktreePath,
-        dmuxPaneId,
+        qmuxPaneId,
         tmuxPaneId: paneInfo,
       });
     } catch (error) {
       LogService.getInstance().warn(
         `Failed to install Claude hooks for ${slug}: ${error instanceof Error ? error.message : String(error)}`,
         'attachAgent',
-        dmuxPaneId
+        qmuxPaneId
       );
     }
   }
@@ -178,14 +178,14 @@ export async function attachAgentToWorktree(
     try {
       installGrokPaneHooks({
         worktreePath: targetPane.worktreePath,
-        dmuxPaneId,
+        qmuxPaneId,
         tmuxPaneId: paneInfo,
       });
     } catch (error) {
       LogService.getInstance().warn(
         `Failed to install Grok hooks for ${slug}: ${error instanceof Error ? error.message : String(error)}`,
         'attachAgent',
-        dmuxPaneId
+        qmuxPaneId
       );
     }
   }
@@ -198,7 +198,7 @@ export async function attachAgentToWorktree(
     slug,
     projectRoot,
     goalMode,
-    dmuxPaneId,
+    qmuxPaneId,
     codexHookEventFile,
     permissionMode: settings.permissionMode,
   });
@@ -214,8 +214,8 @@ export async function attachAgentToWorktree(
   await tmuxService.selectPane(paneInfo);
 
   // Build the sibling pane object — shares worktree/branch with target
-  const newPane: DmuxPane = {
-    id: dmuxPaneId,
+  const newPane: QmuxPane = {
+    id: qmuxPaneId,
     slug,
     branchName: targetPane.branchName,
     prompt: prompt || 'No initial prompt',
@@ -233,9 +233,9 @@ export async function attachAgentToWorktree(
   // Switch focus back to control pane
   await tmuxService.selectPane(originalPaneId);
 
-  // Re-set the dmux sidebar title
+  // Re-set the qmux sidebar title
   try {
-    await tmuxService.setPaneTitle(originalPaneId, "dmux");
+    await tmuxService.setPaneTitle(originalPaneId, "qmux");
   } catch {
     // Ignore title errors
   }

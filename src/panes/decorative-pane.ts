@@ -5,16 +5,16 @@
 
 import { ASCII_ART as ASCII_ART_EXPORTS } from "../utils/asciiArt.js"
 import {
-  applyDmuxTheme,
+  applyQmuxTheme,
   DECORATIVE_THEME,
-  getActiveDmuxTheme,
+  getActiveQmuxTheme,
 } from "../theme/colors.js"
-import { normalizeDmuxTheme } from "../theme/themePalette.js"
+import { normalizeQmuxTheme } from "../theme/themePalette.js"
 import { WELCOME_PANE_THEME_OPTION } from "../utils/welcomePane.js"
 import { execSync } from "child_process"
 
 // Parse the ASCII art string into an array of lines
-const ASCII_ART = ASCII_ART_EXPORTS.dmuxWelcome.trim().split("\n")
+const ASCII_ART = ASCII_ART_EXPORTS.qmuxWelcome.trim().split("\n")
 
 const FILL_CHAR = "·"
 const DIM_GRAY = DECORATIVE_THEME.fill
@@ -185,12 +185,12 @@ function syncThemeFromPaneOption(): boolean {
     return false
   }
 
-  const nextTheme = normalizeDmuxTheme(configuredTheme)
-  if (nextTheme === getActiveDmuxTheme()) {
+  const nextTheme = normalizeQmuxTheme(configuredTheme)
+  if (nextTheme === getActiveQmuxTheme()) {
     return false
   }
 
-  applyDmuxTheme(nextTheme)
+  applyQmuxTheme(nextTheme)
   return true
 }
 

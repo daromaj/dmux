@@ -4,9 +4,9 @@ import {
   PaneAction,
   TOGGLE_PANE_VISIBILITY_ACTION,
 } from "../src/actions/types.js"
-import type { DmuxPane } from "../src/types.js"
+import type { QmuxPane } from "../src/types.js"
 
-function pane(id: string, overrides: Partial<DmuxPane> = {}): DmuxPane {
+function pane(id: string, overrides: Partial<QmuxPane> = {}): QmuxPane {
   const projectRoot = overrides.projectRoot || "/repo-a"
   const slug = overrides.slug || `pane-${id}`
 
@@ -16,7 +16,7 @@ function pane(id: string, overrides: Partial<DmuxPane> = {}): DmuxPane {
     prompt: `prompt-${id}`,
     paneId: `%${id}`,
     projectRoot,
-    worktreePath: `${projectRoot}/.dmux/worktrees/${slug}`,
+    worktreePath: `${projectRoot}/.qmux/worktrees/${slug}`,
     ...overrides,
   }
 }

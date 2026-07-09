@@ -80,7 +80,7 @@ describe('paneAttentionHeuristics', () => {
     expect(getAgentHookStatus({ hookEventName: 'PermissionRequest' })).toBe('waiting');
     expect(getAgentHookStatus({ hookEventName: 'Notification' })).toBe('waiting');
     expect(getAgentHookStatus({ hookEventName: 'Stop' })).toBe('idle');
-    expect(getAgentHookStatus({ dmuxStatus: 'working', hookEventName: 'Stop' })).toBe('working');
+    expect(getAgentHookStatus({ qmuxStatus: 'working', hookEventName: 'Stop' })).toBe('working');
     expect(getAgentHookStatus({ hookEventName: 'UnknownEvent' })).toBe(null);
   });
 });

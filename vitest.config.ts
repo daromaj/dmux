@@ -9,7 +9,7 @@ export default defineConfig({
       'tests/**/*.test.tsx',
     ],
     exclude: [
-      '.dmux/**',
+      '.qmux/**',
       'node_modules/**',
       'dist/**',
     ],

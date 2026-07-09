@@ -3,7 +3,7 @@ import ApplicationServices
 import Dispatch
 import Foundation
 
-private let helperBundleIconName = "dmux-helper"
+private let helperBundleIconName = "qmux-helper"
 private let notificationTitleTokenKey = "titleToken"
 private let notificationBundleIdKey = "bundleId"
 private let notificationTmuxPaneIdKey = "tmuxPaneId"
@@ -196,7 +196,7 @@ final class ClientConnection {
 final class FocusMonitor: NSObject, NSUserNotificationCenterDelegate, NSSoundDelegate {
     private let socketPath: String
     private let pollInterval: TimeInterval
-    private let queue = DispatchQueue(label: "dmux.helper.focus", qos: .userInitiated)
+    private let queue = DispatchQueue(label: "qmux.helper.focus", qos: .userInitiated)
     private var listenerFD: Int32 = -1
     private var listenerSource: DispatchSourceRead?
     private var timer: DispatchSourceTimer?
@@ -237,7 +237,7 @@ final class FocusMonitor: NSObject, NSUserNotificationCenterDelegate, NSSoundDel
         let maxPathLength = MemoryLayout.size(ofValue: address.sun_path)
         let utf8Path = socketPath.utf8CString
         guard utf8Path.count <= maxPathLength else {
-            throw NSError(domain: "dmux.helper", code: 1, userInfo: [
+            throw NSError(domain: "qmux.helper", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "Socket path too long: \(socketPath)",
             ])
         }
@@ -756,7 +756,7 @@ final class FocusMonitor: NSObject, NSUserNotificationCenterDelegate, NSSoundDel
 }
 
 func parseArguments() -> (socketPath: String, pollMilliseconds: Int) {
-    var socketPath = "\(NSHomeDirectory())/.dmux/native-helper/run/dmux-helper.sock"
+    var socketPath = "\(NSHomeDirectory())/.qmux/native-helper/run/qmux-helper.sock"
     var pollMilliseconds = 250
 
     var iterator = CommandLine.arguments.dropFirst().makeIterator()
@@ -778,7 +778,7 @@ func parseArguments() -> (socketPath: String, pollMilliseconds: Int) {
     return (socketPath, pollMilliseconds)
 }
 
-final class DmuxHelperAppDelegate: NSObject, NSApplicationDelegate {
+final class QmuxHelperAppDelegate: NSObject, NSApplicationDelegate {
     private let monitor: FocusMonitor
 
     init(monitor: FocusMonitor) {
@@ -796,7 +796,7 @@ final class DmuxHelperAppDelegate: NSObject, NSApplicationDelegate {
         do {
             try monitor.start()
         } catch {
-            fputs("dmux-helper failed to start: \(error)\n", stderr)
+            fputs("qmux-helper failed to start: \(error)\n", stderr)
             NSApp.terminate(nil)
         }
     }
@@ -809,6 +809,6 @@ let monitor = FocusMonitor(
 )
 
 let app = NSApplication.shared
-let delegate = DmuxHelperAppDelegate(monitor: monitor)
+let delegate = QmuxHelperAppDelegate(monitor: monitor)
 app.delegate = delegate
 app.run()

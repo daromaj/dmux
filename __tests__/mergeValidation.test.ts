@@ -11,9 +11,9 @@ describe('mergeValidation', () => {
     vi.mocked(execSync).mockReset();
   });
 
-  it('ignores dmux metadata directories when checking git status', () => {
+  it('ignores qmux metadata directories when checking git status', () => {
     vi.mocked(execSync).mockReturnValue(
-      '?? .dmux/\nM  .dmux/worktrees/feature-a\n'
+      '?? .qmux/\nM  .qmux/worktrees/feature-a\n'
     );
 
     const status = getGitStatus('/repo');
@@ -28,11 +28,11 @@ describe('mergeValidation', () => {
   it('ignores untracked hook scaffolding but preserves real hook changes', () => {
     vi.mocked(execSync).mockReturnValue(
       [
-        '?? .dmux-hooks/',
-        '?? .dmux-hooks/AGENTS.md',
-        '?? .dmux-hooks/examples/pre_merge.example',
-        ' M .dmux-hooks/pre_merge',
-        '?? .dmux-hooks/custom_hook',
+        '?? .qmux-hooks/',
+        '?? .qmux-hooks/AGENTS.md',
+        '?? .qmux-hooks/examples/pre_merge.example',
+        ' M .qmux-hooks/pre_merge',
+        '?? .qmux-hooks/custom_hook',
       ].join('\n')
     );
 
@@ -41,14 +41,14 @@ describe('mergeValidation', () => {
     expect(status).toEqual({
       hasChanges: true,
       files: [
-        '.dmux-hooks/pre_merge',
-        '.dmux-hooks/custom_hook',
+        '.qmux-hooks/pre_merge',
+        '.qmux-hooks/custom_hook',
       ],
-      summary: ' M .dmux-hooks/pre_merge\n?? .dmux-hooks/custom_hook',
+      summary: ' M .qmux-hooks/pre_merge\n?? .qmux-hooks/custom_hook',
     });
   });
 
-  it('keeps non-dmux files in the dirty-state result', () => {
+  it('keeps non-qmux files in the dirty-state result', () => {
     vi.mocked(execSync).mockReturnValue(
       ' M src/index.ts\nM package.json\n'
     );

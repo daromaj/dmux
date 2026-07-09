@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Standalone popup used by dmux when creating a new pane.
+ * Standalone popup used by qmux when creating a new pane.
  *
  * Behavior:
  * - Captures the initial agent prompt (with @file autocomplete support).
@@ -48,7 +48,7 @@ const PROJECT_NAME = path.basename(FILE_SCAN_ROOT)
 const ESC_CLEAR_CONFIRMATION_MS = 500
 
 // Debug logging to file
-const DEBUG_LOG = path.join(FILE_SCAN_ROOT, '.dmux', 'file-picker-debug.log')
+const DEBUG_LOG = path.join(FILE_SCAN_ROOT, '.qmux', 'file-picker-debug.log')
 function debugLog(message: string, data?: any) {
   const timestamp = new Date().toISOString()
   const logLine = `[${timestamp}] ${message} ${data ? JSON.stringify(data, null, 2) : ''}\n`

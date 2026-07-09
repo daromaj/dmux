@@ -3,14 +3,14 @@ export const meta = { title: 'Multi-Project' };
 export function render() {
   return `
     <h1>Multi-Project</h1>
-    <p class="lead">dmux supports attaching multiple git repositories to a single tmux session, letting you manage panes, file browsers, and visibility controls across different projects side by side.</p>
+    <p class="lead">qmux supports attaching multiple git repositories to a single tmux session, letting you manage panes, file browsers, and visibility controls across different projects side by side.</p>
 
     <h2>Attaching a Project</h2>
-    <p>Press <kbd>p</kbd> in the dmux TUI to create a pane in a different project. dmux will prompt you to select a project directory. The new project is attached to the current session and appears as a separate group in the sidebar.</p>
+    <p>Press <kbd>p</kbd> in the qmux TUI to create a pane in a different project. qmux will prompt you to select a project directory. The new project is attached to the current session and appears as a separate group in the sidebar.</p>
 
     <div class="callout callout-info">
       <div class="callout-title">How it works</div>
-      Each attached project gets its own <code>.dmux/</code> directory and worktree space. The tmux session is shared, but pane tracking is per-project.
+      Each attached project gets its own <code>.qmux/</code> directory and worktree space. The tmux session is shared, but pane tracking is per-project.
     </div>
 
     <h2>Project Navigation</h2>
@@ -31,29 +31,29 @@ export function render() {
     </ul>
 
     <h2>Sub-Worktree Discovery</h2>
-    <p>dmux automatically discovers when a worktree is nested inside another project's directory. This is useful for monorepo setups where you might have:</p>
+    <p>qmux automatically discovers when a worktree is nested inside another project's directory. This is useful for monorepo setups where you might have:</p>
     <div class="file-tree">monorepo/
-├── .dmux/worktrees/
+├── .qmux/worktrees/
 │   └── feat-api/           # Worktree for the monorepo
 │       └── packages/
 │           └── api/
 └── packages/
     └── api/
-        └── .dmux/worktrees/
+        └── .qmux/worktrees/
             └── fix-endpoint/  # Worktree for the api package</div>
 
-    <p>dmux tracks these relationships so it can merge in the correct order.</p>
+    <p>qmux tracks these relationships so it can merge in the correct order.</p>
 
     <h2>Per-Project File Browser</h2>
     <p>Press <kbd>f</kbd> on any worktree pane to open a read-only file browser rooted at that pane's worktree. In a shared session, the browser stays attached to the same project group as the pane it came from.</p>
     <ul>
       <li>Use this to inspect frontend and backend repos independently without leaving the shared session</li>
       <li>Browser panes respect project visibility controls such as <kbd>P</kbd> and hidden-pane toggles</li>
-      <li>If a browser for that worktree is already open, dmux focuses it instead of opening a duplicate</li>
+      <li>If a browser for that worktree is already open, qmux focuses it instead of opening a duplicate</li>
     </ul>
 
     <h2>Multi-Merge Orchestration</h2>
-    <p>When merging across multiple projects with nested worktrees, dmux merges <strong>deepest first</strong>. This ensures that:</p>
+    <p>When merging across multiple projects with nested worktrees, qmux merges <strong>deepest first</strong>. This ensures that:</p>
     <ol>
       <li>Child project changes are merged before parent project changes</li>
       <li>The parent worktree sees the child's merged state when it merges</li>

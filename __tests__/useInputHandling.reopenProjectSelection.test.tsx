@@ -117,14 +117,14 @@ function Harness({
     cleanExit: vi.fn(),
     killSessionExit: vi.fn(),
     getAvailableAgentsForProject: vi.fn(() => []),
-    panesFile: '/tmp/dmux.config.json',
+    panesFile: '/tmp/qmux.config.json',
     projectRoot: '/repo-root',
     activeProjectRoot,
     projectActionItems,
     findCardInDirection: vi.fn(() => null),
   });
 
-  return <Text>dmux</Text>;
+  return <Text>qmux</Text>;
 }
 
 describe('useInputHandling reopen project selection', () => {
@@ -207,7 +207,7 @@ describe('useInputHandling reopen project selection', () => {
       {
         branchName: 'feature-a',
         slug: 'feature-a',
-        path: '/repo-selected/.dmux/worktrees/feature-a',
+        path: '/repo-selected/.qmux/worktrees/feature-a',
         lastModified: new Date('2026-03-12T12:00:00.000Z'),
         hasUncommittedChanges: false,
         hasWorktree: true,
@@ -315,7 +315,7 @@ describe('useInputHandling reopen project selection', () => {
       {
         branchName: 'feature-a',
         slug: 'feature-a',
-        path: '/repo-selected/.dmux/worktrees/feature-a',
+        path: '/repo-selected/.qmux/worktrees/feature-a',
         lastModified: new Date('2026-03-12T12:00:00.000Z'),
         hasUncommittedChanges: false,
         hasWorktree: true,

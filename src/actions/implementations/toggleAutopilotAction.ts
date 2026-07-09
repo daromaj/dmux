@@ -2,7 +2,7 @@
  * TOGGLE_AUTOPILOT Action - Toggle autopilot mode for a pane
  */
 
-import type { DmuxPane } from '../../types.js';
+import type { QmuxPane } from '../../types.js';
 import type { ActionResult, ActionContext } from '../types.js';
 import { getPaneDisplayName } from '../../utils/paneTitle.js';
 
@@ -10,7 +10,7 @@ import { getPaneDisplayName } from '../../utils/paneTitle.js';
  * Toggle autopilot mode for a pane
  */
 export async function toggleAutopilot(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext
 ): Promise<ActionResult> {
   try {

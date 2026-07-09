@@ -2,8 +2,8 @@
  * Shared types for the quake-mode assistant.
  *
  * The quake assistant is a basic agentic harness: a chat overlay that talks to
- * dmux's configured LLM and operates the workspace by emitting shell/tmux
- * commands (executed via a shell) and `dmux:` control verbs (routed into the
+ * qmux's configured LLM and operates the workspace by emitting shell/tmux
+ * commands (executed via a shell) and `qmux:` control verbs (routed into the
  * running Ink process). See docs/superpowers/specs/2026-07-09-quake-mode-assistant-design.md
  */
 
@@ -37,9 +37,9 @@ export interface ChatCompletionOptions {
  * A parsed segment of an assistant message.
  * - `prose`   : plain text to show the user.
  * - `shell`   : a fenced ```run / ```sh / ```bash block to execute in a shell.
- * - `dmux`    : a fenced ```dmux block containing control verbs (one per line).
+ * - `qmux`    : a fenced ```qmux block containing control verbs (one per line).
  */
-export type QuakeBlockKind = 'prose' | 'shell' | 'dmux';
+export type QuakeBlockKind = 'prose' | 'shell' | 'qmux';
 
 export interface QuakeBlock {
   kind: QuakeBlockKind;
@@ -48,7 +48,7 @@ export interface QuakeBlock {
 
 /** A command block extracted for execution, in emission order. */
 export interface QuakeCommand {
-  kind: 'shell' | 'dmux';
+  kind: 'shell' | 'qmux';
   content: string;
 }
 
@@ -57,8 +57,8 @@ export interface QuakeCommand {
  * ------------------------------------------------------------------ */
 
 /**
- * In-process effects the `dmux:` control lane routes into the running app.
- * Implementations live in the wiring layer (DmuxApp) and reuse existing
+ * In-process effects the `qmux:` control lane routes into the running app.
+ * Implementations live in the wiring layer (QmuxApp) and reuse existing
  * settings/layout closures; this keeps the verb module pure and testable.
  * Each handler returns (or resolves to) a short human-readable result note.
  */
@@ -66,7 +66,7 @@ export interface QuakeControlHandlers {
   /** gridColumns: 0/'auto' = adaptive, else 1..4. */
   setGridColumns: (columns: number | 'auto') => Promise<string> | string;
   setControlPosition: (position: 'bottom' | 'left') => Promise<string> | string;
-  /** paneRef = pane slug or tmux pane id (%3) or dmux id. */
+  /** paneRef = pane slug or tmux pane id (%3) or qmux id. */
   setPaneColor: (paneRef: string, color: string) => Promise<string> | string;
   refreshLayout: () => Promise<string> | string;
 }
@@ -76,7 +76,7 @@ export interface QuakeControlHandlers {
  * ------------------------------------------------------------------ */
 
 export interface QuakePaneContext {
-  /** dmux logical id. */
+  /** qmux logical id. */
   id: string;
   slug: string;
   /** tmux pane id, e.g. "%4" — the send-keys / capture-pane target. */
@@ -102,7 +102,7 @@ export interface QuakeWorkspaceContext {
 export type QuakeEntryKind =
   | 'user'          // user message
   | 'assistant'     // assistant prose
-  | 'command'       // a shell/dmux command about to run
+  | 'command'       // a shell/qmux command about to run
   | 'output'        // result of a command
   | 'error'         // error notice
   | 'info';         // system notice (aborted, max steps, no api key, ...)
@@ -111,7 +111,7 @@ export interface QuakeTranscriptEntry {
   kind: QuakeEntryKind;
   text: string;
   /** For 'command'/'output': which lane. */
-  lane?: 'shell' | 'dmux';
+  lane?: 'shell' | 'qmux';
   /** Monotonic id for keying in the UI. */
   seq: number;
 }

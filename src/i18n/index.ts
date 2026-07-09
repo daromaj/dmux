@@ -1,5 +1,5 @@
 /**
- * Internationalization (i18n) module for dmux
+ * Internationalization (i18n) module for qmux
  *
  * Translations are bundled as TypeScript modules (no fs/JSON at runtime).
  * This keeps published builds self-contained and avoids fs side effects

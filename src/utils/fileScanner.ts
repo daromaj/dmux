@@ -50,8 +50,8 @@ export function scanProjectFiles(projectPath: string): FileScanResult {
           // Exclude lock files and logs (often large and not useful for reference)
           !lower.endsWith('.lock') &&
           !lower.endsWith('.log') &&
-          // Exclude .dmux internal directory (should be gitignored but extra safety)
-          !lower.includes('.dmux/')
+          // Exclude .qmux internal directory (should be gitignored but extra safety)
+          !lower.includes('.qmux/')
           // Everything else from git ls-files is included
         );
       })

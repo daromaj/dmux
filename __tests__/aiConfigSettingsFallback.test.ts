@@ -5,20 +5,20 @@ import path from 'path';
 import { readApiKeyFromSettingsSync, readAiSettingsSync } from '../src/utils/aiConfig.js';
 
 /**
- * Regression coverage for the tmux-stale-environment bug: dmux processes spawned
+ * Regression coverage for the tmux-stale-environment bug: qmux processes spawned
  * by a long-lived tmux server inherit an environment without the API key. Storing
- * `aiApiKey` in the dmux settings file lets resolveApiKey() recover it from disk.
+ * `aiApiKey` in the qmux settings file lets resolveApiKey() recover it from disk.
  *
  * The global path is injected here so the tests never touch the real
- * ~/.dmux.global.json.
+ * ~/.qmux.global.json.
  */
 describe('readApiKeyFromSettingsSync', () => {
   let cwd: string;
   let globalPath: string;
 
   beforeEach(() => {
-    cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'dmux-settings-'));
-    fs.mkdirSync(path.join(cwd, '.dmux'), { recursive: true });
+    cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'qmux-settings-'));
+    fs.mkdirSync(path.join(cwd, '.qmux'), { recursive: true });
     globalPath = path.join(cwd, 'global.json'); // isolated, does not exist by default
   });
 
@@ -28,7 +28,7 @@ describe('readApiKeyFromSettingsSync', () => {
 
   const writeProjectSettings = (obj: unknown) => {
     fs.writeFileSync(
-      path.join(cwd, '.dmux', 'settings.json'),
+      path.join(cwd, '.qmux', 'settings.json'),
       JSON.stringify(obj),
       'utf-8',
     );
@@ -68,7 +68,7 @@ describe('readApiKeyFromSettingsSync', () => {
   });
 
   it('returns undefined on malformed JSON (does not throw)', () => {
-    fs.writeFileSync(path.join(cwd, '.dmux', 'settings.json'), '{ not json', 'utf-8');
+    fs.writeFileSync(path.join(cwd, '.qmux', 'settings.json'), '{ not json', 'utf-8');
     expect(readApiKeyFromSettingsSync(cwd, globalPath)).toBeUndefined();
   });
 
@@ -83,8 +83,8 @@ describe('readAiSettingsSync (provider/model/baseUrl + key)', () => {
   let globalPath: string;
 
   beforeEach(() => {
-    cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'dmux-ai-'));
-    fs.mkdirSync(path.join(cwd, '.dmux'), { recursive: true });
+    cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'qmux-ai-'));
+    fs.mkdirSync(path.join(cwd, '.qmux'), { recursive: true });
     globalPath = path.join(cwd, 'global.json');
   });
 
@@ -93,7 +93,7 @@ describe('readAiSettingsSync (provider/model/baseUrl + key)', () => {
   });
 
   const writeProject = (obj: unknown) =>
-    fs.writeFileSync(path.join(cwd, '.dmux', 'settings.json'), JSON.stringify(obj), 'utf-8');
+    fs.writeFileSync(path.join(cwd, '.qmux', 'settings.json'), JSON.stringify(obj), 'utf-8');
   const writeGlobal = (obj: unknown) =>
     fs.writeFileSync(globalPath, JSON.stringify(obj), 'utf-8');
 

@@ -1,12 +1,12 @@
 import { spawn } from 'child_process';
-import type { DmuxPane } from '../types.js';
+import type { QmuxPane } from '../types.js';
 import { triggerHook } from '../utils/hooks.js';
 import { getPaneBranchName } from '../utils/git.js';
 import { detectAllWorktrees } from '../utils/worktreeDiscovery.js';
 import { LogService } from './LogService.js';
 
 interface WorktreeCleanupJob {
-  pane: DmuxPane;
+  pane: QmuxPane;
   paneProjectRoot: string;
   mainRepoPath: string;
   deleteBranch: boolean;
@@ -30,7 +30,7 @@ interface WorktreeRemovalTarget {
 
 /**
  * Queues worktree deletions in the background so large filesystem cleanup
- * never blocks the main dmux event loop.
+ * never blocks the main qmux event loop.
  */
 export class WorktreeCleanupService {
   private static instance: WorktreeCleanupService;
@@ -130,7 +130,7 @@ export class WorktreeCleanupService {
   }
 
   private getBranchDeletionTargets(
-    pane: DmuxPane,
+    pane: QmuxPane,
     mainRepoPath: string
   ): BranchDeletionTarget[] {
     const branchName = getPaneBranchName(pane);
@@ -158,7 +158,7 @@ export class WorktreeCleanupService {
   }
 
   private getWorktreeRemovalTargets(
-    pane: DmuxPane,
+    pane: QmuxPane,
     mainRepoPath: string
   ): WorktreeRemovalTarget[] {
     if (!pane.worktreePath) {

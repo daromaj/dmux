@@ -1,10 +1,11 @@
 import { SettingsManager } from '../utils/settingsManager.js';
-import type { DmuxThemeName } from '../types.js';
+import type { QmuxThemeName } from '../types.js';
 import {
-  DEFAULT_DMUX_THEME,
-  isDmuxThemeName,
-  normalizeDmuxTheme,
+  DEFAULT_QMUX_THEME,
+  isQmuxThemeName,
+  normalizeQmuxTheme,
 } from './themePalette.js';
+import { getQmuxEnv } from '../utils/qmuxEnv.js';
 
 interface ThemePalette {
   accentHex: string;
@@ -20,7 +21,7 @@ const ANSI_16_HEX_COLORS = [
   '#0000ff', '#ff00ff', '#00ffff', '#ffffff',
 ] as const;
 
-const THEME_PALETTES: Record<DmuxThemeName, ThemePalette> = {
+const THEME_PALETTES: Record<QmuxThemeName, ThemePalette> = {
   red: {
     accentHex: '#ff5f5f',
     activeBorder: '203',
@@ -104,14 +105,14 @@ export const DECORATIVE_THEME = {
   tail: Array.from({ length: 8 }, () => ''),
 } as const;
 
-let activeThemeName: DmuxThemeName = DEFAULT_DMUX_THEME;
+let activeThemeName: QmuxThemeName = DEFAULT_QMUX_THEME;
 
-export function getDmuxThemePalette(themeName: unknown): ThemePalette {
-  return THEME_PALETTES[normalizeDmuxTheme(themeName)];
+export function getQmuxThemePalette(themeName: unknown): ThemePalette {
+  return THEME_PALETTES[normalizeQmuxTheme(themeName)];
 }
 
-export function getDmuxThemeAccent(themeName: unknown): string {
-  return getDmuxThemePalette(themeName).accentHex;
+export function getQmuxThemeAccent(themeName: unknown): string {
+  return getQmuxThemePalette(themeName).accentHex;
 }
 
 function xterm256IndexToHex(colorIndex: number): string | undefined {
@@ -140,14 +141,14 @@ function xterm256IndexToHex(colorIndex: number): string | undefined {
     .join('')}`;
 }
 
-export function getDmuxThemeActiveBorderHex(themeName: unknown): string {
-  const activeBorderIndex = Number.parseInt(getDmuxThemePalette(themeName).activeBorder, 10);
+export function getQmuxThemeActiveBorderHex(themeName: unknown): string {
+  const activeBorderIndex = Number.parseInt(getQmuxThemePalette(themeName).activeBorder, 10);
   const activeBorderHex = xterm256IndexToHex(activeBorderIndex);
-  return activeBorderHex || getDmuxThemeAccent(themeName);
+  return activeBorderHex || getQmuxThemeAccent(themeName);
 }
 
-export function applyDmuxTheme(themeName: DmuxThemeName): DmuxThemeName {
-  const nextTheme = getDmuxThemePalette(themeName);
+export function applyQmuxTheme(themeName: QmuxThemeName): QmuxThemeName {
+  const nextTheme = getQmuxThemePalette(themeName);
   activeThemeName = themeName;
 
   assignMutableRecord(COLORS as unknown as Record<string, string>, {
@@ -168,22 +169,23 @@ export function applyDmuxTheme(themeName: DmuxThemeName): DmuxThemeName {
   return activeThemeName;
 }
 
-export function getActiveDmuxTheme(): DmuxThemeName {
+export function getActiveQmuxTheme(): QmuxThemeName {
   return activeThemeName;
 }
 
-export function syncDmuxThemeFromSettings(projectRoot?: string): DmuxThemeName {
+export function syncQmuxThemeFromSettings(projectRoot?: string): QmuxThemeName {
   try {
     const settings = new SettingsManager(projectRoot || process.cwd()).getSettings();
-    return applyDmuxTheme(normalizeDmuxTheme(settings.colorTheme));
+    return applyQmuxTheme(normalizeQmuxTheme(settings.colorTheme));
   } catch {
-    return applyDmuxTheme(DEFAULT_DMUX_THEME);
+    return applyQmuxTheme(DEFAULT_QMUX_THEME);
   }
 }
 
 // Keep module consumers working without explicit setup.
-if (process.env.DMUX_THEME && isDmuxThemeName(process.env.DMUX_THEME)) {
-  applyDmuxTheme(process.env.DMUX_THEME);
+const envThemeName = getQmuxEnv('THEME');
+if (envThemeName && isQmuxThemeName(envThemeName)) {
+  applyQmuxTheme(envThemeName);
 } else {
-  syncDmuxThemeFromSettings(process.cwd());
+  syncQmuxThemeFromSettings(process.cwd());
 }

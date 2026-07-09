@@ -20,7 +20,7 @@ cat << 'EOF'
 EOF
 echo -e "${RESET}"
 
-echo "🚀 Welcome to your new dmux pane!"
-echo "📝 Slug: $DMUX_SLUG"
-echo "🤖 Agent: $DMUX_AGENT"
+echo "🚀 Welcome to your new qmux pane!"
+echo "📝 Slug: $QMUX_SLUG"
+echo "🤖 Agent: $QMUX_AGENT"
 echo ""

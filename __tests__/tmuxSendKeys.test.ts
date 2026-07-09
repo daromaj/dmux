@@ -17,13 +17,13 @@ describe('sendTmuxShellCommand', () => {
 
   it('passes shell commands as a single tmux argument', () => {
     spawnSyncMock.mockReturnValue({ status: 0 });
-    const commandWithSpaces = '"/Users/me/Library/Application Support/fnm/bin/dmux"';
+    const commandWithSpaces = '"/Users/me/Library/Application Support/fnm/bin/qmux"';
 
-    sendTmuxShellCommand('dmux-demo', commandWithSpaces, 'inherit');
+    sendTmuxShellCommand('qmux-demo', commandWithSpaces, 'inherit');
 
     expect(spawnSyncMock).toHaveBeenCalledWith(
       'tmux',
-      ['send-keys', '-t', 'dmux-demo', commandWithSpaces, 'Enter'],
+      ['send-keys', '-t', 'qmux-demo', commandWithSpaces, 'Enter'],
       { stdio: 'inherit' }
     );
   });
@@ -31,8 +31,8 @@ describe('sendTmuxShellCommand', () => {
   it('throws when tmux send-keys fails', () => {
     spawnSyncMock.mockReturnValue({ status: 1 });
 
-    expect(() => sendTmuxShellCommand('dmux-demo', 'dmux')).toThrow(
-      'Failed to send tmux command to target dmux-demo'
+    expect(() => sendTmuxShellCommand('qmux-demo', 'qmux')).toThrow(
+      'Failed to send tmux command to target qmux-demo'
     );
   });
 });

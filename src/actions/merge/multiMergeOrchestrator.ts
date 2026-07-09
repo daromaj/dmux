@@ -6,7 +6,7 @@
  */
 
 import type { ActionResult, ActionContext } from '../types.js';
-import type { DmuxPane } from '../../types.js';
+import type { QmuxPane } from '../../types.js';
 import type { WorktreeInfo, MergeQueueItem, MultiMergeResult } from './types.js';
 import type { MergeValidationResult } from '../../utils/mergeValidation.js';
 import { getWorktreeDisplayLabel } from '../../utils/worktreeDiscovery.js';
@@ -61,7 +61,7 @@ export async function buildMergeQueue(
  * Returns ActionResult that chains through each merge
  */
 export async function executeMultiMerge(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   queue: MergeQueueItem[]
 ): Promise<ActionResult> {
@@ -73,7 +73,7 @@ export async function executeMultiMerge(
  * Show initial confirmation dialog listing all worktrees to merge
  */
 function showMultiMergeConfirmation(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   queue: MergeQueueItem[]
 ): ActionResult {
@@ -117,7 +117,7 @@ function showMultiMergeConfirmation(
  * Process the next item in the merge queue
  */
 async function processNextInQueue(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   queue: MergeQueueItem[],
   currentIndex: number,
@@ -182,7 +182,7 @@ async function processNextInQueue(
  * Execute merge for a single worktree in the queue
  */
 async function executeSingleWorktreeMerge(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   item: MergeQueueItem,
   currentIndex: number,
@@ -229,7 +229,7 @@ async function executeSingleWorktreeMerge(
  * Handle merge issues for a single worktree in multi-merge context
  */
 async function handleWorktreeMergeIssues(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   item: MergeQueueItem,
   progressPrefix: string,
@@ -459,7 +459,7 @@ async function handleUncommittedForWorktree(
  * Handle merge conflict for a worktree in multi-merge
  */
 async function handleConflictForWorktree(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   item: MergeQueueItem,
   progressPrefix: string,
@@ -536,7 +536,7 @@ async function handleConflictForWorktree(
  * Creates a new pane with an agent to resolve conflicts, then continues the multi-merge
  */
 async function launchConflictResolutionForSubWorktree(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   item: MergeQueueItem,
   queue: MergeQueueItem[],
@@ -610,7 +610,7 @@ async function launchConflictResolutionForSubWorktree(
  * Create a conflict resolution pane and monitor for completion
  */
 async function createAndMonitorConflictPane(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   item: MergeQueueItem,
   queue: MergeQueueItem[],
@@ -664,7 +664,7 @@ async function createAndMonitorConflictPane(
           const { StateManager } = await import('../../shared/StateManager.js');
           const stateManager = StateManager.getInstance();
           const currentPanes = stateManager.getPanes();
-          const panesWithoutConflictPane = currentPanes.filter((p: DmuxPane) => p.id !== conflictPane.id);
+          const panesWithoutConflictPane = currentPanes.filter((p: QmuxPane) => p.id !== conflictPane.id);
           await context.savePanes(panesWithoutConflictPane);
 
           // Mark this worktree as completed
@@ -696,9 +696,9 @@ async function createAndMonitorConflictPane(
           } else {
             // Trigger post_merge hook
             await triggerHook('post_merge', worktree.parentRepoPath, pane, {
-              DMUX_TARGET_BRANCH: mainBranch,
-              DMUX_WORKTREE_PATH: worktree.worktreePath,
-              DMUX_REPO_NAME: worktree.repoName,
+              QMUX_TARGET_BRANCH: mainBranch,
+              QMUX_WORKTREE_PATH: worktree.worktreePath,
+              QMUX_REPO_NAME: worktree.repoName,
             });
           }
 
@@ -735,7 +735,7 @@ async function createAndMonitorConflictPane(
  * Actually perform the merge for a worktree
  */
 async function performWorktreeMerge(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   item: MergeQueueItem,
   progressPrefix: string,
@@ -754,9 +754,9 @@ async function performWorktreeMerge(
 
   // Trigger pre_merge hook
   await triggerHook('pre_merge', worktree.parentRepoPath, pane, {
-    DMUX_TARGET_BRANCH: mainBranch,
-    DMUX_WORKTREE_PATH: worktree.worktreePath,
-    DMUX_REPO_NAME: worktree.repoName,
+    QMUX_TARGET_BRANCH: mainBranch,
+    QMUX_WORKTREE_PATH: worktree.worktreePath,
+    QMUX_REPO_NAME: worktree.repoName,
   });
 
   // Step 1: Merge main into worktree
@@ -839,9 +839,9 @@ async function performWorktreeMerge(
 
   // Trigger post_merge hook
   await triggerHook('post_merge', worktree.parentRepoPath, pane, {
-    DMUX_TARGET_BRANCH: mainBranch,
-    DMUX_WORKTREE_PATH: worktree.worktreePath,
-    DMUX_REPO_NAME: worktree.repoName,
+    QMUX_TARGET_BRANCH: mainBranch,
+    QMUX_WORKTREE_PATH: worktree.worktreePath,
+    QMUX_REPO_NAME: worktree.repoName,
   });
 
   console.error(`[multiMerge] Successfully merged ${worktree.repoName}`);
@@ -852,7 +852,7 @@ async function performWorktreeMerge(
  * Show final summary of multi-merge operation
  */
 function showMultiMergeSummary(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext,
   result: MultiMergeResult
 ): ActionResult {

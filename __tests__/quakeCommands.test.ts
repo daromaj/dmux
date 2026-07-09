@@ -36,10 +36,10 @@ describe('parseAssistantMessage', () => {
     }
   );
 
-  it('recognizes ```dmux as a dmux control block', () => {
-    const text = ['```dmux', 'setGridColumns 2', '```'].join('\n');
+  it('recognizes ```qmux as a qmux control block', () => {
+    const text = ['```qmux', 'setGridColumns 2', '```'].join('\n');
     const blocks = parseAssistantMessage(text);
-    expect(blocks).toEqual([{ kind: 'dmux', content: 'setGridColumns 2' }]);
+    expect(blocks).toEqual([{ kind: 'qmux', content: 'setGridColumns 2' }]);
   });
 
   it('treats ```json and unknown/empty info fences as prose', () => {
@@ -75,7 +75,7 @@ describe('parseAssistantMessage', () => {
       'ls',
       '```',
       'Step 2: set columns',
-      '```dmux',
+      '```qmux',
       'setGridColumns 3',
       '```',
       'Step 3: run again',
@@ -90,7 +90,7 @@ describe('parseAssistantMessage', () => {
       { kind: 'prose', content: 'Step 1: list files' },
       { kind: 'shell', content: 'ls' },
       { kind: 'prose', content: 'Step 2: set columns' },
-      { kind: 'dmux', content: 'setGridColumns 3' },
+      { kind: 'qmux', content: 'setGridColumns 3' },
       { kind: 'prose', content: 'Step 3: run again' },
       { kind: 'shell', content: 'pwd' },
       { kind: 'prose', content: 'All done.' },
@@ -124,15 +124,15 @@ describe('hasCommands', () => {
     expect(hasCommands(['```sh', 'echo hi', '```'].join('\n'))).toBe(true);
   });
 
-  it('returns true when the message has a dmux block', () => {
-    expect(hasCommands(['```dmux', 'refreshLayout', '```'].join('\n'))).toBe(true);
+  it('returns true when the message has a qmux block', () => {
+    expect(hasCommands(['```qmux', 'refreshLayout', '```'].join('\n'))).toBe(true);
   });
 
   it('returns false for plain prose', () => {
     expect(hasCommands('Just some text, nothing fenced.')).toBe(false);
   });
 
-  it('returns false for non-shell/dmux fences', () => {
+  it('returns false for non-shell/qmux fences', () => {
     expect(hasCommands(['```json', '{}', '```'].join('\n'))).toBe(false);
   });
 });
@@ -145,7 +145,7 @@ describe('extractCommands', () => {
       'ls',
       '```',
       'Then adjust the layout.',
-      '```dmux',
+      '```qmux',
       'setGridColumns 2',
       '```',
       'That is all.',
@@ -155,7 +155,7 @@ describe('extractCommands', () => {
     expect(prose).toBe('First, list files.\n\nThen adjust the layout.\n\nThat is all.');
     expect(commands).toEqual([
       { kind: 'shell', content: 'ls' },
-      { kind: 'dmux', content: 'setGridColumns 2' },
+      { kind: 'qmux', content: 'setGridColumns 2' },
     ]);
   });
 

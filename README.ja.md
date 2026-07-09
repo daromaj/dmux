@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./dmux.png" alt="dmux logo" width="400" />
+  <img src="./qmux.png" alt="qmux logo" width="400" />
 </p>
 
 <h3 align="center">tmuxとworktreeを使った並列エージェント</h3>
@@ -10,9 +10,9 @@
 </p>
 
 <p align="center">
-  <a href="https://dmux.ai"><strong>ドキュメント</strong></a> &nbsp;&middot;&nbsp;
-  <a href="https://dmux.ai#getting-started"><strong>クイックスタート</strong></a> &nbsp;&middot;&nbsp;
-  <a href="https://github.com/formkit/dmux/issues"><strong>イシュー</strong></a>
+  <a href="https://qmux.ai"><strong>ドキュメント</strong></a> &nbsp;&middot;&nbsp;
+  <a href="https://qmux.ai#getting-started"><strong>クイックスタート</strong></a> &nbsp;&middot;&nbsp;
+  <a href="https://github.com/formkit/qmux/issues"><strong>イシュー</strong></a>
 </p>
 
 <p align="center">
@@ -23,26 +23,26 @@
 
 ---
 
-<img src="./dmux.webp" alt="dmux demo" width="100%" />
+<img src="./qmux.webp" alt="qmux demo" width="100%" />
 
 ## インストール
 
 ```bash
-npm install -g dmux
+npm install -g qmux
 ```
 
 ## クイックスタート
 
 ```bash
 cd /path/to/your/project
-dmux
+qmux
 ```
 
-`n`キーを押して新しいペインを作成し、プロンプトを入力、1つ以上のエージェントを選択（またはプレーンターミナルの場合は選択なし）すると、dmuxが残りの処理（worktree、ブランチ、エージェント起動）を自動的に処理します。
+`n`キーを押して新しいペインを作成し、プロンプトを入力、1つ以上のエージェントを選択（またはプレーンターミナルの場合は選択なし）すると、qmuxが残りの処理（worktree、ブランチ、エージェント起動）を自動的に処理します。
 
-## dmuxとは
+## qmuxとは
 
-dmuxは各タスクに対してtmuxペインを作成します。各ペインには独自のgit worktreeとブランチが割り当てられるため、エージェントは完全に分離されて作業できます。タスクが完了したら、ペインメニューで`m`を押してマージを選択すると、メインブランチに変更を取り込めます。
+qmuxは各タスクに対してtmuxペインを作成します。各ペインには独自のgit worktreeとブランチが割り当てられるため、エージェントは完全に分離されて作業できます。タスクが完了したら、ペインメニューで`m`を押してマージを選択すると、メインブランチに変更を取り込めます。
 
 - **Worktree分離** &mdash; 各ペインは完全な作業コピーで、エージェント間の競合はありません
 - **エージェントサポート** &mdash; Claude Code、Codex、OpenCode、Cline CLI、Gemini CLI、Qwen CLI、Amp CLI、pi CLI、Cursor CLI、Copilot CLI、Crush CLI
@@ -50,7 +50,7 @@ dmuxは各タスクに対してtmuxペインを作成します。各ペインに
 - **AI命名** &mdash; ブランチとコミットメッセージを自動生成
 - **スマートマージ** &mdash; 自動コミット、マージ、クリーンアップを1ステップで実行
 - **macOS通知** &mdash; バックグラウンドペインが処理完了時にネイティブのアラートを送信
-- **内蔵ファイルブラウザ** &mdash; dmuxを離れずにペインのworktreeを閲覧、ファイル検索、コードや差分のプレビュー
+- **内蔵ファイルブラウザ** &mdash; qmuxを離れずにペインのworktreeを閲覧、ファイル検索、コードや差分のプレビュー
 - **ペイン表示制御** &mdash; 個別ペインの非表示、プロジェクトの分離、後から全表示の復元
 - **マルチプロジェクト** &mdash; 同じセッションに複数のリポジトリを追加
 - **ライフサイクルフック** &mdash; worktree作成、プレマージ、ポストマージ時のスクリプト実行
@@ -82,11 +82,11 @@ dmuxは各タスクに対してtmuxペインを作成します。各ペインに
 
 ## ドキュメント
 
-完全なドキュメントは **[dmux.ai](https://dmux.ai)** でご覧いただけます。セットアップガイド、設定、フックの情報が含まれています。
+完全なドキュメントは **[qmux.ai](https://qmux.ai)** でご覧いただけます。セットアップガイド、設定、フックの情報が含まれています。
 
 ## コントリビュート
 
-推奨されるローカル「dmux-on-dmux」開発ループ、フックセットアップ、PRワークフローについては、**[CONTRIBUTING.md](./CONTRIBUTING.md)** をご覧ください。
+推奨されるローカル「qmux-on-qmux」開発ループ、フックセットアップ、PRワークフローについては、**[CONTRIBUTING.md](./CONTRIBUTING.md)** をご覧ください。
 
 ## ライセンス
 

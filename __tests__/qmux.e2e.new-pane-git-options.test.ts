@@ -100,15 +100,15 @@ async function readPopupResult(resultFile: string): Promise<any | null> {
   }
 }
 
-const runE2E = process.env.DMUX_E2E === '1';
+const runE2E = process.env.QMUX_E2E === '1';
 const popupRunner = detectPopupRunner();
 const canRun = runE2E && hasCmd('tmux') && !!popupRunner;
 
-describe.sequential('dmux e2e: new pane git options popup', () => {
+describe.sequential('qmux e2e: new pane git options popup', () => {
   it.runIf(canRun)('writes prompt + base branch + branch override payload', async () => {
-    const server = `dmux-e2e-gitopt-${Date.now()}`;
-    const session = 'dmux-e2e-gitopt-ok';
-    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'dmux-e2e-gitopt-'));
+    const server = `qmux-e2e-gitopt-${Date.now()}`;
+    const session = 'qmux-e2e-gitopt-ok';
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'qmux-e2e-gitopt-'));
     const resultFile = path.join(tempDir, 'result.json');
     const existingBaseBranch = execSync('git branch --show-current', {
       encoding: 'utf-8',
@@ -160,9 +160,9 @@ describe.sequential('dmux e2e: new pane git options popup', () => {
   }, 120000);
 
   it.runIf(canRun)('rejects non-existent base branch overrides (strict mode)', async () => {
-    const server = `dmux-e2e-gitopt-${Date.now()}`;
-    const session = 'dmux-e2e-gitopt-strict';
-    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'dmux-e2e-gitopt-'));
+    const server = `qmux-e2e-gitopt-${Date.now()}`;
+    const session = 'qmux-e2e-gitopt-strict';
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'qmux-e2e-gitopt-'));
     const resultFile = path.join(tempDir, 'result.json');
 
     try {
@@ -198,9 +198,9 @@ describe.sequential('dmux e2e: new pane git options popup', () => {
   }, 120000);
 
   it.runIf(canRun)('cycles prompt/base/branch with Tab and Shift+Tab', async () => {
-    const server = `dmux-e2e-gitopt-${Date.now()}`;
-    const session = 'dmux-e2e-gitopt-cycle';
-    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'dmux-e2e-gitopt-'));
+    const server = `qmux-e2e-gitopt-${Date.now()}`;
+    const session = 'qmux-e2e-gitopt-cycle';
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'qmux-e2e-gitopt-'));
     const resultFile = path.join(tempDir, 'result.json');
     const existingBaseBranch = execSync('git branch --show-current', {
       encoding: 'utf-8',
@@ -269,9 +269,9 @@ describe.sequential('dmux e2e: new pane git options popup', () => {
   }, 120000);
 
   it.runIf(canRun)('does not auto-accept highlighted base branch when tabbing fields', async () => {
-    const server = `dmux-e2e-gitopt-${Date.now()}`;
-    const session = 'dmux-e2e-gitopt-tab-noaccept';
-    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'dmux-e2e-gitopt-'));
+    const server = `qmux-e2e-gitopt-${Date.now()}`;
+    const session = 'qmux-e2e-gitopt-tab-noaccept';
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'qmux-e2e-gitopt-'));
     const resultFile = path.join(tempDir, 'result.json');
     const existingBaseBranch = execSync('git branch --show-current', {
       encoding: 'utf-8',
@@ -312,9 +312,9 @@ describe.sequential('dmux e2e: new pane git options popup', () => {
   }, 120000);
 
   it.runIf(canRun)('accepts highlighted branch on Enter after typing partial branch text', async () => {
-    const server = `dmux-e2e-gitopt-${Date.now()}`;
-    const session = 'dmux-e2e-gitopt-enter-fill';
-    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'dmux-e2e-gitopt-'));
+    const server = `qmux-e2e-gitopt-${Date.now()}`;
+    const session = 'qmux-e2e-gitopt-enter-fill';
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'qmux-e2e-gitopt-'));
     const resultFile = path.join(tempDir, 'result.json');
     const branches = getLocalBranchesByRecentCommit();
     const topBranch = branches[0];
@@ -359,9 +359,9 @@ describe.sequential('dmux e2e: new pane git options popup', () => {
   }, 120000);
 
   it.runIf(canRun)('uses up/down arrows to change highlighted branch before Enter', async () => {
-    const server = `dmux-e2e-gitopt-${Date.now()}`;
-    const session = 'dmux-e2e-gitopt-arrows';
-    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'dmux-e2e-gitopt-'));
+    const server = `qmux-e2e-gitopt-${Date.now()}`;
+    const session = 'qmux-e2e-gitopt-arrows';
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'qmux-e2e-gitopt-'));
     const resultFile = path.join(tempDir, 'result.json');
     const branches = getLocalBranchesByRecentCommit();
 
@@ -411,9 +411,9 @@ describe.sequential('dmux e2e: new pane git options popup', () => {
   }, 120000);
 
   it.runIf(canRun)('treats Delete key as forward-delete in base branch input', async () => {
-    const server = `dmux-e2e-gitopt-${Date.now()}`;
-    const session = 'dmux-e2e-gitopt-delete-forward';
-    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'dmux-e2e-gitopt-'));
+    const server = `qmux-e2e-gitopt-${Date.now()}`;
+    const session = 'qmux-e2e-gitopt-delete-forward';
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'qmux-e2e-gitopt-'));
     const resultFile = path.join(tempDir, 'result.json');
     const existingBaseBranch = execSync('git branch --show-current', {
       encoding: 'utf-8',
@@ -464,9 +464,9 @@ describe.sequential('dmux e2e: new pane git options popup', () => {
   }, 120000);
 
   it.runIf(canRun)('uses Backspace as left-delete in base branch input', async () => {
-    const server = `dmux-e2e-gitopt-${Date.now()}`;
-    const session = 'dmux-e2e-gitopt-backspace-left';
-    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'dmux-e2e-gitopt-'));
+    const server = `qmux-e2e-gitopt-${Date.now()}`;
+    const session = 'qmux-e2e-gitopt-backspace-left';
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'qmux-e2e-gitopt-'));
     const resultFile = path.join(tempDir, 'result.json');
     const existingBaseBranch = execSync('git branch --show-current', {
       encoding: 'utf-8',

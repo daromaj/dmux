@@ -2,16 +2,16 @@ import React, { memo, useMemo } from "react"
 import { Box, Text } from "ink"
 import stringWidth from "string-width"
 import type {
-  DmuxPane,
-  DmuxThemeName,
+  QmuxPane,
+  QmuxThemeName,
   SidebarProject,
 } from "../../types.js"
 import type { AgentStatusMap } from "../../hooks/useAgentStatus.js"
 import PaneCard from "./PaneCard.js"
 import { COLORS } from "../../theme/colors.js"
 import {
-  getDmuxThemeAccent,
-  getDmuxThemeActiveBorderHex,
+  getQmuxThemeAccent,
+  getQmuxThemeActiveBorderHex,
 } from "../../theme/colors.js"
 import Spinner from "../indicators/Spinner.js"
 import {
@@ -21,12 +21,12 @@ import {
 import { isActiveDevSourcePath } from "../../utils/devSource.js"
 
 interface PanesGridProps {
-  panes: DmuxPane[]
+  panes: QmuxPane[]
   selectedIndex: number
   activeProjectRoot?: string
   isLoading: boolean
   themeName: string
-  projectThemeByRoot: Map<string, DmuxThemeName>
+  projectThemeByRoot: Map<string, QmuxThemeName>
   agentStatuses?: AgentStatusMap
   activeDevSourcePath?: string
   sidebarProjects: SidebarProject[]
@@ -103,9 +103,9 @@ const PanesGrid: React.FC<PanesGridProps> = memo(({
     return selectedAction?.projectRoot
   }, [activeProjectRootProp, selectedIndex, paneGroups, actionLayout.actionItems])
 
-  const getProjectThemeName = (projectRoot: string): DmuxThemeName =>
+  const getProjectThemeName = (projectRoot: string): QmuxThemeName =>
     projectThemeByRoot.get(projectRoot)
-    || themeName as DmuxThemeName
+    || themeName as QmuxThemeName
 
   const renderActionRow = (
     actions: ProjectActionItem[],
@@ -113,7 +113,7 @@ const PanesGrid: React.FC<PanesGridProps> = memo(({
     isActiveGroup: boolean
   ) => {
     const actionThemeName = getProjectThemeName(actions[0]?.projectRoot || fallbackProjectRoot)
-    const actionAccent = getDmuxThemeAccent(actionThemeName)
+    const actionAccent = getQmuxThemeAccent(actionThemeName)
 
     const renderLabel = (action: ProjectActionItem) => {
       const isSelected = selIdx === action.index
@@ -163,7 +163,7 @@ const PanesGrid: React.FC<PanesGridProps> = memo(({
           {(() => {
             const isActive = activeProjectRoot === group.projectRoot
             const groupThemeName = getProjectThemeName(group.projectRoot)
-            const accentColor = getDmuxThemeAccent(groupThemeName)
+            const accentColor = getQmuxThemeAccent(groupThemeName)
             const busy = isProjectBusy?.(group.projectRoot) ?? false
             const spinnerWidth = busy ? 2 : 0
             const nameSection = `⣿⣿ ${group.projectName} `
@@ -174,7 +174,7 @@ const PanesGrid: React.FC<PanesGridProps> = memo(({
             const fill = "⣿".repeat(remaining)
             const fillColor = isActive ? accentColor : COLORS.border
             const titleColor = isActive
-              ? getDmuxThemeActiveBorderHex(groupThemeName)
+              ? getQmuxThemeActiveBorderHex(groupThemeName)
               : COLORS.border
             return (
               <Text>

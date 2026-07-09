@@ -1,14 +1,14 @@
 import React, { memo, useMemo } from "react"
 import { Box, Text } from "ink"
 import type {
-  DmuxPane,
-  DmuxThemeName,
+  QmuxPane,
+  QmuxThemeName,
   SidebarProject,
 } from "../../types.js"
 import type { AgentStatusMap } from "../../hooks/useAgentStatus.js"
 import PaneCard from "./PaneCard.js"
 import { COLORS } from "../../theme/colors.js"
-import { getDmuxThemeAccent } from "../../theme/colors.js"
+import { getQmuxThemeAccent } from "../../theme/colors.js"
 import {
   buildProjectActionLayout,
   type ProjectActionItem,
@@ -16,12 +16,12 @@ import {
 import { isActiveDevSourcePath } from "../../utils/devSource.js"
 
 interface PanesStripProps {
-  panes: DmuxPane[]
+  panes: QmuxPane[]
   selectedIndex: number
   columns: number
   isLoading: boolean
   themeName: string
-  projectThemeByRoot: Map<string, DmuxThemeName>
+  projectThemeByRoot: Map<string, QmuxThemeName>
   agentStatuses?: AgentStatusMap
   activeDevSourcePath?: string
   sidebarProjects: SidebarProject[]
@@ -70,7 +70,7 @@ const PanesStrip: React.FC<PanesStripProps> = memo(({
 
   // Flatten panes in visual order (matches buildHorizontalNavigationRows).
   const flatPanes = useMemo(() => {
-    const out: { pane: DmuxPane; index: number; projectRoot: string }[] = []
+    const out: { pane: QmuxPane; index: number; projectRoot: string }[] = []
     for (const group of actionLayout.groups) {
       for (const entry of group.panes) {
         out.push({ pane: entry.pane, index: entry.index, projectRoot: group.projectRoot })
@@ -79,8 +79,8 @@ const PanesStrip: React.FC<PanesStripProps> = memo(({
     return out
   }, [actionLayout.groups])
 
-  const getProjectThemeName = (projectRoot: string): DmuxThemeName =>
-    projectThemeByRoot.get(projectRoot) || (themeName as DmuxThemeName)
+  const getProjectThemeName = (projectRoot: string): QmuxThemeName =>
+    projectThemeByRoot.get(projectRoot) || (themeName as QmuxThemeName)
 
   // Chunk into rows of `cols`.
   const rows = useMemo(() => {
@@ -100,7 +100,7 @@ const PanesStrip: React.FC<PanesStripProps> = memo(({
 
   const renderActionLabel = (action: ProjectActionItem) => {
     const isSelected = selectedIndex === action.index
-    const accent = getDmuxThemeAccent(getProjectThemeName(action.projectRoot))
+    const accent = getQmuxThemeAccent(getProjectThemeName(action.projectRoot))
     const color = isSelected ? accent : COLORS.border
     if (action.kind === "new-agent") {
       return (

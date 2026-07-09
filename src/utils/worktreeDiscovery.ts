@@ -14,7 +14,7 @@ import { getMainBranch, getCurrentBranch } from './git.js';
 /**
  * Detect all git worktrees within a directory (recursively)
  *
- * @param rootWorktreePath - The root worktree path (dmux pane's worktree)
+ * @param rootWorktreePath - The root worktree path (qmux pane's worktree)
  * @returns Array of WorktreeInfo objects, ordered by depth (deepest first, root last)
  */
 export function detectAllWorktrees(rootWorktreePath: string): WorktreeInfo[] {

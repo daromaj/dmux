@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DmuxPane, SidebarProject } from '../src/types.js';
+import type { QmuxPane, SidebarProject } from '../src/types.js';
 import {
   buildProjectActionLayout,
   buildVisualNavigationRows,
@@ -7,21 +7,21 @@ import {
   resolveSelectionAfterPaneClose,
 } from '../src/utils/projectActions.js';
 
-function pane(id: string, slug: string, projectRoot: string): DmuxPane {
+function pane(id: string, slug: string, projectRoot: string): QmuxPane {
   return {
     id,
     slug,
     prompt: `prompt-${slug}`,
-    paneId: `%${id.replace('dmux-', '')}`,
+    paneId: `%${id.replace('qmux-', '')}`,
     projectRoot,
   };
 }
 
 describe('projectActions', () => {
   it('adds remove-project only for empty non-root sidebar projects', () => {
-    const panes: DmuxPane[] = [
-      pane('dmux-1', 'main-pane', '/repo-main'),
-      pane('dmux-2', 'aux-pane', '/repo-aux'),
+    const panes: QmuxPane[] = [
+      pane('qmux-1', 'main-pane', '/repo-main'),
+      pane('qmux-2', 'aux-pane', '/repo-aux'),
     ];
     const sidebarProjects: SidebarProject[] = [
       { projectRoot: '/repo-main', projectName: 'repo-main' },
@@ -62,12 +62,12 @@ describe('projectActions', () => {
   });
 
   it('chunks panes into rows of N for the horizontal (bottom) layout', () => {
-    const panes: DmuxPane[] = [
-      pane('dmux-1', 'p1', '/repo'),
-      pane('dmux-2', 'p2', '/repo'),
-      pane('dmux-3', 'p3', '/repo'),
-      pane('dmux-4', 'p4', '/repo'),
-      pane('dmux-5', 'p5', '/repo'),
+    const panes: QmuxPane[] = [
+      pane('qmux-1', 'p1', '/repo'),
+      pane('qmux-2', 'p2', '/repo'),
+      pane('qmux-3', 'p3', '/repo'),
+      pane('qmux-4', 'p4', '/repo'),
+      pane('qmux-5', 'p5', '/repo'),
     ];
     const layout = buildProjectActionLayout(panes, [], '/repo', 'repo');
 
@@ -109,11 +109,11 @@ describe('projectActions', () => {
   });
 
   it('selects the next pane down in the same project after closing a pane', () => {
-    const panes: DmuxPane[] = [
-      pane('dmux-1', 'main-pane', '/repo-main'),
-      pane('dmux-2', 'aux-one', '/repo-aux'),
-      pane('dmux-3', 'aux-two', '/repo-aux'),
-      pane('dmux-4', 'main-two', '/repo-main'),
+    const panes: QmuxPane[] = [
+      pane('qmux-1', 'main-pane', '/repo-main'),
+      pane('qmux-2', 'aux-one', '/repo-aux'),
+      pane('qmux-3', 'aux-two', '/repo-aux'),
+      pane('qmux-4', 'main-two', '/repo-main'),
     ];
     const sidebarProjects: SidebarProject[] = [
       { projectRoot: '/repo-main', projectName: 'repo-main' },
@@ -133,9 +133,9 @@ describe('projectActions', () => {
   });
 
   it('selects the project terminal action when closing the last pane in that project', () => {
-    const panes: DmuxPane[] = [
-      pane('dmux-1', 'main-pane', '/repo-main'),
-      pane('dmux-2', 'aux-one', '/repo-aux'),
+    const panes: QmuxPane[] = [
+      pane('qmux-1', 'main-pane', '/repo-main'),
+      pane('qmux-2', 'aux-one', '/repo-aux'),
     ];
     const sidebarProjects: SidebarProject[] = [
       { projectRoot: '/repo-main', projectName: 'repo-main' },

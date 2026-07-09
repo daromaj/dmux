@@ -85,7 +85,7 @@ Shows choice dialog with 3 options:
 **File**: `src/actions/merge/conflictResolution.ts:107-140`
 
 1. **Kills conflict pane**: `tmux kill-pane -t '${conflictPane.paneId}'`
-2. **Removes conflict pane from dmux state**
+2. **Removes conflict pane from qmux state**
 3. **Creates updated context** without conflict pane (prevents stale context bug)
 4. **Re-runs `executeMerge()`** with the original pane
 
@@ -102,7 +102,7 @@ Shows choice dialog with 3 options:
 
 1. **Kills original worktree pane**: `tmux kill-pane -t '${pane.paneId}'`
 2. Runs `cleanupAfterMerge()`: removes worktree, deletes branch
-3. Removes pane from dmux state
+3. Removes pane from qmux state
 4. Calls `onPaneRemove()` callback
 5. Shows success message
 
@@ -166,7 +166,7 @@ The conflict monitor watches `pane.worktreePath!` (not the main repo) because:
    - After successful merge, cleanup dialog appears
    - Killed if user confirms cleanup
 
-3. **Main repo**: Never touched by dmux UI (only git operations run there)
+3. **Main repo**: Never touched by qmux UI (only git operations run there)
 
 ### Two-Phase Merge Strategy
 
@@ -202,7 +202,7 @@ This prevents polluting main with conflict markers and allows safe experimentati
 
 ### Adapters
 - `src/hooks/useActionSystem.ts` - React hook bridging actions to TUI
-- `src/DmuxApp.tsx` - TUI rendering and `onActionResult` callback
+- `src/QmuxApp.tsx` - TUI rendering and `onActionResult` callback
 
 ---
 
@@ -219,7 +219,7 @@ This prevents polluting main with conflict markers and allows safe experimentati
 - **Impact**: Cleanup now targets the correct pane (original worktree, not conflict pane)
 
 ### Bug #8: Zombie Panes in tmux
-- **Problem**: Cleanup removed pane from dmux state but didn't kill tmux process
+- **Problem**: Cleanup removed pane from qmux state but didn't kill tmux process
 - **Fix**: Added `execSync(\`tmux kill-pane -t '${pane.paneId}'\`)` in mergeExecution.ts:204-210
 - **Also fixed**: Changed callback from `onPaneUpdate` to `onPaneRemove`
 - **Impact**: Original pane's tmux process is now properly terminated during cleanup

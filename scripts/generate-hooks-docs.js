@@ -3,7 +3,7 @@
  * Generate AGENTS.md documentation from TypeScript types
  *
  * This script extracts hook types, environment variables, and generates
- * comprehensive documentation that gets embedded in the dmux binary.
+ * comprehensive documentation that gets embedded in the qmux binary.
  */
 
 import { readFileSync, writeFileSync } from 'fs';
@@ -30,26 +30,26 @@ const hookTypes = hookTypesMatch
 console.log(`📋 Found ${hookTypes.length} hook types`);
 
 // Generate AGENTS.md content
-const agentsMd = `# dmux Hooks System - Agent Reference
+const agentsMd = `# qmux Hooks System - Agent Reference
 
 **Auto-generated documentation for AI agents**
 
-This document contains everything an AI agent needs to create, modify, and understand dmux hooks. It is automatically generated from the dmux source code and embedded in the binary.
+This document contains everything an AI agent needs to create, modify, and understand qmux hooks. It is automatically generated from the qmux source code and embedded in the binary.
 
 ## What You're Working On
 
-You are editing hooks for **dmux**, a tmux pane manager that creates AI-powered development workflows. Each pane runs in its own git worktree with an AI agent.
+You are editing hooks for **qmux**, a tmux pane manager that creates AI-powered development workflows. Each pane runs in its own git worktree with an AI agent.
 
 ## Your Goal
 
-Create executable bash scripts in \`.dmux-hooks/\` that run automatically at key lifecycle events.
+Create executable bash scripts in \`.qmux-hooks/\` that run automatically at key lifecycle events.
 
 ## Quick Start
 
-1. **Create a hook file**: \`touch .dmux-hooks/worktree_created\`
-2. **Make it executable**: \`chmod +x .dmux-hooks/worktree_created\`
+1. **Create a hook file**: \`touch .qmux-hooks/worktree_created\`
+2. **Make it executable**: \`chmod +x .qmux-hooks/worktree_created\`
 3. **Add shebang**: Start with \`#!/bin/bash\`
-4. **Use environment variables**: Access \`$DMUX_ROOT\`, \`$DMUX_WORKTREE_PATH\`, etc.
+4. **Use environment variables**: Access \`$QMUX_ROOT\`, \`$QMUX_WORKTREE_PATH\`, etc.
 5. **Test it**: Set env vars manually and run the script
 
 ## Hook Execution Model
@@ -59,8 +59,8 @@ Create executable bash scripts in \`.dmux-hooks/\` that run automatically at key
 - **Live bootstrap output**: During \`worktree_created\`, stdout/stderr is streamed into the new pane's setup UI
 - **Failure behavior**: Background hook errors are logged; gated hooks can abort the operation
 - **Environment-based**: All context passed via environment variables
-- **Version controlled**: Hooks in \`.dmux-hooks/\` are shared with team
-- **Priority resolution**: \`.dmux-hooks/\` → \`.dmux/hooks/\` → \`~/.dmux/hooks/\`
+- **Version controlled**: Hooks in \`.qmux-hooks/\` are shared with team
+- **Priority resolution**: \`.qmux-hooks/\` → \`.qmux/hooks/\` → \`~/.qmux/hooks/\`
 
 ## Available Hooks
 
@@ -70,37 +70,37 @@ ${generateHooksTable()}
 
 ### Always Available
 \`\`\`bash
-DMUX_ROOT="/path/to/project"           # Project root directory
-DMUX_SERVER_PORT="3142"                # HTTP server port
+QMUX_ROOT="/path/to/project"           # Project root directory
+QMUX_SERVER_PORT="3142"                # HTTP server port
 \`\`\`
 
 ### Pane Context (most hooks)
 \`\`\`bash
-DMUX_PANE_ID="dmux-1234567890"         # dmux pane identifier
-DMUX_SLUG="fix-auth-bug"               # Branch/worktree name
-DMUX_PROMPT="Fix authentication bug"   # User's prompt
-DMUX_AGENT="claude"                    # Agent type (registry id, e.g. claude, codex, opencode)
-DMUX_TMUX_PANE_ID="%38"                # tmux pane ID
+QMUX_PANE_ID="qmux-1234567890"         # qmux pane identifier
+QMUX_SLUG="fix-auth-bug"               # Branch/worktree name
+QMUX_PROMPT="Fix authentication bug"   # User's prompt
+QMUX_AGENT="claude"                    # Agent type (registry id, e.g. claude, codex, opencode)
+QMUX_TMUX_PANE_ID="%38"                # tmux pane ID
 \`\`\`
 
 ### Worktree Context
 \`\`\`bash
-DMUX_WORKTREE_PATH="/path/.dmux/worktrees/fix-auth-bug"
-DMUX_BRANCH="fix-auth-bug"             # Same as slug
+QMUX_WORKTREE_PATH="/path/.qmux/worktrees/fix-auth-bug"
+QMUX_BRANCH="fix-auth-bug"             # Same as slug
 \`\`\`
 
 ### Bootstrap Progress Context
 \`\`\`bash
-DMUX_PROGRESS="1"                      # Set when output is shown in the new pane setup UI
-DMUX_STATUS_PREFIX="DMUX_STATUS:"      # Prefix for clean status messages
+QMUX_PROGRESS="1"                      # Set when output is shown in the new pane setup UI
+QMUX_STATUS_PREFIX="QMUX_STATUS:"      # Prefix for clean status messages
 \`\`\`
 
-\`worktree_created\` can emit progress while it runs. Any stdout/stderr line is shown in the setup UI; lines prefixed with \`$DMUX_STATUS_PREFIX\` are displayed without the prefix.
+\`worktree_created\` can emit progress while it runs. Any stdout/stderr line is shown in the setup UI; lines prefixed with \`$QMUX_STATUS_PREFIX\` are displayed without the prefix.
 
 \`\`\`bash
 status() {
-  if [ "\${DMUX_PROGRESS:-0}" = "1" ]; then
-    echo "\${DMUX_STATUS_PREFIX:-DMUX_STATUS:} $*"
+  if [ "\${QMUX_PROGRESS:-0}" = "1" ]; then
+    echo "\${QMUX_STATUS_PREFIX:-QMUX_STATUS:} $*"
   else
     echo "[Hook] $*"
   fi
@@ -109,16 +109,16 @@ status() {
 
 ### Merge Context
 \`\`\`bash
-DMUX_TARGET_BRANCH="main"              # Branch being merged into
+QMUX_TARGET_BRANCH="main"              # Branch being merged into
 \`\`\`
 
 ## HTTP Callback API
 
-Interactive hooks (\`run_test\` and \`run_dev\`) can update dmux UI via HTTP.
+Interactive hooks (\`run_test\` and \`run_dev\`) can update qmux UI via HTTP.
 
 ### Update Test Status
 \`\`\`bash
-curl -X PUT "http://localhost:$DMUX_SERVER_PORT/api/panes/$DMUX_PANE_ID/test" \\
+curl -X PUT "http://localhost:$QMUX_SERVER_PORT/api/panes/$QMUX_PANE_ID/test" \\
   -H "Content-Type: application/json" \\
   -d '{"status": "running", "output": "optional test output"}'
 
@@ -127,7 +127,7 @@ curl -X PUT "http://localhost:$DMUX_SERVER_PORT/api/panes/$DMUX_PANE_ID/test" \\
 
 ### Update Dev Server
 \`\`\`bash
-curl -X PUT "http://localhost:$DMUX_SERVER_PORT/api/panes/$DMUX_PANE_ID/dev" \\
+curl -X PUT "http://localhost:$QMUX_SERVER_PORT/api/panes/$QMUX_PANE_ID/dev" \\
   -H "Content-Type: application/json" \\
   -d '{"status": "running", "url": "http://localhost:3000"}'
 
@@ -140,13 +140,13 @@ curl -X PUT "http://localhost:$DMUX_SERVER_PORT/api/panes/$DMUX_PANE_ID/dev" \\
 ### Pattern 1: Install Dependencies
 \`\`\`bash
 #!/bin/bash
-# .dmux-hooks/worktree_created
+# .qmux-hooks/worktree_created
 
-cd "$DMUX_WORKTREE_PATH"
+cd "$QMUX_WORKTREE_PATH"
 
 status() {
-  if [ "\${DMUX_PROGRESS:-0}" = "1" ]; then
-    echo "\${DMUX_STATUS_PREFIX:-DMUX_STATUS:} $*"
+  if [ "\${QMUX_PROGRESS:-0}" = "1" ]; then
+    echo "\${QMUX_STATUS_PREFIX:-QMUX_STATUS:} $*"
   else
     echo "[Hook] $*"
   fi
@@ -176,17 +176,17 @@ fi
 ### Pattern 2: Copy Configuration
 \`\`\`bash
 #!/bin/bash
-# .dmux-hooks/worktree_created
+# .qmux-hooks/worktree_created
 
 # Copy environment file
-if [ -f "$DMUX_ROOT/.env.local" ]; then
-  cp "$DMUX_ROOT/.env.local" "$DMUX_WORKTREE_PATH/.env.local"
+if [ -f "$QMUX_ROOT/.env.local" ]; then
+  cp "$QMUX_ROOT/.env.local" "$QMUX_WORKTREE_PATH/.env.local"
 fi
 
 # Copy other config files
 for file in .env.development .npmrc .yarnrc; do
-  if [ -f "$DMUX_ROOT/$file" ]; then
-    cp "$DMUX_ROOT/$file" "$DMUX_WORKTREE_PATH/$file"
+  if [ -f "$QMUX_ROOT/$file" ]; then
+    cp "$QMUX_ROOT/$file" "$QMUX_WORKTREE_PATH/$file"
   fi
 done
 \`\`\`
@@ -194,18 +194,18 @@ done
 ### Pattern 3: Run Tests with Status Updates
 \`\`\`bash
 #!/bin/bash
-# .dmux-hooks/run_test
+# .qmux-hooks/run_test
 
 set -e
-cd "$DMUX_WORKTREE_PATH"
-API="http://localhost:$DMUX_SERVER_PORT/api/panes/$DMUX_PANE_ID/test"
+cd "$QMUX_WORKTREE_PATH"
+API="http://localhost:$QMUX_SERVER_PORT/api/panes/$QMUX_PANE_ID/test"
 
 # Update: starting
 curl -s -X PUT "$API" -H "Content-Type: application/json" \\
   -d '{"status": "running"}' > /dev/null
 
 # Run tests and capture output
-OUTPUT_FILE="/tmp/dmux-test-$DMUX_PANE_ID.txt"
+OUTPUT_FILE="/tmp/qmux-test-$QMUX_PANE_ID.txt"
 if pnpm test > "$OUTPUT_FILE" 2>&1; then
   STATUS="passed"
 else
@@ -226,14 +226,14 @@ rm -f "$OUTPUT_FILE"
 ### Pattern 4: Dev Server with Tunnel
 \`\`\`bash
 #!/bin/bash
-# .dmux-hooks/run_dev
+# .qmux-hooks/run_dev
 
 set -e
-cd "$DMUX_WORKTREE_PATH"
-API="http://localhost:$DMUX_SERVER_PORT/api/panes/$DMUX_PANE_ID/dev"
+cd "$QMUX_WORKTREE_PATH"
+API="http://localhost:$QMUX_SERVER_PORT/api/panes/$QMUX_PANE_ID/dev"
 
 # Start dev server in background
-LOG_FILE="/tmp/dmux-dev-$DMUX_PANE_ID.log"
+LOG_FILE="/tmp/qmux-dev-$QMUX_PANE_ID.log"
 pnpm dev > "$LOG_FILE" 2>&1 &
 DEV_PID=$!
 
@@ -263,18 +263,18 @@ echo "[Hook] Dev server running at $URL (PID: $DEV_PID)"
 ### Pattern 5: Post-Merge Deployment
 \`\`\`bash
 #!/bin/bash
-# .dmux-hooks/post_merge
+# .qmux-hooks/post_merge
 
 set -e
-cd "$DMUX_ROOT"
+cd "$QMUX_ROOT"
 
 # Only deploy from main/master
-if [ "$DMUX_TARGET_BRANCH" != "main" ] && [ "$DMUX_TARGET_BRANCH" != "master" ]; then
+if [ "$QMUX_TARGET_BRANCH" != "main" ] && [ "$QMUX_TARGET_BRANCH" != "master" ]; then
   exit 0
 fi
 
 # Push to remote
-git push origin "$DMUX_TARGET_BRANCH"
+git push origin "$QMUX_TARGET_BRANCH"
 
 # Trigger deployment (example: Vercel)
 if [ -n "$VERCEL_TOKEN" ]; then
@@ -285,10 +285,10 @@ if [ -n "$VERCEL_TOKEN" ]; then
 fi
 
 # Close GitHub issue if prompt contains #123
-ISSUE=$(echo "$DMUX_PROMPT" | grep -oP '#\\K\\d+' | head -1)
+ISSUE=$(echo "$QMUX_PROMPT" | grep -oP '#\\K\\d+' | head -1)
 if [ -n "$ISSUE" ] && command -v gh &> /dev/null; then
   gh issue close "$ISSUE" \\
-    -c "Resolved in $DMUX_SLUG, merged to $DMUX_TARGET_BRANCH" \\
+    -c "Resolved in $QMUX_SLUG, merged to $QMUX_TARGET_BRANCH" \\
     2>/dev/null || true
 fi
 \`\`\`
@@ -297,10 +297,10 @@ fi
 
 1. **Always start with shebang**: \`#!/bin/bash\`
 2. **Set error handling**: \`set -e\` (exit on error)
-3. **Make executable**: \`chmod +x .dmux-hooks/hook_name\`
+3. **Make executable**: \`chmod +x .qmux-hooks/hook_name\`
 4. **Background long operations**: Append \`&\` to avoid blocking
 5. **Check for required tools**: \`command -v tool &> /dev/null\`
-6. **Log for debugging**: \`echo "[Hook] message" >> "$DMUX_ROOT/.dmux/hooks.log"\`
+6. **Log for debugging**: \`echo "[Hook] message" >> "$QMUX_ROOT/.qmux/hooks.log"\`
 7. **Handle missing vars gracefully**: \`[ -z "$VAR" ] && exit 0\`
 8. **Use silent curl**: \`curl -s\` to avoid noise in logs
 9. **Clean up temp files**: Remove files in \`/tmp/\`
@@ -311,16 +311,16 @@ fi
 ### Manual Testing
 \`\`\`bash
 # 1. Set environment variables
-export DMUX_ROOT="$(pwd)"
-export DMUX_PANE_ID="test-pane"
-export DMUX_SLUG="test-branch"
-export DMUX_WORKTREE_PATH="$(pwd)"
-export DMUX_SERVER_PORT="3142"
-export DMUX_AGENT="claude"
-export DMUX_PROMPT="Test prompt"
+export QMUX_ROOT="$(pwd)"
+export QMUX_PANE_ID="test-pane"
+export QMUX_SLUG="test-branch"
+export QMUX_WORKTREE_PATH="$(pwd)"
+export QMUX_SERVER_PORT="3142"
+export QMUX_AGENT="claude"
+export QMUX_PROMPT="Test prompt"
 
 # 2. Run hook directly
-./.dmux-hooks/worktree_created
+./.qmux-hooks/worktree_created
 
 # 3. Check exit code
 echo $?  # Should be 0 for success
@@ -329,12 +329,12 @@ echo $?  # Should be 0 for success
 ### Syntax Check
 \`\`\`bash
 # Check for syntax errors without running
-bash -n ./.dmux-hooks/worktree_created
+bash -n ./.qmux-hooks/worktree_created
 \`\`\`
 
 ### Shellcheck (if available)
 \`\`\`bash
-shellcheck ./.dmux-hooks/worktree_created
+shellcheck ./.qmux-hooks/worktree_created
 \`\`\`
 
 ## Project Context Analysis
@@ -389,11 +389,11 @@ fi
 
 ## Common Mistakes to Avoid
 
-❌ **Blocking operations**: \`sleep 60\` (blocks dmux)
+❌ **Blocking operations**: \`sleep 60\` (blocks qmux)
 ✅ **Background long tasks**: \`slow_operation &\`
 
 ❌ **Hardcoded paths**: \`/Users/me/project\`
-✅ **Use variables**: \`"$DMUX_ROOT"\`
+✅ **Use variables**: \`"$QMUX_ROOT"\`
 
 ❌ **Assuming tools exist**: \`pnpm install\`
 ✅ **Check first**: \`command -v pnpm && pnpm install\`
@@ -404,7 +404,7 @@ fi
 ❌ **Forgetting executable bit**: Hook won't run
 ✅ **Make executable**: \`chmod +x\`
 
-❌ **Noisy output**: Clutters dmux logs
+❌ **Noisy output**: Clutters qmux logs
 ✅ **Silent operations**: \`curl -s\`, \`> /dev/null 2>&1\`
 
 ❌ **Not testing**: Deploy and hope
@@ -414,11 +414,11 @@ fi
 
 If a hook isn't working:
 
-1. **Check if file exists**: \`ls -la .dmux-hooks/\`
+1. **Check if file exists**: \`ls -la .qmux-hooks/\`
 2. **Check permissions**: Should show \`x\` in \`rwxr-xr-x\`
-3. **Check syntax**: \`bash -n .dmux-hooks/hook_name\`
+3. **Check syntax**: \`bash -n .qmux-hooks/hook_name\`
 4. **Test manually**: Set env vars and run
-5. **Check logs**: dmux logs to stderr with \`[Hooks]\` prefix
+5. **Check logs**: qmux logs to stderr with \`[Hooks]\` prefix
 6. **Simplify**: Remove complex parts, test basic version
 7. **Check tool availability**: \`command -v required_tool\`
 
@@ -436,7 +436,7 @@ set -e  # Exit on error
 
 When creating a new hook:
 
-- [ ] Create file in \`.dmux-hooks/\`
+- [ ] Create file in \`.qmux-hooks/\`
 - [ ] Add shebang: \`#!/bin/bash\`
 - [ ] Make executable: \`chmod +x\`
 - [ ] Add \`set -e\` for error handling
@@ -451,13 +451,13 @@ When creating a new hook:
 ## Getting Help
 
 - **Full documentation**: See \`HOOKS.md\` in project root
-- **Claude-specific tips**: See \`CLAUDE.md\` in \`.dmux-hooks/\`
-- **Examples**: Check \`.dmux-hooks/examples/\` directory
-- **dmux API**: See \`API.md\` for REST endpoints
+- **Claude-specific tips**: See \`CLAUDE.md\` in \`.qmux-hooks/\`
+- **Examples**: Check \`.qmux-hooks/examples/\` directory
+- **qmux API**: See \`API.md\` for REST endpoints
 
 ---
 
-*This documentation was auto-generated from dmux source code.*
+*This documentation was auto-generated from qmux source code.*
 *Version: ${new Date().toISOString().split('T')[0]}*
 `;
 

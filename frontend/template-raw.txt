@@ -1,6 +1,6 @@
   template: \`
     <header>
-      <img src="https://cdn.formk.it/dmux/dmux.png" alt="dmux" class="logo" />
+      <img src="https://cdn.formk.it/qmux/qmux.png" alt="qmux" class="logo" />
       <h1>{{ projectName }}</h1>
       <div class="session-info">
         <button @click="toggleTheme" class="theme-toggle" :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
@@ -28,8 +28,8 @@
         </div>
 
         <div v-if="panes.length === 0" class="no-panes">
-          <p>No dmux panes active</p>
-          <p class="hint">Click "Create New Pane" above or press 'n' in dmux</p>
+          <p>No qmux panes active</p>
+          <p class="hint">Click "Create New Pane" above or press 'n' in qmux</p>
         </div>
 
         <div v-else class="panes-grid">
@@ -236,7 +236,7 @@
                 :disabled="creatingPane"
               >
                 <img
-                  :src="'https://cdn.formk.it/dmux/' + agent + '.svg'"
+                  :src="'https://cdn.formk.it/qmux/' + agent + '.svg'"
                   :alt="agent"
                   class="agent-logo"
                 />
@@ -282,7 +282,7 @@
   methods: {
     toggleTheme() {
       this.theme = this.theme === 'dark' ? 'light' : 'dark';
-      localStorage.setItem('dmux-theme', this.theme);
+      localStorage.setItem('qmux-theme', this.theme);
       document.documentElement.setAttribute('data-theme', this.theme);
     },
     togglePrompt(paneId) {

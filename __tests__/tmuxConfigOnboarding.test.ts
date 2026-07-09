@@ -20,7 +20,7 @@ describe('tmux config onboarding utils', () => {
   });
 
   it('detects missing tmux config', async () => {
-    const homeDir = mkdtempSync(join(tmpdir(), 'dmux-onboarding-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'qmux-onboarding-'));
 
     try {
       const result = await hasMeaningfulTmuxConfig(homeDir);
@@ -31,7 +31,7 @@ describe('tmux config onboarding utils', () => {
   });
 
   it('detects existing tmux config from ~/.tmux.conf', async () => {
-    const homeDir = mkdtempSync(join(tmpdir(), 'dmux-onboarding-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'qmux-onboarding-'));
 
     try {
       writeFileSync(join(homeDir, '.tmux.conf'), "set -g mouse on\n", 'utf-8');
@@ -43,7 +43,7 @@ describe('tmux config onboarding utils', () => {
   });
 
   it('treats empty tmux config as not configured', async () => {
-    const homeDir = mkdtempSync(join(tmpdir(), 'dmux-onboarding-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'qmux-onboarding-'));
 
     try {
       writeFileSync(join(homeDir, '.tmux.conf'), '', 'utf-8');
@@ -55,7 +55,7 @@ describe('tmux config onboarding utils', () => {
   });
 
   it('detects existing tmux config from ~/.config/tmux/tmux.conf', async () => {
-    const homeDir = mkdtempSync(join(tmpdir(), 'dmux-onboarding-'));
+    const homeDir = mkdtempSync(join(tmpdir(), 'qmux-onboarding-'));
 
     try {
       const configDir = join(homeDir, '.config', 'tmux');

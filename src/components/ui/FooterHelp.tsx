@@ -33,10 +33,10 @@ const FooterHelp: React.FC<FooterHelpProps> = memo(({
     return (
       <Box marginTop={1} flexDirection="column">
         <Text color="yellow" bold>
-          Ctrl+C again closes dmux (ALL panes)
+          Ctrl+C again closes qmux (ALL panes)
         </Text>
         <Text dimColor>
-          q quits but keeps the session — resume with dmux -c
+          q quits but keeps the session — resume with qmux -c
         </Text>
       </Box>
     );

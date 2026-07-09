@@ -2,8 +2,8 @@ import { createConnection, type Socket } from 'node:net';
 import os from 'os';
 import path from 'path';
 import {
-  supportsNativeDmuxHelper,
-  type DmuxHelperPreviewSoundMessage,
+  supportsNativeQmuxHelper,
+  type QmuxHelperPreviewSoundMessage,
 } from './focusDetection.js';
 import type { NotificationSoundId } from './notificationSounds.js';
 import { getNotificationSoundDefinition } from './notificationSounds.js';
@@ -16,8 +16,8 @@ export interface NotificationSoundPreviewPlayer {
 export function buildNotificationSoundPreviewMessage(
   soundId: NotificationSoundId,
   platform: NodeJS.Platform = process.platform
-): DmuxHelperPreviewSoundMessage | null {
-  if (!supportsNativeDmuxHelper(platform)) {
+): QmuxHelperPreviewSoundMessage | null {
+  if (!supportsNativeQmuxHelper(platform)) {
     return null;
   }
 
@@ -28,13 +28,13 @@ export function buildNotificationSoundPreviewMessage(
   };
 }
 
-export function getDmuxHelperSocketPath(homeDirectory: string = os.homedir()): string {
-  return path.join(homeDirectory, '.dmux', 'native-helper', 'run', 'dmux-helper.sock');
+export function getQmuxHelperSocketPath(homeDirectory: string = os.homedir()): string {
+  return path.join(homeDirectory, '.qmux', 'native-helper', 'run', 'qmux-helper.sock');
 }
 
 export function createNotificationSoundPreviewPlayer(
   platform: NodeJS.Platform = process.platform,
-  socketPath: string = getDmuxHelperSocketPath()
+  socketPath: string = getQmuxHelperSocketPath()
 ): NotificationSoundPreviewPlayer {
   let activeSocket: Socket | null = null;
 

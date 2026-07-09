@@ -1,8 +1,8 @@
-# dmux Action Tests
+# qmux Action Tests
 
 ## Overview
 
-This directory contains comprehensive unit tests for all dmux action implementations. These tests verify that actions work correctly in isolation by mocking external dependencies.
+This directory contains comprehensive unit tests for all qmux action implementations. These tests verify that actions work correctly in isolation by mocking external dependencies.
 
 ## Test Structure
 
@@ -19,7 +19,7 @@ __tests__/
 │   └── toggleAutopilotAction.test.ts
 ├── fixtures/              # Test data and mocks
 │   ├── mockContext.ts     # ActionContext mocks
-│   └── mockPanes.ts       # DmuxPane fixtures
+│   └── mockPanes.ts       # QmuxPane fixtures
 └── helpers/               # Test utilities
     └── actionAssertions.ts # Custom assertions
 ```
@@ -62,7 +62,7 @@ pnpm test __tests__/actions/ --reporter=verbose
 
 Test individual actions in isolation:
 - Mock all external dependencies (execSync, StateManager, hooks, fs)
-- Create mock ActionContext and DmuxPane fixtures
+- Create mock ActionContext and QmuxPane fixtures
 - Assert on ActionResult types and callback chains
 - Test happy paths and error scenarios
 
@@ -77,7 +77,7 @@ it('should jump to pane successfully', async () => {
   const result = await viewPane(mockPane, mockContext);
 
   expect(result.type).toBe('navigation');
-  expect(result.targetPaneId).toBe('dmux-1');
+  expect(result.targetPaneId).toBe('qmux-1');
 });
 ```
 
@@ -93,7 +93,7 @@ Test adapters with actions:
 Test complete workflows in real tmux:
 - Full merge → commit → cleanup flow
 - Close → worktree removal → layout recalc
-- Following pattern in `dmux.e2e.create-pane.test.ts`
+- Following pattern in `qmux.e2e.create-pane.test.ts`
 
 ## Test Utilities
 
@@ -107,7 +107,7 @@ const context = createMockContext(panes, {
 });
 ```
 
-**mockPanes.ts** - Creates mock DmuxPane objects:
+**mockPanes.ts** - Creates mock QmuxPane objects:
 ```typescript
 const pane = createMockPane({ slug: 'my-feature' });
 const shellPane = createShellPane();

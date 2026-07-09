@@ -1,21 +1,21 @@
-interface DmuxProcessShutdownState {
+interface QmuxProcessShutdownState {
   claimed: boolean;
   owner?: string;
 }
 
-type GlobalWithDmuxShutdownState = typeof globalThis & {
-  __dmuxProcessShutdownState?: DmuxProcessShutdownState;
+type GlobalWithQmuxShutdownState = typeof globalThis & {
+  __qmuxProcessShutdownState?: QmuxProcessShutdownState;
 };
 
-function getShutdownState(): DmuxProcessShutdownState {
-  const globalWithState = globalThis as GlobalWithDmuxShutdownState;
-  if (!globalWithState.__dmuxProcessShutdownState) {
-    globalWithState.__dmuxProcessShutdownState = {
+function getShutdownState(): QmuxProcessShutdownState {
+  const globalWithState = globalThis as GlobalWithQmuxShutdownState;
+  if (!globalWithState.__qmuxProcessShutdownState) {
+    globalWithState.__qmuxProcessShutdownState = {
       claimed: false,
     };
   }
 
-  return globalWithState.__dmuxProcessShutdownState;
+  return globalWithState.__qmuxProcessShutdownState;
 }
 
 export function claimProcessShutdown(owner: string): boolean {

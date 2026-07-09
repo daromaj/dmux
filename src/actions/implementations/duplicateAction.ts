@@ -2,7 +2,7 @@
  * DUPLICATE Action - Duplicate a pane with the same prompt
  */
 
-import type { DmuxPane } from '../../types.js';
+import type { QmuxPane } from '../../types.js';
 import type { ActionResult, ActionContext } from '../types.js';
 import { getPaneDisplayName } from '../../utils/paneTitle.js';
 
@@ -10,7 +10,7 @@ import { getPaneDisplayName } from '../../utils/paneTitle.js';
  * Duplicate a pane (create a new pane with the same prompt)
  */
 export async function duplicatePane(
-  pane: DmuxPane,
+  pane: QmuxPane,
   context: ActionContext
 ): Promise<ActionResult> {
   const paneName = getPaneDisplayName(pane);

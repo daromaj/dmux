@@ -318,7 +318,7 @@ export class TmuxService {
   }
 
   /**
-   * Get the pane currently selected in the active dmux window.
+   * Get the pane currently selected in the active qmux window.
    *
    * This uses pane_active from list-panes instead of display-message so it
    * reflects tmux focus changes after this process was launched.
@@ -517,7 +517,7 @@ export class TmuxService {
 
       try {
         const title = await this.getPaneTitle(id);
-        if (title !== 'dmux-spacer') {
+        if (title !== 'qmux-spacer') {
           contentPanes.push(id);
         }
       } catch {
@@ -1067,7 +1067,7 @@ export class TmuxService {
    *   - tmux automatically manages window size to fit client
    *   - window_height = client_height (tmux handles status bar internally)
    *
-   * When window-size is "manual" (dmux uses this):
+   * When window-size is "manual" (qmux uses this):
    *   - You control window dimensions explicitly
    *   - total_terminal = window_height + status_bar_height
    *   - When setting window size: window_height = client_height - status_bar_height

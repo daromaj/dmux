@@ -5,7 +5,7 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import type { DmuxConfig } from '../types.js';
+import type { QmuxConfig } from '../types.js';
 import { LogService } from '../services/LogService.js';
 import { TmuxService } from '../services/TmuxService.js';
 

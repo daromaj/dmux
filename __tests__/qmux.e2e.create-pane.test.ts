@@ -43,8 +43,8 @@ function computePanesFilePath(homeDir: string): string {
   const projectName = path.basename(gitRoot);
   const projectHash = createHash('md5').update(gitRoot).digest('hex').substring(0, 8);
   const projectIdentifier = `${projectName}-${projectHash}`;
-  const dmuxDir = path.join(homeDir, '.dmux');
-  return path.join(dmuxDir, `${projectIdentifier}-panes.json`);
+  const qmuxDir = path.join(homeDir, '.qmux');
+  return path.join(qmuxDir, `${projectIdentifier}-panes.json`);
 }
 
 async function poll<T>(fn: () => T | Promise<T>, predicate: (v: T) => boolean, timeoutMs = 15000, intervalMs = 200): Promise<T> {
@@ -59,17 +59,17 @@ async function poll<T>(fn: () => T | Promise<T>, predicate: (v: T) => boolean, t
 
 // Only run if tmux and a runner are available
 const runner = detectRunner();
-const runE2E = process.env.DMUX_E2E === '1';
+const runE2E = process.env.QMUX_E2E === '1';
 const canRun = runE2E && hasTmux() && !!runner;
 
-describe.sequential('dmux e2e: create pane', () => {
-  it.runIf(canRun)('starts dmux in tmux and initializes panes file', async () => {
+describe.sequential('qmux e2e: create pane', () => {
+  it.runIf(canRun)('starts qmux in tmux and initializes panes file', async () => {
     // Unique tmux server and session to isolate from user environment
-    const server = `dmux-e2e-${Date.now()}`;
-    const session = `dmux-e2e-create`;
+    const server = `qmux-e2e-${Date.now()}`;
+    const session = `qmux-e2e-create`;
 
-    // Temp HOME to sandbox ~/.dmux writes
-    const tmpHome = await fsp.mkdtemp(path.join(os.tmpdir(), 'dmux-e2e-home-'));
+    // Temp HOME to sandbox ~/.qmux writes
+    const tmpHome = await fsp.mkdtemp(path.join(os.tmpdir(), 'qmux-e2e-home-'));
     const panesFile = computePanesFilePath(tmpHome);
 
     try {
@@ -80,13 +80,13 @@ describe.sequential('dmux e2e: create pane', () => {
       // Create a detached session running bash so we can export HOME
       execSync(`tmux -L ${server} -f /dev/null new-session -d -s ${session} -n main bash`, { stdio: 'pipe' });
 
-      // Export HOME inside the tmux session so dmux writes under tmpHome
+      // Export HOME inside the tmux session so qmux writes under tmpHome
       execSync(`tmux -L ${server} send-keys -t ${session}:0.0 'export HOME="${tmpHome}"' Enter`, { stdio: 'pipe' });
 
-      // Start dmux using detected runner
+      // Start qmux using detected runner
       execSync(`tmux -L ${server} send-keys -t ${session}:0.0 '${runner!.cmd}' Enter`, { stdio: 'pipe' });
 
-      // Wait for panes file to be created by dmux init
+      // Wait for panes file to be created by qmux init
       await poll(
         async () => {
           try {
@@ -112,7 +112,7 @@ describe.sequential('dmux e2e: create pane', () => {
       execSync(`tmux -L ${server} send-keys -t ${session}:0.0 'e2e create pane'`, { stdio: 'pipe' });
       execSync(`tmux -L ${server} send-keys -t ${session}:0.0 Enter`, { stdio: 'pipe' });
 
-      // Give dmux some time to process pane creation
+      // Give qmux some time to process pane creation
       // Then re-read panes file; if pane creation failed due to missing agents, we still pass on panes file existence
       await new Promise(res => setTimeout(res, 3000));
       const raw2 = await fsp.readFile(panesFile, 'utf-8');
@@ -123,7 +123,7 @@ describe.sequential('dmux e2e: create pane', () => {
         expect(data2.length).toBeGreaterThanOrEqual(1);
       }
 
-      // Quit dmux UI if it's still running (best-effort)
+      // Quit qmux UI if it's still running (best-effort)
       try {
         execSync(`tmux -L ${server} send-keys -t ${session}:0.0 q`, { stdio: 'pipe' });
       } catch {}

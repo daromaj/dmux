@@ -10,7 +10,7 @@ import React from 'react';
 import { createHash } from 'crypto';
 import { createRequire } from 'module';
 import { createInterface } from 'node:readline/promises';
-import DmuxApp from './DmuxApp.js';
+import QmuxApp from './QmuxApp.js';
 import FileBrowserApp from './FileBrowserApp.js';
 import { StateManager } from './shared/StateManager.js';
 import { LogService } from './services/LogService.js';
@@ -34,8 +34,8 @@ import {
 } from './utils/tmuxHookCommands.js';
 import { ensureTmuxRuntimeCompatibility } from './utils/tmuxRuntimeCompatibility.js';
 import { claimProcessShutdown } from './utils/processShutdown.js';
-import { buildDmuxCommand } from './utils/dmuxCommand.js';
-import { sanitizePathForInstalledDmux } from './utils/pathEnvironment.js';
+import { buildQmuxCommand } from './utils/qmuxCommand.js';
+import { sanitizePathForInstalledQmux } from './utils/pathEnvironment.js';
 import { attachTmuxSession, startDetachedTmuxSession } from './utils/tmuxSessionStart.js';
 import {
   addSidebarProject,
@@ -49,9 +49,9 @@ import {
   buildRemotePaneActionBindingCommands,
   buildRemotePaneActionCleanupCommands,
   clearRemotePaneActions,
-  DMUX_CONTROLLER_PID_OPTION,
-  DMUX_CONTROL_PANE_OPTION,
-  DMUX_REMOTE_PANE_MODE_OPTION,
+  QMUX_CONTROLLER_PID_OPTION,
+  QMUX_CONTROL_PANE_OPTION,
+  QMUX_REMOTE_PANE_MODE_OPTION,
   enqueueRemotePaneAction,
   getCurrentTmuxPaneId as getFocusedTmuxPaneId,
   getCurrentTmuxSessionName as getFocusedTmuxSessionName,
@@ -68,7 +68,8 @@ import {
   TMUX_PANE_TITLE_LABEL_FORMAT,
   TMUX_PANE_TITLE_PREFIX_FORMAT,
 } from './utils/paneTitlePrefix.js';
-import type { DmuxConfig, DmuxPane } from './types.js';
+import type { QmuxConfig, QmuxPane } from './types.js';
+import { migrateDmuxLegacyState } from './utils/legacyMigration.js';
 
 const require = createRequire(import.meta.url);
 const packageJson = require('../package.json');
@@ -96,7 +97,7 @@ function getArgValue(flag: string): string | null {
 
 async function handleRemotePaneActionCli(shortcutArg: string): Promise<number> {
   if (!isRemotePaneActionShortcut(shortcutArg)) {
-    showTmuxMessage(`Unsupported dmux pane action: ${shortcutArg}`);
+    showTmuxMessage(`Unsupported qmux pane action: ${shortcutArg}`);
     return 1;
   }
 
@@ -104,26 +105,26 @@ async function handleRemotePaneActionCli(shortcutArg: string): Promise<number> {
   const targetPaneId = getFocusedTmuxPaneId();
 
   if (!sessionName || !targetPaneId) {
-    showTmuxMessage('dmux remote pane actions require an active tmux pane');
+    showTmuxMessage('qmux remote pane actions require an active tmux pane');
     return 1;
   }
 
-  const controllerPid = getTmuxSessionOption(sessionName, DMUX_CONTROLLER_PID_OPTION);
+  const controllerPid = getTmuxSessionOption(sessionName, QMUX_CONTROLLER_PID_OPTION);
   if (!controllerPid || !/^\d+$/.test(controllerPid)) {
-    showTmuxMessage('No active dmux controller found for this session');
+    showTmuxMessage('No active qmux controller found for this session');
     return 1;
   }
 
-  const controlPaneId = getTmuxSessionOption(sessionName, DMUX_CONTROL_PANE_OPTION);
+  const controlPaneId = getTmuxSessionOption(sessionName, QMUX_CONTROL_PANE_OPTION);
   if (controlPaneId && controlPaneId === targetPaneId) {
-    showTmuxMessage('Focused pane is already the dmux control pane');
+    showTmuxMessage('Focused pane is already the qmux control pane');
     return 1;
   }
 
   try {
     process.kill(Number(controllerPid), 0);
   } catch {
-    showTmuxMessage('The dmux controller for this session is not running');
+    showTmuxMessage('The qmux controller for this session is not running');
     return 1;
   }
 
@@ -133,12 +134,12 @@ async function handleRemotePaneActionCli(shortcutArg: string): Promise<number> {
     return 0;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    showTmuxMessage(`Failed to queue dmux pane action: ${message}`);
+    showTmuxMessage(`Failed to queue qmux pane action: ${message}`);
     return 1;
   }
 }
 
-class Dmux {
+class Qmux {
   private panesFile: string;
   private settingsFile: string;
   private projectName: string;
@@ -156,11 +157,11 @@ class Dmux {
     // Create a stable, collision-safe session name for this project root
     this.sessionName = this.buildSessionNameForRoot(this.projectRoot);
 
-    // Store config in .dmux directory inside project root
-    const dmuxDir = path.join(this.projectRoot, '.dmux');
-    const configFile = path.join(dmuxDir, 'dmux.config.json');
+    // Store config in .qmux directory inside project root
+    const qmuxDir = path.join(this.projectRoot, '.qmux');
+    const configFile = path.join(qmuxDir, 'qmux.config.json');
 
-    // Always use the .dmux directory config location
+    // Always use the .qmux directory config location
     this.panesFile = configFile;
     this.settingsFile = configFile; // Same file for all config
 
@@ -169,11 +170,15 @@ class Dmux {
   }
 
   async init() {
+    // Best-effort migration of legacy dmux on-disk/tmux state to qmux naming.
+    // Must run before anything below reads or creates qmux-named config/state.
+    migrateDmuxLegacyState(this.projectRoot);
+
     // Set up global signal handlers for clean exit
     this.setupGlobalSignalHandlers();
 
-    // Ensure .dmux directory exists and is in .gitignore
-    await this.ensureDmuxDirectory();
+    // Ensure .qmux directory exists and is in .gitignore
+    await this.ensureQmuxDirectory();
 
     // Check for migration from old config location
     await this.migrateOldConfig();
@@ -202,9 +207,9 @@ class Dmux {
     }
 
     const inTmux = process.env.TMUX !== undefined;
-    const isDev = process.env.DMUX_DEV === 'true';
-    const isDevWatch = process.env.DMUX_DEV_WATCH === 'true';
-    // `dmux` starts from scratch; `dmux -c` / `--continue` reopens the last session.
+    const isDev = process.env.QMUX_DEV === 'true';
+    const isDevWatch = process.env.QMUX_DEV_WATCH === 'true';
+    // `qmux` starts from scratch; `qmux -c` / `--continue` reopens the last session.
     const continueSession = process.argv
       .slice(2)
       .some((arg) => arg === '-c' || arg === '--continue');
@@ -218,16 +223,16 @@ class Dmux {
       this.setSessionPathEnvironment(sessionNameForCurrentTmux);
     }
 
-    // Running dmux from another project while already inside a dmux session:
+    // Running qmux from another project while already inside a qmux session:
     // offer to attach this project to the current sidebar/session instead.
     if (
       inTmux &&
       currentTmuxSessionName &&
-      currentTmuxSessionName.startsWith('dmux-') &&
+      currentTmuxSessionName.startsWith('qmux-') &&
       currentTmuxSessionName !== this.sessionName
     ) {
       const shouldAttachToCurrent = await this.promptYesNo(
-        `Detected active dmux session '${currentTmuxSessionName}'. Add project '${this.projectName}' to this session's sidebar?`,
+        `Detected active qmux session '${currentTmuxSessionName}'. Add project '${this.projectName}' to this session's sidebar?`,
         true
       );
 
@@ -284,8 +289,8 @@ class Dmux {
         sessionExists = false;
       }
 
-      // Plain `dmux` starts from scratch: discard any existing session (with its old
-      // panes/agents) and create a fresh one. `dmux -c` skips this and reattaches so the
+      // Plain `qmux` starts from scratch: discard any existing session (with its old
+      // panes/agents) and create a fresh one. `qmux -c` skips this and reattaches so the
       // previous session — including live panes and their state — is preserved.
       if (sessionExists && !continueSession && !isDev) {
         try {
@@ -319,14 +324,14 @@ class Dmux {
         }
       } else {
         // Expected - session doesn't exist, create new one
-        // Start dmux as the pane command instead of typing a long startup
+        // Start qmux as the pane command instead of typing a long startup
         // command into a shell before that shell has finished initializing.
-        let dmuxCommand: string;
+        let qmuxCommand: string;
         if (isDev) {
-          dmuxCommand = buildDevWatchCommand(devDirectory);
+          qmuxCommand = buildDevWatchCommand(devDirectory);
         } else {
           // Propagate continue mode so the control pane restores the last session.
-          dmuxCommand = buildDmuxCommand(
+          qmuxCommand = buildQmuxCommand(
             continueSession ? ['-c'] : [],
             this.projectRoot
           );
@@ -335,14 +340,14 @@ class Dmux {
         startDetachedTmuxSession({
           sessionName: this.sessionName,
           startDirectory: isDev ? devDirectory : this.projectRoot,
-          command: dmuxCommand,
+          command: qmuxCommand,
         });
         ensureTmuxRuntimeCompatibility(this.sessionName);
         this.setSessionPathEnvironment(this.sessionName);
         // Batch all session configuration commands into a single tmux call for faster startup
         // This reduces 5 process spawns to 1, significantly improving startup time
         this.applySessionPaneBorderOptions(this.sessionName, 'inherit');
-        execSync(`tmux select-pane -t ${this.sessionName} -T "dmux"`, { stdio: 'inherit' });
+        execSync(`tmux select-pane -t ${this.sessionName} -T "qmux"`, { stdio: 'inherit' });
       }
       attachTmuxSession(this.sessionName);
       return;
@@ -356,17 +361,17 @@ class Dmux {
     //   // Ignore if it fails
     // }
 
-    // Set pane title for the current pane running dmux
+    // Set pane title for the current pane running qmux
     // TODO(future): Re-enable control pane title once UI shift issue is resolved
     // Setting the title can cause visual artifacts in some tmux configurations
-    // Original code: execSync(`tmux select-pane -T "dmux v${version} - ${project}"`)
+    // Original code: execSync(`tmux select-pane -T "qmux v${version} - ${project}"`)
     // See: Title updates are currently handled by enforcePaneTitles() in usePaneSync.ts
 
     try {
       const activeSessionName = this.getCurrentTmuxSessionName() || this.sessionName;
       this.applySessionPaneBorderOptions(activeSessionName, 'pipe');
     } catch {
-      // Best effort - dmux still works without reapplying border format here.
+      // Best effort - qmux still works without reapplying border format here.
     }
 
     // Get current pane ID (control pane for left sidebar)
@@ -395,8 +400,8 @@ class Dmux {
         .map((paneId: string) => paneId.trim())
         .filter(Boolean);
 
-      // Preserve an existing valid control pane ID when dmux is launched from a non-control pane.
-      // This prevents nested dmux UIs from accidentally hijacking control-pane ownership.
+      // Preserve an existing valid control pane ID when qmux is launched from a non-control pane.
+      // This prevents nested qmux UIs from accidentally hijacking control-pane ownership.
       const preservedControlPaneId =
         typeof oldControlPaneId === 'string' && sessionPaneIds.includes(oldControlPaneId)
           ? oldControlPaneId
@@ -439,7 +444,7 @@ class Dmux {
         await fs.writeFile(this.panesFile, JSON.stringify(config, null, 2));
       }
 
-      // Create welcome pane if there are no dmux panes and no existing welcome pane
+      // Create welcome pane if there are no qmux panes and no existing welcome pane
       // Check if welcome pane actually exists, not just if it's in config (handles tmux restarts)
       const { welcomePaneExists } = await import('./utils/welcomePane.js');
       const normalizePathForComparison = (candidatePath?: string): string | null => {
@@ -584,7 +589,7 @@ class Dmux {
         }
       }
 
-      // Check for untracked panes (terminal panes created outside dmux tracking)
+      // Check for untracked panes (terminal panes created outside qmux tracking)
       const trackedPaneIds = config.panes?.map((p: any) => p.paneId) ?? [];
       const untrackedPanes = await getUntrackedPanes(
         sessionNameForCurrentTmux,
@@ -594,8 +599,8 @@ class Dmux {
       );
 
       // Only show welcome pane if there are no tracked AND no untracked panes.
-      // Continue mode (`dmux -c`) restores saved panes even when they aren't live in
-      // tmux yet; default `dmux` starts fresh, so stale saved panes (tmux was killed)
+      // Continue mode (`qmux -c`) restores saved panes even when they aren't live in
+      // tmux yet; default `qmux` starts fresh, so stale saved panes (tmux was killed)
       // must not suppress the welcome pane — count only panes still live in tmux.
       const trackedPaneCount = continueSession
         ? (config.panes?.length ?? 0)
@@ -668,7 +673,7 @@ class Dmux {
 
     const metadataSessionName = currentTmuxSessionName || this.getCurrentTmuxSessionName() || this.sessionName;
     const shouldPublishMetadata =
-      !metadataSessionName.startsWith('dmux-') || metadataSessionName === this.sessionName;
+      !metadataSessionName.startsWith('qmux-') || metadataSessionName === this.sessionName;
     if (shouldPublishMetadata) {
       this.publishSessionMetadata(metadataSessionName, controlPaneId);
       this.clearRemotePaneModeIndicators(metadataSessionName);
@@ -701,7 +706,7 @@ class Dmux {
       controlPaneId,
     };
 
-    const app = render(React.createElement(DmuxApp, appProps), {
+    const app = render(React.createElement(QmuxApp, appProps), {
       exitOnCtrlC: false  // Disable automatic exit on Ctrl+C
     });
 
@@ -716,7 +721,7 @@ class Dmux {
     const projectHash = createHash('md5').update(projectRoot).digest('hex').substring(0, 8);
     const projectIdentifier = `${projectName}-${projectHash}`;
     const sanitizedProjectIdentifier = projectIdentifier.replace(/[^a-zA-Z0-9_-]+/g, '-');
-    return `dmux-${sanitizedProjectIdentifier}`;
+    return `qmux-${sanitizedProjectIdentifier}`;
   }
 
   private getCurrentTmuxSessionName(): string | null {
@@ -795,12 +800,12 @@ class Dmux {
 
   private publishSessionMetadata(sessionName: string, controlPaneId?: string): void {
     try {
-      spawnSync('tmux', ['set-option', '-t', sessionName, '@dmux_project_root', this.projectRoot], { stdio: 'pipe' });
-      spawnSync('tmux', ['set-option', '-t', sessionName, '@dmux_project_name', this.projectName], { stdio: 'pipe' });
-      spawnSync('tmux', ['set-option', '-t', sessionName, '@dmux_config_path', this.panesFile], { stdio: 'pipe' });
-      spawnSync('tmux', ['set-option', '-t', sessionName, DMUX_CONTROLLER_PID_OPTION, String(process.pid)], { stdio: 'pipe' });
+      spawnSync('tmux', ['set-option', '-t', sessionName, '@qmux_project_root', this.projectRoot], { stdio: 'pipe' });
+      spawnSync('tmux', ['set-option', '-t', sessionName, '@qmux_project_name', this.projectName], { stdio: 'pipe' });
+      spawnSync('tmux', ['set-option', '-t', sessionName, '@qmux_config_path', this.panesFile], { stdio: 'pipe' });
+      spawnSync('tmux', ['set-option', '-t', sessionName, QMUX_CONTROLLER_PID_OPTION, String(process.pid)], { stdio: 'pipe' });
       if (controlPaneId) {
-        spawnSync('tmux', ['set-option', '-t', sessionName, DMUX_CONTROL_PANE_OPTION, controlPaneId], { stdio: 'pipe' });
+        spawnSync('tmux', ['set-option', '-t', sessionName, QMUX_CONTROL_PANE_OPTION, controlPaneId], { stdio: 'pipe' });
       }
     } catch {
       // Metadata is best-effort only
@@ -811,13 +816,13 @@ class Dmux {
     sessionName: string = this.getCurrentTmuxSessionName() || this.sessionName
   ) {
     try {
-      const activeControllerPid = this.getTmuxOptionValue(sessionName, DMUX_CONTROLLER_PID_OPTION);
+      const activeControllerPid = this.getTmuxOptionValue(sessionName, QMUX_CONTROLLER_PID_OPTION);
       if (activeControllerPid !== String(process.pid)) {
         return;
       }
 
-      spawnSync('tmux', ['set-option', '-u', '-t', sessionName, DMUX_CONTROLLER_PID_OPTION], { stdio: 'pipe' });
-      spawnSync('tmux', ['set-option', '-u', '-t', sessionName, DMUX_CONTROL_PANE_OPTION], { stdio: 'pipe' });
+      spawnSync('tmux', ['set-option', '-u', '-t', sessionName, QMUX_CONTROLLER_PID_OPTION], { stdio: 'pipe' });
+      spawnSync('tmux', ['set-option', '-u', '-t', sessionName, QMUX_CONTROL_PANE_OPTION], { stdio: 'pipe' });
     } catch {
       // Metadata cleanup is best-effort only.
     }
@@ -865,7 +870,7 @@ class Dmux {
       for (const paneId of paneIds) {
         spawnSync(
           'tmux',
-          ['set-option', '-u', '-p', '-t', paneId, DMUX_REMOTE_PANE_MODE_OPTION],
+          ['set-option', '-u', '-p', '-t', paneId, QMUX_REMOTE_PANE_MODE_OPTION],
           { stdio: 'pipe' }
         );
       }
@@ -878,7 +883,7 @@ class Dmux {
     sessionName: string = this.getCurrentTmuxSessionName() || this.sessionName
   ) {
     try {
-      const activeControllerPid = this.getTmuxOptionValue(sessionName, DMUX_CONTROLLER_PID_OPTION);
+      const activeControllerPid = this.getTmuxOptionValue(sessionName, QMUX_CONTROLLER_PID_OPTION);
       if (activeControllerPid !== String(process.pid)) {
         return;
       }
@@ -898,7 +903,7 @@ class Dmux {
           .filter(Boolean)
           .some((name) =>
             name !== sessionName
-            && this.getTmuxOptionValue(name, DMUX_CONTROLLER_PID_OPTION) !== null
+            && this.getTmuxOptionValue(name, QMUX_CONTROLLER_PID_OPTION) !== null
           );
         if (otherControllerExists) {
           return;
@@ -966,7 +971,7 @@ class Dmux {
           if (seenRoots.has(candidateRoot)) continue;
           seenRoots.add(candidateRoot);
 
-          const configPath = path.join(candidateRoot, '.dmux', 'dmux.config.json');
+          const configPath = path.join(candidateRoot, '.qmux', 'qmux.config.json');
           if (!fsSync.existsSync(configPath)) {
             continue;
           }
@@ -991,16 +996,16 @@ class Dmux {
   }
 
   private getExistingSessionContext(sessionName: string): ExistingSessionContext | null {
-    const optionProjectRoot = this.getTmuxOptionValue(sessionName, '@dmux_project_root');
-    const optionProjectName = this.getTmuxOptionValue(sessionName, '@dmux_project_name');
-    const optionConfigPath = this.getTmuxOptionValue(sessionName, '@dmux_config_path');
+    const optionProjectRoot = this.getTmuxOptionValue(sessionName, '@qmux_project_root');
+    const optionProjectName = this.getTmuxOptionValue(sessionName, '@qmux_project_name');
+    const optionConfigPath = this.getTmuxOptionValue(sessionName, '@qmux_config_path');
 
     const sessionProjectRoot =
       optionProjectRoot
       || (optionConfigPath ? path.dirname(path.dirname(optionConfigPath)) : undefined);
     const sessionConfigPath =
       optionConfigPath
-      || (sessionProjectRoot ? path.join(sessionProjectRoot, '.dmux', 'dmux.config.json') : undefined);
+      || (sessionProjectRoot ? path.join(sessionProjectRoot, '.qmux', 'qmux.config.json') : undefined);
 
     if (
       sessionProjectRoot &&
@@ -1022,7 +1027,7 @@ class Dmux {
     const context = this.getExistingSessionContext(sessionName);
     if (!context) {
       console.log(chalk.yellow(
-        `Unable to locate config for session '${sessionName}'. Run dmux inside that project once, then try again.`
+        `Unable to locate config for session '${sessionName}'. Run qmux inside that project once, then try again.`
       ));
       return false;
     }
@@ -1033,10 +1038,10 @@ class Dmux {
 
     try {
       const configRaw = await fs.readFile(context.sessionConfigPath, 'utf-8');
-      const config: DmuxConfig = JSON.parse(configRaw);
+      const config: QmuxConfig = JSON.parse(configRaw);
       const existingPanes = Array.isArray(config.panes) ? config.panes : [];
       const latestConfigRaw = await fs.readFile(context.sessionConfigPath, 'utf-8');
-      const latestConfig: DmuxConfig = JSON.parse(latestConfigRaw);
+      const latestConfig: QmuxConfig = JSON.parse(latestConfigRaw);
       const latestPanes = Array.isArray(latestConfig.panes) ? latestConfig.panes : [];
       const normalizedProjects = normalizeSidebarProjects(
         latestConfig.sidebarProjects,
@@ -1140,14 +1145,14 @@ class Dmux {
     }
   }
 
-  private async ensureDmuxDirectory() {
-    const dmuxDir = path.join(this.projectRoot, '.dmux');
-    const worktreesDir = path.join(dmuxDir, 'worktrees');
-    const promptsDir = path.join(dmuxDir, 'prompts');
+  private async ensureQmuxDirectory() {
+    const qmuxDir = path.join(this.projectRoot, '.qmux');
+    const worktreesDir = path.join(qmuxDir, 'worktrees');
+    const promptsDir = path.join(qmuxDir, 'prompts');
 
-    // Create .dmux directory if it doesn't exist
-    if (!await this.fileExists(dmuxDir)) {
-      await fs.mkdir(dmuxDir, { recursive: true });
+    // Create .qmux directory if it doesn't exist
+    if (!await this.fileExists(qmuxDir)) {
+      await fs.mkdir(qmuxDir, { recursive: true });
     }
 
     // Create worktrees directory if it doesn't exist
@@ -1160,8 +1165,8 @@ class Dmux {
       await fs.mkdir(promptsDir, { recursive: true });
     }
 
-    // Check if .dmux is ignored by either this repo's .gitignore or global gitignore
-    const isIgnored = spawnSync('git', ['check-ignore', '--quiet', dmuxDir], {
+    // Check if .qmux is ignored by either this repo's .gitignore or global gitignore
+    const isIgnored = spawnSync('git', ['check-ignore', '--quiet', qmuxDir], {
       cwd: this.projectRoot
     }).status === 0;
 
@@ -1169,47 +1174,47 @@ class Dmux {
       return;
     }
 
-    // Auto-add .dmux to .gitignore if not already present
+    // Auto-add .qmux to .gitignore if not already present
     const gitignorePath = path.join(this.projectRoot, '.gitignore');
     if (await this.fileExists(gitignorePath)) {
       const gitignoreContent = await fs.readFile(gitignorePath, 'utf-8');
       const lines = gitignoreContent.split('\n');
 
-      // Check if .dmux is already in .gitignore (exact match or pattern match)
-      const hasDmuxEntry = lines.some(line => {
+      // Check if .qmux is already in .gitignore (exact match or pattern match)
+      const hasQmuxEntry = lines.some(line => {
         const trimmed = line.trim();
-        return trimmed === '.dmux/' || trimmed === '.dmux' || trimmed === '/.dmux/';
+        return trimmed === '.qmux/' || trimmed === '.qmux' || trimmed === '/.qmux/';
       });
 
-      if (!hasDmuxEntry) {
-        // Add .dmux/ to .gitignore
+      if (!hasQmuxEntry) {
+        // Add .qmux/ to .gitignore
         const newGitignore = gitignoreContent.endsWith('\n')
-          ? gitignoreContent + '.dmux/\n'
-          : gitignoreContent + '\n.dmux/\n';
+          ? gitignoreContent + '.qmux/\n'
+          : gitignoreContent + '\n.qmux/\n';
         await fs.writeFile(gitignorePath, newGitignore);
-        LogService.getInstance().debug('Added .dmux/ to .gitignore', 'Setup');
+        LogService.getInstance().debug('Added .qmux/ to .gitignore', 'Setup');
       }
     } else {
-      // No .gitignore exists, create one with .dmux/ entry
-      await fs.writeFile(gitignorePath, '.dmux/\n');
-      LogService.getInstance().debug('Created .gitignore with .dmux/ entry', 'Setup');
+      // No .gitignore exists, create one with .qmux/ entry
+      await fs.writeFile(gitignorePath, '.qmux/\n');
+      LogService.getInstance().debug('Created .gitignore with .qmux/ entry', 'Setup');
     }
   }
 
 
   private async migrateOldConfig() {
     // Check if we're using the new config location
-    const dmuxDir = path.join(this.projectRoot, '.dmux');
-    const newConfigFile = path.join(dmuxDir, 'dmux.config.json');
-    const oldParentConfigFile = path.join(path.dirname(this.projectRoot), 'dmux.config.json');
-    const homeDmuxDir = path.join(process.env.HOME!, '.dmux');
+    const qmuxDir = path.join(this.projectRoot, '.qmux');
+    const newConfigFile = path.join(qmuxDir, 'qmux.config.json');
+    const oldParentConfigFile = path.join(path.dirname(this.projectRoot), 'qmux.config.json');
+    const homeQmuxDir = path.join(process.env.HOME!, '.qmux');
 
     if (this.panesFile === newConfigFile && !await this.fileExists(newConfigFile)) {
       // Look for old config files to migrate
       const projectHash = createHash('md5').update(this.projectRoot).digest('hex').substring(0, 8);
       const projectIdentifier = `${this.projectName}-${projectHash}`;
-      const oldPanesFile = path.join(homeDmuxDir, `${projectIdentifier}-panes.json`);
-      const oldSettingsFile = path.join(homeDmuxDir, `${projectIdentifier}-settings.json`);
+      const oldPanesFile = path.join(homeQmuxDir, `${projectIdentifier}-panes.json`);
+      const oldSettingsFile = path.join(homeQmuxDir, `${projectIdentifier}-settings.json`);
 
       let panes = [];
       let settings = {};
@@ -1253,7 +1258,7 @@ class Dmux {
           panes: panes,
           settings: settings,
           lastUpdated: new Date().toISOString(),
-          migratedFrom: 'dmux-legacy'
+          migratedFrom: 'qmux-legacy'
         };
         await fs.writeFile(newConfigFile, JSON.stringify(migratedConfig, null, 2));
 
@@ -1280,7 +1285,7 @@ class Dmux {
   private applySessionPaneBorderOptions(sessionName: string, stdio: 'pipe' | 'inherit' = 'pipe') {
     const sessionOptions = [
       `set-option -t ${sessionName} pane-border-status top`,
-      `set-option -t ${sessionName} pane-border-format " #{?@dmux_attention,#[bold]![ready] #[default],}${TMUX_PANE_TITLE_PREFIX_FORMAT}${TMUX_PANE_TITLE_LABEL_FORMAT} "`,
+      `set-option -t ${sessionName} pane-border-format " #{?@qmux_attention,#[bold]![ready] #[default],}${TMUX_PANE_TITLE_PREFIX_FORMAT}${TMUX_PANE_TITLE_LABEL_FORMAT} "`,
     ].join(' \\; ');
 
     execSync(`tmux ${sessionOptions}`, { stdio });
@@ -1288,7 +1293,7 @@ class Dmux {
   }
 
   private setSessionPathEnvironment(sessionName: string): void {
-    const cleanPath = sanitizePathForInstalledDmux(process.env.PATH || '', this.projectRoot);
+    const cleanPath = sanitizePathForInstalledQmux(process.env.PATH || '', this.projectRoot);
     if (!cleanPath) return;
 
     spawnSync('tmux', ['set-environment', '-t', sessionName, 'PATH', cleanPath], {
@@ -1298,7 +1303,7 @@ class Dmux {
 
   private setupResizeHook(sessionName: string = this.sessionName) {
     try {
-      // Set up session-specific hook that sends SIGUSR1 to dmux process on resize
+      // Set up session-specific hook that sends SIGUSR1 to qmux process on resize
       // This works inside tmux where normal SIGWINCH may not propagate
       const pid = process.pid;
       execSync(`tmux set-hook -t '${sessionName}' client-resized 'run-shell "kill -USR1 ${pid} 2>/dev/null || true"'`, { stdio: 'pipe' });
@@ -1310,13 +1315,13 @@ class Dmux {
 
   private setupPaneSplitHook(sessionName: string = this.sessionName) {
     try {
-      // Set up hooks that send SIGUSR2 to dmux process for pane events
+      // Set up hooks that send SIGUSR2 to qmux process for pane events
       // This allows immediate detection of pane changes
       const pid = process.pid;
       const paneExitedHookCommand = buildPaneExitedHookCommandForSession(pid, sessionName);
 
       // Detect manually created panes via Ctrl+b %
-      execSync(`tmux set-hook -t '${sessionName}' after-split-window 'run-shell "kill -USR2 ${pid} 2>/dev/null || true # dmux-hook"'`, { stdio: 'pipe' });
+      execSync(`tmux set-hook -t '${sessionName}' after-split-window 'run-shell "kill -USR2 ${pid} 2>/dev/null || true # qmux-hook"'`, { stdio: 'pipe' });
 
       // Detect pane closures via Ctrl+b x or process exit.
       // If the control pane is closed, this also recreates a replacement pane.
@@ -1418,7 +1423,7 @@ class Dmux {
       // Wait a moment for clearing to settle, then show goodbye message
       setTimeout(() => {
         process.stdout.write('\x1b[2J\x1b[H');
-        process.stdout.write('\n\n  dmux session ended.\n\n');
+        process.stdout.write('\n\n  qmux session ended.\n\n');
         process.exit(0);
       }, 100);
     };
@@ -1438,7 +1443,7 @@ class Dmux {
       LogService.getInstance().debug('Pane split detected via SIGUSR2, triggering immediate detection', 'shellDetection');
       // Emit a custom event to trigger immediate shell pane detection
       process.emit('pane-split-detected' as any);
-      process.emit('dmux-external-command-signal' as any);
+      process.emit('qmux-external-command-signal' as any);
     });
 
     // Handle uncaught exceptions and unhandled rejections
@@ -1471,7 +1476,7 @@ class Dmux {
 
   // Only proceed if system requirements are met
   if (validationResult.canRun) {
-    const dmux = new Dmux();
-    dmux.init().catch(() => process.exit(1));
+    const qmux = new Qmux();
+    qmux.init().catch(() => process.exit(1));
   }
 })();

@@ -2,7 +2,7 @@ import { exec, execSync } from 'child_process';
 import { createHash } from 'crypto';
 import * as fs from 'fs';
 import path from 'path';
-import type { DmuxPane } from '../types.js';
+import type { QmuxPane } from '../types.js';
 import type { AgentName } from './agentLaunch.js';
 import { triggerHook } from './hooks.js';
 import { getOrphanedWorktrees, isValidBranchName } from './git.js';
@@ -13,7 +13,7 @@ import { writeWorktreeMetadata } from './worktreeMetadata.js';
 
 const REMOTE_FALLBACK = 'origin';
 const RESUME_SCAN_EXCLUDED_DIRS = new Set([
-  '.dmux',
+  '.qmux',
   '.git',
   'node_modules',
   'vendor',
@@ -53,7 +53,7 @@ export interface ResumeBranchWorkspaceOptions {
   branchName: string;
   agent: AgentName;
   projectRoot: string;
-  existingPanes: DmuxPane[];
+  existingPanes: QmuxPane[];
   sessionConfigPath?: string;
   sessionProjectRoot?: string;
 }
@@ -495,9 +495,9 @@ function hasReusableWorktreeForBranch(
 function getAvailableSlug(
   branchName: string,
   projectRoot: string,
-  existingPanes: DmuxPane[]
+  existingPanes: QmuxPane[]
 ): string {
-  const worktreesDir = path.join(projectRoot, '.dmux', 'worktrees');
+  const worktreesDir = path.join(projectRoot, '.qmux', 'worktrees');
   const reserved = new Set(existingPanes.map((pane) => pane.slug));
   const baseSlug = deriveBaseSlug(branchName);
   let candidate = baseSlug;
@@ -941,17 +941,17 @@ async function triggerChildWorktreeHook(
   agent: AgentName
 ): Promise<void> {
   await triggerHook('worktree_created', projectRoot, undefined, {
-    DMUX_SLUG: slug,
-    DMUX_PROMPT: 'No initial prompt',
-    DMUX_AGENT: agent,
-    DMUX_WORKTREE_PATH: worktreePath,
-    DMUX_BRANCH: branchName,
+    QMUX_SLUG: slug,
+    QMUX_PROMPT: 'No initial prompt',
+    QMUX_AGENT: agent,
+    QMUX_WORKTREE_PATH: worktreePath,
+    QMUX_BRANCH: branchName,
   });
 }
 
 export async function resumeBranchWorkspace(
   options: ResumeBranchWorkspaceOptions
-): Promise<{ pane: DmuxPane }> {
+): Promise<{ pane: QmuxPane }> {
   const {
     branchName,
     agent,
@@ -963,7 +963,7 @@ export async function resumeBranchWorkspace(
 
   const workspaceStates = await getWorkspaceBranchStatesAsync(projectRoot, branchName);
   const slug = getAvailableSlug(branchName, projectRoot, existingPanes);
-  const rootWorktreePath = path.join(projectRoot, '.dmux', 'worktrees', slug);
+  const rootWorktreePath = path.join(projectRoot, '.qmux', 'worktrees', slug);
   const settings = new SettingsManager(projectRoot).getSettings();
 
   if (!agent) {

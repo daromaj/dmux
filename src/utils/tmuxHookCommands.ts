@@ -8,16 +8,16 @@ function escapeForDoubleQuotes(value: string): string {
 }
 
 /**
- * Builds the pane-exited hook command used by dmux.
+ * Builds the pane-exited hook command used by qmux.
  *
  * It performs two actions:
  * 1) Best-effort control-pane recovery if the control pane was killed.
- * 2) Notifies the current dmux process via SIGUSR2 for normal pane sync.
+ * 2) Notifies the current qmux process via SIGUSR2 for normal pane sync.
  */
 export function buildPaneExitedHookCommand(pid: number): string {
   const recoveryScriptPath = resolveDistPath('utils', 'controlPaneRecovery.js');
   const escapedScriptPath = escapeForDoubleQuotes(recoveryScriptPath);
-  return `run-shell "DMUX_RECOVERY_EXITED_PANE=#{hook_pane} node \\"${escapedScriptPath}\\" >/dev/null 2>&1; kill -USR2 ${pid} 2>/dev/null || true # dmux-hook"`;
+  return `run-shell "QMUX_RECOVERY_EXITED_PANE=#{hook_pane} node \\"${escapedScriptPath}\\" >/dev/null 2>&1; kill -USR2 ${pid} 2>/dev/null || true # qmux-hook"`;
 }
 
 /**
@@ -32,7 +32,7 @@ export function buildPaneExitedHookCommandForSession(
   const escapedScriptPath = escapeForDoubleQuotes(recoveryScriptPath);
   const encodedSessionName = Buffer.from(sessionName, 'utf-8').toString('base64');
 
-  return `run-shell "DMUX_RECOVERY_SESSION_B64=${encodedSessionName} DMUX_RECOVERY_EXITED_PANE=#{hook_pane} node \\"${escapedScriptPath}\\" >/dev/null 2>&1; kill -USR2 ${pid} 2>/dev/null || true # dmux-hook"`;
+  return `run-shell "QMUX_RECOVERY_SESSION_B64=${encodedSessionName} QMUX_RECOVERY_EXITED_PANE=#{hook_pane} node \\"${escapedScriptPath}\\" >/dev/null 2>&1; kill -USR2 ${pid} 2>/dev/null || true # qmux-hook"`;
 }
 
 /**
@@ -46,8 +46,8 @@ export function buildPaneFocusHookCommandForSession(
 ): string {
   const escapedSessionName = escapeForDoubleQuotes(sessionName);
   const notifyController = typeof pid === 'number'
-    ? `; run-shell -b "kill -USR2 ${pid} 2>/dev/null || true # dmux-hook"`
+    ? `; run-shell -b "kill -USR2 ${pid} 2>/dev/null || true # qmux-hook"`
     : '';
 
-  return `if-shell -F "#{!=:#{@dmux_active_border_style},}" "set-option -F -t \\"${escapedSessionName}\\" pane-active-border-style \\"#{@dmux_active_border_style}\\""${notifyController}`;
+  return `if-shell -F "#{!=:#{@qmux_active_border_style},}" "set-option -F -t \\"${escapedSessionName}\\" pane-active-border-style \\"#{@qmux_active_border_style}\\""${notifyController}`;
 }

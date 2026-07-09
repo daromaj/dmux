@@ -13,16 +13,16 @@ import {
   createInitialTUIState,
   type TUIActionState
 } from '../adapters/tuiActionHandler.js';
-import type { DmuxPane } from '../types.js';
+import type { QmuxPane } from '../types.js';
 import type { TrackProjectActivity } from '../types/activity.js';
 
 interface UseActionSystemParams {
-  panes: DmuxPane[];
-  savePanes: (panes: DmuxPane[]) => Promise<void>;
+  panes: QmuxPane[];
+  savePanes: (panes: QmuxPane[]) => Promise<void>;
   sessionName: string;
   projectName: string;
   defaultProjectRoot: string;
-  onPaneUpdate?: (pane: DmuxPane) => void;
+  onPaneUpdate?: (pane: QmuxPane) => void;
   onPaneRemove?: (paneId: string) => void | Promise<void>;
   onActionResult?: (result: ActionResult) => Promise<void>;
   trackProjectActivity: TrackProjectActivity;
@@ -209,7 +209,7 @@ export default function useActionSystem({
   // Execute an action and handle the result
   const executeActionWithHandling = useCallback(async (
     actionId: PaneAction,
-    pane: DmuxPane,
+    pane: QmuxPane,
     params?: any
   ) => {
     const projectRoot = pane.projectRoot || defaultProjectRoot;

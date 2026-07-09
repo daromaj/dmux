@@ -1,15 +1,15 @@
 import { watch, type FSWatcher } from 'chokidar';
 import { EventEmitter } from 'events';
 import { readFile } from 'fs/promises';
-import type { DmuxPane } from '../types.js';
+import type { QmuxPane } from '../types.js';
 import { LogService } from './LogService.js';
 
 export interface ConfigData {
-  panes: DmuxPane[];
+  panes: QmuxPane[];
 }
 
 /**
- * Watches the dmux.config.json file for changes and emits events
+ * Watches the qmux.config.json file for changes and emits events
  * when the file is modified. Only emits when actual changes occur.
  */
 export class ConfigWatcher extends EventEmitter {

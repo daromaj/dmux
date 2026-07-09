@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DMUX_BOOTSTRAP_PANE_TITLE_PREFIX } from '../src/utils/paneBootstrapConfig.js';
+import { QMUX_BOOTSTRAP_PANE_TITLE_PREFIX } from '../src/utils/paneBootstrapConfig.js';
 import { getUntrackedPanes } from '../src/utils/shellPaneDetection.js';
 
 const execSyncMock = vi.hoisted(() => vi.fn());
@@ -13,10 +13,10 @@ describe('shell pane detection', () => {
     execSyncMock.mockReset();
   });
 
-  it('ignores dmux bootstrap panes before they are saved as worktree panes', async () => {
+  it('ignores qmux bootstrap panes before they are saved as worktree panes', async () => {
     execSyncMock.mockReturnValue(
       [
-        `%1::${DMUX_BOOTSTRAP_PANE_TITLE_PREFIX}add-user::zsh`,
+        `%1::${QMUX_BOOTSTRAP_PANE_TITLE_PREFIX}add-user::zsh`,
         '%2::manual-shell::zsh',
       ].join('\n')
     );

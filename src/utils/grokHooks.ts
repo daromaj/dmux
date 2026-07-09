@@ -13,17 +13,17 @@ function escapeForSingleQuotedJs(value: string): string {
 
 export function installGrokPaneHooks(opts: {
   worktreePath: string;
-  dmuxPaneId: string;
+  qmuxPaneId: string;
   tmuxPaneId: string;
 }): GrokHookInstallResult {
   const grokDir = path.join(opts.worktreePath, '.grok');
   const hookDir = path.join(grokDir, 'hooks');
-  const stateDir = path.join(grokDir, 'dmux');
+  const stateDir = path.join(grokDir, 'qmux');
   fs.mkdirSync(hookDir, { recursive: true });
   fs.mkdirSync(stateDir, { recursive: true });
 
-  const eventFile = path.join(stateDir, `${opts.dmuxPaneId}.json`);
-  const hookScriptPath = path.join(hookDir, 'dmux-status-hook.cjs');
+  const eventFile = path.join(stateDir, `${opts.qmuxPaneId}.json`);
+  const hookScriptPath = path.join(hookDir, 'qmux-status-hook.cjs');
   const hookScript = `#!/usr/bin/env node
 const fs = require('fs');
 
@@ -98,9 +98,9 @@ process.stdin.on('end', () => {
 
   const event = {
     source: 'grok-status-hook',
-    dmuxPaneId: process.env.DMUX_PANE_ID || '',
-    tmuxPaneId: process.env.DMUX_TMUX_PANE_ID || '',
-    expectedDmuxPaneId: '${escapeForSingleQuotedJs(opts.dmuxPaneId)}',
+    qmuxPaneId: process.env.QMUX_PANE_ID || process.env.DMUX_PANE_ID || '',
+    tmuxPaneId: process.env.QMUX_TMUX_PANE_ID || process.env.DMUX_TMUX_PANE_ID || '',
+    expectedQmuxPaneId: '${escapeForSingleQuotedJs(opts.qmuxPaneId)}',
     expectedTmuxPaneId: '${escapeForSingleQuotedJs(opts.tmuxPaneId)}',
     hookEventName,
     sessionId,
@@ -111,7 +111,7 @@ process.stdin.on('end', () => {
     timestamp: Date.now()
   };
 
-  if (event.dmuxPaneId !== event.expectedDmuxPaneId) {
+  if (event.qmuxPaneId !== event.expectedQmuxPaneId) {
     process.exit(0);
   }
 
@@ -126,18 +126,18 @@ process.stdin.on('end', () => {
   fs.chmodSync(hookScriptPath, 0o755);
 
   const hookCommand = `node ${shellQuote(hookScriptPath)}`;
-  const hookConfigPath = path.join(hookDir, 'dmux-hooks.json');
+  const hookConfigPath = path.join(hookDir, 'qmux-hooks.json');
   const hookHandler = {
     type: 'command',
     command: hookCommand,
     timeout: 5,
     env: {
-      DMUX_PANE_ID: opts.dmuxPaneId,
-      DMUX_TMUX_PANE_ID: opts.tmuxPaneId,
+      QMUX_PANE_ID: opts.qmuxPaneId,
+      QMUX_TMUX_PANE_ID: opts.tmuxPaneId,
     },
   };
   atomicWriteJsonSync(hookConfigPath, {
-    description: 'dmux pane status hooks for Grok Build',
+    description: 'qmux pane status hooks for Grok Build',
     hooks: {
       Stop: [
         {

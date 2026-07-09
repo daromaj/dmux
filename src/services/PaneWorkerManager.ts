@@ -1,6 +1,6 @@
 import { Worker } from 'worker_threads';
 import { randomUUID } from 'crypto';
-import type { DmuxPane } from '../types.js';
+import type { QmuxPane } from '../types.js';
 import type { WorkerMessageBus } from './WorkerMessageBus.js';
 import type {
   InboundMessage,
@@ -15,14 +15,14 @@ interface WorkerInfo {
   worker: Worker;
   paneId: string;
   tmuxPaneId: string;
-  paneType?: DmuxPane['type'];
-  agent?: DmuxPane['agent'];
+  paneType?: QmuxPane['type'];
+  agent?: QmuxPane['agent'];
   startTime: number;
   restartCount: number;
 }
 
 export function shouldMonitorPaneForStatusTracking(
-  pane: Pick<DmuxPane, 'type' | 'agent'>
+  pane: Pick<QmuxPane, 'type' | 'agent'>
 ): boolean {
   return pane.type !== 'shell' && Boolean(pane.agent);
 }
@@ -44,7 +44,7 @@ export class PaneWorkerManager {
   /**
    * Create a new worker for a pane
    */
-  createWorker(pane: DmuxPane): void {
+  createWorker(pane: QmuxPane): void {
     // Don't create if already exists or shutting down
     if (this.workers.has(pane.id) || this.isShuttingDown || !shouldMonitorPaneForStatusTracking(pane)) {
       return;
@@ -213,7 +213,7 @@ export class PaneWorkerManager {
   /**
    * Update workers based on current panes
    */
-  async updateWorkers(panes: DmuxPane[]): Promise<void> {
+  async updateWorkers(panes: QmuxPane[]): Promise<void> {
     const monitoredPanes = panes.filter(shouldMonitorPaneForStatusTracking);
     const currentPaneIds = new Set(monitoredPanes.map(p => p.id));
 
@@ -313,7 +313,7 @@ export class PaneWorkerManager {
         prompt: '',
         type: workerInfo.paneType,
         agent: workerInfo.agent,
-      } as DmuxPane);
+      } as QmuxPane);
 
       const newWorkerInfo = this.workers.get(paneId);
       if (newWorkerInfo) {
