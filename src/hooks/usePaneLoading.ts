@@ -62,8 +62,10 @@ export function shouldContinueSession(
  * Decide which saved panes are stale and must be dropped from config on initial load.
  *
  * - A pane is stale only if it is not live in tmux.
- * - In continue mode (`-c`), only shell panes are dropped (they can't be recreated);
- *   worktree/agent panes are kept so they can be restored.
+ * - In continue mode (`-c`), NOTHING is dropped: worktree/agent panes restore with a
+ *   fresh agent, and shell panes restore as a fresh shell in their recorded directory.
+ *   Both are recreated below, which rebinds their (dead) paneId to a live one — so
+ *   keeping them here does not leave dangling IDs.
  * - In fresh mode (plain `dmux`), ALL non-live panes are dropped — this is what stops a
  *   later poll from reloading them and recreating them in an old worktree dir.
  */
@@ -72,17 +74,15 @@ export function selectStalePanesToDrop(
   allPaneIds: string[],
   continueSession: boolean
 ): DmuxPane[] {
-  return panes.filter(
-    (pane) =>
-      !allPaneIds.includes(pane.paneId) &&
-      (!continueSession || pane.type === 'shell')
-  );
+  if (continueSession) return [];
+  return panes.filter((pane) => !allPaneIds.includes(pane.paneId));
 }
 
 /**
- * Decide which saved panes should be recreated on initial load. Only worktree/agent
- * panes that are missing from tmux qualify, and ONLY when continue mode is active.
- * Without `-c`, nothing is recreated (start-fresh behavior).
+ * Decide which saved panes should be recreated on initial load. Any saved pane that is
+ * missing from tmux qualifies — worktree/agent panes restart their agent, shell panes
+ * come back as a fresh shell in their recorded directory — and ONLY when continue mode
+ * is active. Without `-c`, nothing is recreated (start-fresh behavior).
  */
 export function selectMissingPanesToRecreate(
   panes: DmuxPane[],
@@ -93,9 +93,7 @@ export function selectMissingPanesToRecreate(
   if (!isInitialLoad || !continueSession || allPaneIds.length === 0 || panes.length === 0) {
     return [];
   }
-  return panes.filter(
-    (pane) => !allPaneIds.includes(pane.paneId) && pane.type !== 'shell'
-  );
+  return panes.filter((pane) => !allPaneIds.includes(pane.paneId));
 }
 
 async function restoreAgentSessionForPane(
@@ -279,8 +277,13 @@ export async function recreateMissingPanes(
 
   for (const missingPane of missingPanes) {
     try {
+      // Recreate in the pane's recorded directory. Worktree/agent panes carry a
+      // worktreePath; shell panes fall back to the project root they were opened in
+      // (their exact cwd isn't persisted), then to this process's cwd.
+      const paneCwd = missingPane.worktreePath || missingPane.projectRoot || process.cwd();
+
       // Create new pane
-      const newPaneId = splitPane({ cwd: missingPane.worktreePath || process.cwd() });
+      const newPaneId = splitPane({ cwd: paneCwd });
 
       // Set pane title
       await tmuxService.setPaneTitle(newPaneId, getPaneTmuxTitle(missingPane, sessionProjectRoot));
@@ -290,9 +293,11 @@ export async function recreateMissingPanes(
 
       // Send a message to the pane indicating it was restored
       await tmuxService.sendKeys(newPaneId, `"echo '# Pane restored: ${missingPane.slug}'" Enter`);
-      const promptPreview = missingPane.prompt?.substring(0, 50) || '';
-      await tmuxService.sendKeys(newPaneId, `"echo '# Original prompt: ${promptPreview}...'" Enter`);
-      await tmuxService.sendKeys(newPaneId, `"cd ${missingPane.worktreePath || process.cwd()}" Enter`);
+      if (missingPane.prompt) {
+        const promptPreview = missingPane.prompt.substring(0, 50);
+        await tmuxService.sendKeys(newPaneId, `"echo '# Original prompt: ${promptPreview}...'" Enter`);
+      }
+      await tmuxService.sendKeys(newPaneId, `"cd ${paneCwd}" Enter`);
       await restoreAgentSessionForPane(tmuxService, missingPane, newPaneId);
     } catch (error) {
       // If we can't create the pane, skip it

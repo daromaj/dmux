@@ -59,6 +59,29 @@ describe('pane restoration', () => {
     expect(String(lastCall?.[1])).not.toContain('resume --last');
     expect(tmuxServiceMock.sendTmuxKeys).toHaveBeenCalledWith('%9', 'Enter');
   });
+
+  it('restores a shell pane as a fresh shell in its recorded directory (no agent)', async () => {
+    const { recreateMissingPanes } = await import('../src/hooks/usePaneLoading.js');
+
+    const pane: DmuxPane = {
+      id: 'dmux-3',
+      slug: 'shell-3',
+      prompt: '',
+      paneId: '%98',
+      type: 'shell',
+      shellType: 'zsh',
+      projectRoot: '/repo',
+    };
+
+    await recreateMissingPanes([pane], '/repo/.dmux/dmux.config.json');
+
+    // A new pane is split in the shell's recorded project directory.
+    expect(splitPaneMock).toHaveBeenCalledWith({ cwd: '/repo' });
+    // The pane record is rebound to the new live tmux id.
+    expect(pane.paneId).toBe('%9');
+    // No agent is launched for a shell pane.
+    expect(tmuxServiceMock.sendShellCommand).not.toHaveBeenCalled();
+  });
 });
 
 const pane = (over: Partial<DmuxPane>): DmuxPane => ({
@@ -96,9 +119,12 @@ describe('selectStalePanesToDrop', () => {
     expect(selectStalePanesToDrop(panes, allPaneIds, false)).toEqual([deadAgent, deadShell]);
   });
 
-  it('continue mode drops only dead shells, keeps dead worktree panes for restore', async () => {
+  it('continue mode keeps dead shells AND dead worktree panes for restore (drops nothing)', async () => {
+    // `dmux -c` restores the previous session. Shell panes are recreated as fresh
+    // shells, so they must NOT be dropped here — otherwise a shell-only session
+    // (the common case) restores to nothing.
     const { selectStalePanesToDrop } = await import('../src/hooks/usePaneLoading.js');
-    expect(selectStalePanesToDrop(panes, allPaneIds, true)).toEqual([deadShell]);
+    expect(selectStalePanesToDrop(panes, allPaneIds, true)).toEqual([]);
   });
 
   it('never drops a live pane', async () => {
@@ -120,9 +146,9 @@ describe('selectMissingPanesToRecreate', () => {
     expect(selectMissingPanesToRecreate(panes, allPaneIds, true, false)).toEqual([]);
   });
 
-  it('recreates only missing non-shell panes in continue mode', async () => {
+  it('recreates all missing panes including shells in continue mode', async () => {
     const { selectMissingPanesToRecreate } = await import('../src/hooks/usePaneLoading.js');
-    expect(selectMissingPanesToRecreate(panes, allPaneIds, true, true)).toEqual([deadAgent]);
+    expect(selectMissingPanesToRecreate(panes, allPaneIds, true, true)).toEqual([deadAgent, deadShell]);
   });
 
   it('recreates nothing when not the initial load', async () => {
