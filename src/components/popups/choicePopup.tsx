@@ -5,7 +5,7 @@
  * Runs in a tmux popup modal and writes result to a file
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { render, Box, Text, useInput, useApp } from 'ink';
 import * as fs from 'fs';
 import { PopupContainer, PopupWrapper, writeSuccessAndExit } from './shared/index.js';
@@ -36,9 +36,13 @@ const ChoicePopupApp: React.FC<ChoicePopupProps> = ({
   maxVisible,
 }) => {
   // Find default option or start at 0
-  const defaultIndex = options.findIndex(o => o.default) || 0;
-  const [selectedIndex, setSelectedIndex] = useState(Math.max(0, defaultIndex));
+  const foundIndex = options.findIndex(o => o.default);
+  const defaultIndex = foundIndex >= 0 ? foundIndex : 0;
+  const [selectedIndex, setSelectedIndex] = useState(defaultIndex);
   const { exit } = useApp();
+
+  const selectedIndexRef = useRef(selectedIndex);
+  selectedIndexRef.current = selectedIndex;
 
   // Window the list so a long option set (e.g. the ~/git project chooser)
   // never overflows the fixed-height popup — otherwise the highlighted row
@@ -51,13 +55,15 @@ const ChoicePopupApp: React.FC<ChoicePopupProps> = ({
 
   useInput((input, key) => {
     if (key.upArrow) {
-      setSelectedIndex(Math.max(0, selectedIndex - 1));
+      setSelectedIndex((prev) => Math.max(0, prev - 1));
     } else if (key.downArrow) {
-      setSelectedIndex(Math.min(options.length - 1, selectedIndex + 1));
+      setSelectedIndex((prev) => Math.min(options.length - 1, prev + 1));
     } else if (key.return) {
       // User selected an option
-      const selectedOption = options[selectedIndex];
-      writeSuccessAndExit(resultFile, selectedOption.id, exit);
+      const selectedOption = options[selectedIndexRef.current];
+      if (selectedOption) {
+        writeSuccessAndExit(resultFile, selectedOption.id, exit);
+      }
     }
   });
 

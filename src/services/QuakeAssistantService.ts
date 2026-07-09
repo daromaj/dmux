@@ -159,17 +159,30 @@ export class QuakeAssistantService extends EventEmitter {
           ...this.history,
         ];
 
-        // Streaming assistant entry: create a placeholder, append deltas into it.
-        const assistantEntry = this.pushEntry('assistant', '');
+        // Streaming assistant entry: create placeholders lazily.
+        let assistantEntry: QuakeTranscriptEntry | null = null;
+        let thinkingEntry: QuakeTranscriptEntry | null = null;
         let assistantText = '';
+        let reasoningText = '';
         try {
           assistantText = await this.deps.complete({
             messages,
             signal,
             onToken: (delta) => {
               assistantText += delta;
+              if (!assistantEntry) {
+                assistantEntry = this.pushEntry('assistant', '');
+              }
               assistantEntry.text += delta;
               this.emit('append', { seq: assistantEntry.seq, delta });
+            },
+            onThinkingToken: (delta) => {
+              reasoningText += delta;
+              if (!thinkingEntry) {
+                thinkingEntry = this.pushEntry('thinking', '');
+              }
+              thinkingEntry.text += delta;
+              this.emit('append', { seq: thinkingEntry.seq, delta });
             },
           });
         } catch (err: any) {
@@ -182,8 +195,8 @@ export class QuakeAssistantService extends EventEmitter {
         }
 
         // If the model didn't stream (onToken unused), finalize the entry text.
-        if (!assistantEntry.text && assistantText) {
-          assistantEntry.text = assistantText;
+        if (!assistantEntry && assistantText) {
+          assistantEntry = this.pushEntry('assistant', assistantText);
           this.emit('append', { seq: assistantEntry.seq, delta: assistantText });
         }
         this.history.push({ role: 'assistant', content: assistantText });

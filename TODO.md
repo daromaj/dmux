@@ -2,10 +2,32 @@
 
 > Based on personal workflow needs. Quick hacks first, proper features later.
 
+## Bugs
+
+- [x] Quake mode: we need to use word wrap on the assitant response... right now it's single line and truncated; the chat area should be scrollable
+
+- [x] Quake mode: I want to be able to see thinking tokens from the model
+
+- [x] after rebranding the welcome page / screen should have qmux ascii art - today it's dmux
+
+- [x] in project selection [p] if I press down to second project on the list, I'm not able to select the first project - up arrow doesn't select/highlight it
+
 ## Pending
 
-- [ ] **New project creates two control entries** — starting a new project shows two entries in the
-      control pane (one for terminal, one for project?). Unintuitive — collapse to a single clear entry.
+- [x] Quake mode: peak-hours indicator — a colored badge in the Quake overlay header shows 🔴 PEAK
+      (inside a window), 🟡 approaching (within 60 min), or 🟢 off-peak, with a live countdown to the
+      next boundary. Windows are UTC 01:00–04:00 and 06:00–10:00. Logic in `src/utils/peakHours.ts`
+      (`getPeakInfo`/`formatPeakBadge`, unit-tested), refreshed every 30s in `QuakeOverlay.tsx`.
+
+- [ ] WHEN we have 2,3 panels we should have some shortcuts to rearrange them for exmaple 1 left, 2 right on top of each other, or side by side horizontally or vertically
+
+- [x] **New project creates two control entries** — starting a new project showed two entries in the
+      control pane. Root cause: `groupPanesByProject` always injects the session's fallback project as
+      a group even with zero panes, so opening a terminal in a *different* project flipped the layout
+      into multi-project mode and rendered a phantom header + action row for the empty fallback project.
+      Fix (`src/utils/projectActions.ts`, `buildProjectActionLayout`): drop the phantom fallback group
+      (empty and not explicitly pinned to the sidebar) before computing `multiProjectMode`, guarded so a
+      genuinely empty single-project session still shows its one shared action row. Regression-tested.
 
 - [ ] **Collapse / hide-unhide control pane** — a toggle that fully hides the control pane and gives
       its space back to the content panes, then restores it. Extends the existing `[` sidebar

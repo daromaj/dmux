@@ -31,6 +31,15 @@ describe('QuakeOverlay', () => {
     expect(stripAnsi(lastFrame() ?? '')).toContain('distribute work');
   });
 
+  it('renders a peak-hours badge in the header', () => {
+    const service = new MockService();
+    const { lastFrame } = render(
+      <QuakeOverlay service={service as any} onClose={() => {}} />,
+    );
+    // Badge is always one of the three states regardless of the wall clock.
+    expect(stripAnsi(lastFrame() ?? '')).toMatch(/🔴|🟡|🟢/);
+  });
+
   it('renders transcript entries pushed via events', async () => {
     const service = new MockService();
     const { lastFrame } = render(

@@ -45,6 +45,40 @@ describe('projectActions', () => {
     ).toEqual(['/repo-empty']);
   });
 
+  it('does not promote to multi-project mode for a phantom empty fallback project', () => {
+    // Repro of "new project creates two control entries": opening a terminal in
+    // a *different* project than the session root must not spawn a phantom
+    // header + action row for the (empty, unpinned) fallback project.
+    const panes: QmuxPane[] = [pane('qmux-1', 'other-pane', '/repo-other')];
+    const layout = buildProjectActionLayout(panes, [], '/repo-main', 'repo-main');
+
+    expect(layout.multiProjectMode).toBe(false);
+    expect(layout.groups.map((g) => g.projectRoot)).toEqual(['/repo-other']);
+    // Single shared action row: terminal, project, new-agent.
+    expect(layout.actionItems.map((a) => a.kind)).toEqual([
+      'terminal',
+      'project',
+      'new-agent',
+    ]);
+  });
+
+  it('keeps the empty fallback group when it is explicitly pinned', () => {
+    // A deliberately pinned home project should still show, even with no panes.
+    const panes: QmuxPane[] = [pane('qmux-1', 'other-pane', '/repo-other')];
+    const layout = buildProjectActionLayout(
+      panes,
+      [{ projectRoot: '/repo-main', projectName: 'repo-main' }],
+      '/repo-main',
+      'repo-main'
+    );
+
+    expect(layout.multiProjectMode).toBe(true);
+    expect(layout.groups.map((g) => g.projectRoot).sort()).toEqual([
+      '/repo-main',
+      '/repo-other',
+    ]);
+  });
+
   it('adds action rows to navigation for empty projects', () => {
     const layout = buildProjectActionLayout(
       [],

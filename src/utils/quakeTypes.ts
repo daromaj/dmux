@@ -25,6 +25,8 @@ export interface ChatCompletionOptions {
   signal?: AbortSignal;
   /** Streaming delta callback; called for each token chunk as it arrives. */
   onToken?: (delta: string) => void;
+  /** Streaming reasoning/thinking delta callback. */
+  onThinkingToken?: (delta: string) => void;
   temperature?: number;
   maxTokens?: number;
 }
@@ -102,6 +104,7 @@ export interface QuakeWorkspaceContext {
 export type QuakeEntryKind =
   | 'user'          // user message
   | 'assistant'     // assistant prose
+  | 'thinking'      // model thinking process
   | 'command'       // a shell/qmux command about to run
   | 'output'        // result of a command
   | 'error'         // error notice

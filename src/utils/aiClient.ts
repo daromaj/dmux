@@ -66,7 +66,16 @@ async function requestNonStreaming(
   }
 
   const data = (await response.json()) as any;
-  return data?.choices?.[0]?.message?.content ?? '';
+  const content = data?.choices?.[0]?.message?.content ?? '';
+  const reasoning =
+    data?.choices?.[0]?.message?.reasoning_content ||
+    data?.choices?.[0]?.message?.reasoning ||
+    data?.choices?.[0]?.message?.thinking ||
+    '';
+  if (reasoning && opts.onThinkingToken) {
+    opts.onThinkingToken(reasoning);
+  }
+  return content;
 }
 
 /**
@@ -119,12 +128,25 @@ async function requestStreaming(
     const payload = trimmed.slice('data:'.length).trim();
     if (!payload || payload === '[DONE]') return;
 
-    const chunk = JSON.parse(payload);
-    const delta: string | undefined = chunk?.choices?.[0]?.delta?.content;
-    if (delta) {
-      full += delta;
-      emittedAny = true;
-      opts.onToken!(delta);
+    try {
+      const chunk = JSON.parse(payload);
+      const delta: string | undefined = chunk?.choices?.[0]?.delta?.content;
+      const reasoningDelta: string | undefined =
+        chunk?.choices?.[0]?.delta?.reasoning_content ||
+        chunk?.choices?.[0]?.delta?.reasoning ||
+        chunk?.choices?.[0]?.delta?.thinking;
+
+      if (reasoningDelta && opts.onThinkingToken) {
+        emittedAny = true;
+        opts.onThinkingToken(reasoningDelta);
+      }
+      if (delta) {
+        full += delta;
+        emittedAny = true;
+        opts.onToken!(delta);
+      }
+    } catch {
+      // JSON parse error, ignore malformed stream chunk
     }
   };
 

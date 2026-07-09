@@ -44,12 +44,34 @@ export function buildProjectActionLayout(
   fallbackProjectRoot: string,
   fallbackProjectName: string
 ): ProjectActionLayout {
-  const groups = groupPanesByProject(
+  const rawGroups = groupPanesByProject(
     panes,
     fallbackProjectRoot,
     fallbackProjectName,
     sidebarProjects
   );
+  // `groupPanesByProject` always injects the session's fallback project as a
+  // group, even when it holds no panes. Opening a terminal in a *different*
+  // project then flips the layout into multi-project mode and renders a phantom
+  // header + action row for that empty fallback project — the "new project shows
+  // two control entries" bug. Drop that phantom group (empty and not explicitly
+  // pinned to the sidebar) so opening a project collapses to a single clear entry.
+  // Guarded by rawGroups.length > 1 so a genuinely empty single-project session
+  // still shows its one shared action row.
+  const fallbackIsPinned = sidebarProjects.some((p) =>
+    sameRoot(p.projectRoot, fallbackProjectRoot)
+  );
+  const groups =
+    rawGroups.length > 1
+      ? rawGroups.filter(
+          (g) =>
+            !(
+              sameRoot(g.projectRoot, fallbackProjectRoot) &&
+              g.panes.length === 0 &&
+              !fallbackIsPinned
+            )
+        )
+      : rawGroups;
   const multiProjectMode = groups.length >= 2;
   const actionItems: ProjectActionItem[] = [];
 
