@@ -13,22 +13,28 @@
       in **bottom** mode (reclaim the bottom strip's rows). Decide: reuse `[`, add a distinct key,
       and whether the hidden state persists across restarts.
 
-- [~] **Quake-mode assistant** (`Ctrl+\``) — IMPLEMENTED (pending live tmux smoke test). A drop-down
-      Ink chat overlay toggled with the quake key, talking to the app's configured LLM
+- [~] **Quake-mode assistant** (`Ctrl+\``) — IMPLEMENTED (pending live tmux smoke test). A top-drawer
+      chat that talks to the app's configured LLM
       (`aiProvider`/`aiModel`/`aiBaseUrl`, key from `DMUX_AI_API_KEY`/`OPENROUTER_API_KEY`). Basic
       agentic harness: the model streams prose and emits ` ```run ` shell/tmux blocks (executed) and
-      ` ```dmux ` control verbs (grid/control-position/color, routed in-process so settings stick).
+      ` ```dmux ` control verbs (grid/control-position/color).
       Full-auto, no confirm gate; Esc aborts; forensic transcript to `.dmux/quake-history.jsonl`.
       System prompt is the operating manual (what dmux is + how to send-keys/read panes + live
-      pane/settings context). Decisions resolved: Ink overlay (not tmux popup); free-form send-keys
-      (not tool-calls); no guardrails; history in-memory + jsonl.
+      pane/settings context). Decisions resolved: free-form send-keys (not tool-calls); no guardrails;
+      history in-memory + jsonl.
+      - **Architecture:** runs as its own `tmux display-popup` drawer anchored to the top at ~50%
+        height (a separate process), leaving the small control pane untouched — it does NOT hijack or
+        zoom the control pane. The popup reconstructs `QuakeAssistantService`; AI config is passed in
+        via a data file since a tmux popup doesn't inherit the dmux env. Control verbs persist to disk
+        (best-effort) rather than hot-applying to the live UI.
       - Files: `src/utils/{aiClient,quakeCommands,quakeControlVerbs,quakeSystemPrompt,quakeShell,quakeTypes}.ts`,
         `src/services/QuakeAssistantService.ts`, `src/components/QuakeOverlay.tsx`,
+        `src/components/popups/quakePopup.tsx`, `src/services/PopupManager.ts` (`launchQuakePopup`),
         `src/hooks/useQuakeAssistant.ts`, wired in `DmuxApp.tsx`. Spec:
         `docs/superpowers/specs/2026-07-09-quake-mode-assistant-design.md`.
       - **Needs live verification:** the `Ctrl+\`` key encoding (defensive matching for `key.ctrl+\``,
-        raw `\x1c`, and the `Ctrl+b` `` ` `` chord — confirm which fires in your terminal) and the
-        drop-down control-pane grow/restore behavior in real tmux.
+        raw `\x1c`, and the `Ctrl+b` `` ` `` chord — confirm which fires in your terminal) and that the
+        top drawer appears at ~50% height with visible input in real tmux.
 - [ ] **`/loop` command** — bind a repeatable action to run against the LLM agent on demand/interval
       (re-invoke the same prompt/step N times or until a condition). Overlaps with the assistant
       above; decide whether `/loop` is a slash command inside the quake chat or a standalone control.
