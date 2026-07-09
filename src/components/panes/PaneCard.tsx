@@ -138,6 +138,7 @@ const PaneCard: React.FC<PaneCardProps> = memo(({
     prevProps.pane.id === nextProps.pane.id &&
     prevProps.pane.slug === nextProps.pane.slug &&
     prevProps.pane.displayName === nextProps.pane.displayName &&
+    prevProps.pane.autoLabel === nextProps.pane.autoLabel &&
     prevProps.pane.agentStatus === nextProps.pane.agentStatus &&
     prevProps.pane.needsAttention === nextProps.pane.needsAttention &&
     prevProps.pane.testStatus === nextProps.pane.testStatus &&

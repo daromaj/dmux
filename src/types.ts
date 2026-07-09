@@ -43,6 +43,7 @@ export interface QmuxPane {
   id: string;
   slug: string;
   displayName?: string; // User-facing pane name (independent from worktree slug/branch)
+  autoLabel?: string; // Auto-derived label for shell panes (tool/branch/dir); recomputed at runtime, superseded by a manual displayName.
   branchName?: string; // Git branch name (may differ from slug when branchPrefix is set)
   prompt: string;
   paneId: string;

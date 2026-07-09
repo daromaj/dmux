@@ -31,12 +31,20 @@ export function sanitizePaneDisplayName(value: string): string {
 }
 
 export function getPaneDisplayName(
-  pane: Pick<QmuxPane, 'slug' | 'displayName'>
+  pane: Pick<QmuxPane, 'slug' | 'displayName' | 'autoLabel'>
 ): string {
+  // Manual rename (displayName) always wins; then the ephemeral auto-label
+  // (shell panes only); then the stable slug.
   const displayName = typeof pane.displayName === 'string'
     ? sanitizePaneDisplayName(pane.displayName)
     : '';
-  return displayName || pane.slug;
+  if (displayName) {
+    return displayName;
+  }
+  const autoLabel = typeof pane.autoLabel === 'string'
+    ? sanitizePaneDisplayName(pane.autoLabel)
+    : '';
+  return autoLabel || pane.slug;
 }
 
 function encodePaneTmuxTitle(

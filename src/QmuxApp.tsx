@@ -55,6 +55,7 @@ import {
 } from "./utils/agentLaunch.js"
 import { resolveNextDevSourcePath } from "./utils/devSource.js"
 import { buildDevWatchRespawnCommand } from "./utils/devWatchCommand.js"
+import { collectShellPaneLabels } from "./utils/collectShellPaneLabels.js"
 import { getPaneBranchName } from "./utils/git.js"
 import { getGitStatus } from "./utils/mergeValidation.js"
 import { createMergeTargetChain } from "./utils/mergeTargets.js"
@@ -71,6 +72,7 @@ import { setLocale, t, type Locale } from "./i18n/index.js"
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const ACTIVE_PANE_SYNC_INTERVAL_MS = 125
+const SHELL_LABEL_REFRESH_INTERVAL_MS = 5000
 import type {
   QmuxPane,
   QmuxAppProps,
@@ -142,6 +144,7 @@ const QmuxApp: React.FC<QmuxAppProps> = ({
   const { projectSettings, saveSettings } = useProjectSettings(settingsFile)
   const [themeRefreshNonce, setThemeRefreshNonce] = useState(0)
   const [settings, setSettings] = useState(() => new SettingsManager(sessionProjectRoot).getSettings())
+  const panesRef = useRef<QmuxPane[]>([])
   const paneTitlePrefixCacheRef = useRef(new Map<string, string>())
   const paneTitleLabelCacheRef = useRef(new Map<string, string>())
   const paneActiveBorderStyleCacheRef = useRef(new Map<string, string>())
@@ -275,6 +278,10 @@ const QmuxApp: React.FC<QmuxAppProps> = ({
     controlPaneId,
     useHooks
   )
+
+  // Keep a ref to the latest panes so interval callbacks can read current state
+  // (including rebound paneIds) without re-subscribing every render.
+  panesRef.current = panes
 
   // Check for tmux hooks preference on startup
   useEffect(() => {
@@ -859,6 +866,67 @@ const QmuxApp: React.FC<QmuxAppProps> = ({
       clearInterval(interval)
     }
   }, [eventMode, panes.length, syncSelectedIndexToFocusedPane])
+
+  // Periodically derive a friendly auto-label for shell panes (active tool →
+  // git branch → cwd basename) so the list shows something better than
+  // "shell-1". Auto-labels live in React state only (never persisted) and never
+  // override a manual displayName. Keyed on the set of shell pane ids so it
+  // re-inits when shell panes come or go.
+  const shellPaneKey = useMemo(
+    () =>
+      panes
+        .filter((pane) => pane.type === "shell")
+        .map((pane) => pane.id)
+        .join(","),
+    [panes]
+  )
+  useEffect(() => {
+    if (!process.env.TMUX || shellPaneKey.length === 0) {
+      return
+    }
+
+    let cancelled = false
+    let runInFlight = false
+
+    const refreshLabels = async () => {
+      if (runInFlight) {
+        return
+      }
+      runInFlight = true
+      try {
+        const labels = await collectShellPaneLabels(panesRef.current)
+        if (cancelled || labels.size === 0) {
+          return
+        }
+        setPanes((prevPanes) => {
+          let changed = false
+          const next = prevPanes.map((pane) => {
+            if (!labels.has(pane.id)) {
+              return pane
+            }
+            const nextLabel = labels.get(pane.id)
+            if (pane.autoLabel === nextLabel) {
+              return pane
+            }
+            changed = true
+            return { ...pane, autoLabel: nextLabel }
+          })
+          return changed ? next : prevPanes
+        })
+      } finally {
+        runInFlight = false
+      }
+    }
+
+    void refreshLabels()
+    const interval = setInterval(() => {
+      void refreshLabels()
+    }, SHELL_LABEL_REFRESH_INTERVAL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [shellPaneKey, setPanes])
 
   // savePanes moved to usePanes
 
