@@ -201,6 +201,10 @@ function sanitizeLoadedSettings(value: unknown): DmuxSettings {
     sanitized.aiBaseUrl = parsed.aiBaseUrl;
   }
 
+  if (typeof parsed.aiApiKey === 'string' && parsed.aiApiKey.length > 0) {
+    sanitized.aiApiKey = parsed.aiApiKey;
+  }
+
   return sanitized;
 }
 

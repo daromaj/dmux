@@ -388,6 +388,7 @@ export class PopupManager {
         aiProvider: settings.aiProvider,
         aiModel: settings.aiModel,
         aiBaseUrl: settings.aiBaseUrl,
+        aiApiKey: settings.aiApiKey,
       })
     } catch {
       ai = getAiConfig({})

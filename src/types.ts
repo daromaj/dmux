@@ -160,6 +160,10 @@ export interface DmuxSettings {
   aiModel?: string;
   // Custom API base URL (e.g. "https://api.deepseek.com/v1/chat/completions")
   aiBaseUrl?: string;
+  // API key. Prefer storing this in GLOBAL settings (~/.dmux.global.json) so it is
+  // machine-wide and never committed. Read as a fallback when env vars are absent
+  // (e.g. a dmux process spawned by a tmux server with a stale environment).
+  aiApiKey?: string;
 }
 
 export interface NewPaneInput {

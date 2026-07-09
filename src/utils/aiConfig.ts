@@ -17,7 +17,7 @@
 
 import fs from 'fs';
 import os from 'os';
-import { getShellConfigCandidates } from './openRouterApiKeySetup.js';
+import path from 'path';
 
 export interface AiConfig {
   /** Resolved API key (may be undefined if not set) */
@@ -51,6 +51,7 @@ export interface AiConfigInput {
   aiProvider?: string;
   aiModel?: string;
   aiBaseUrl?: string;
+  aiApiKey?: string;
 }
 
 function resolveProvider(input: AiConfigInput): 'openrouter' | 'deepseek' | 'custom' {
@@ -112,102 +113,68 @@ function resolveBaseUrl(
   return OPENROUTER_DEFAULT_URL;
 }
 
-const API_KEY_VAR_PRIORITY = ['DMUX_AI_API_KEY', 'OPENROUTER_API_KEY'] as const;
+const GLOBAL_SETTINGS_PATH = path.join(os.homedir() || '', '.dmux.global.json');
 
-/** Strip one layer of matching single/double quotes from a shell value. */
-function unquoteShellValue(raw: string): string {
-  const trimmed = raw.trim();
-  if (
-    trimmed.length >= 2 &&
-    ((trimmed.startsWith("'") && trimmed.endsWith("'")) ||
-      (trimmed.startsWith('"') && trimmed.endsWith('"')))
-  ) {
-    return trimmed.slice(1, -1);
+/** Read `aiApiKey` from a single dmux settings JSON file, or undefined. */
+function readApiKeyFromSettingsFile(filePath: string): string | undefined {
+  let raw: string;
+  try {
+    raw = fs.readFileSync(filePath, 'utf-8');
+  } catch {
+    return undefined; // file missing / unreadable
   }
-  // Value may be followed by a trailing comment or extra tokens; keep the first token.
-  return trimmed.split(/\s+/)[0] ?? '';
-}
-
-/** Extract `NAME`'s value from a single shell-config line, or undefined. */
-function extractVarFromLine(line: string, name: string): string | undefined {
-  const stripped = line.trim();
-  if (!stripped || stripped.startsWith('#')) return undefined;
-
-  // POSIX: `export NAME=value` or `NAME=value`
-  const posix = new RegExp(`^(?:export\\s+)?${name}=(.*)$`);
-  const posixMatch = stripped.match(posix);
-  if (posixMatch) {
-    const value = unquoteShellValue(posixMatch[1]);
-    return value.length ? value : undefined;
+  try {
+    const parsed = JSON.parse(raw);
+    const key = parsed?.aiApiKey;
+    return typeof key === 'string' && key.length > 0 ? key : undefined;
+  } catch {
+    return undefined; // malformed JSON
   }
-
-  // fish: `set -gx NAME value` / `set -x NAME value`
-  const fish = new RegExp(`^set\\s+(?:-[a-zA-Z]+\\s+)*${name}\\s+(.*)$`);
-  const fishMatch = stripped.match(fish);
-  if (fishMatch) {
-    const value = unquoteShellValue(fishMatch[1]);
-    return value.length ? value : undefined;
-  }
-
-  return undefined;
 }
 
 /**
- * Recover the API key from the user's shell config files (the same files dmux's
- * onboarding writes to). This is the fallback for the tmux-stale-environment
- * case: a dmux process spawned by a long-lived tmux server inherits an
- * environment without the key even though the shell rc defines it.
+ * Recover the API key from dmux settings files. This is the persisted fallback
+ * for the tmux-stale-environment case: a dmux process spawned by a long-lived
+ * tmux server inherits an environment without DMUX_AI_API_KEY/OPENROUTER_API_KEY
+ * even when the shell defines them. Storing `aiApiKey` in the settings file lets
+ * dmux read the key directly from disk regardless of the process environment.
  *
- * Exported for testing. Synchronous so it can back `resolveApiKey()`.
+ * Project settings (<cwd>/.dmux/settings.json) override global
+ * (~/.dmux.global.json). Exported for testing; synchronous to back resolveApiKey.
  */
-export function readApiKeyFromShellConfigSync(
-  homeDir: string,
-  shellPath: string | undefined,
+export function readApiKeyFromSettingsSync(
+  cwd: string,
+  globalPath: string = GLOBAL_SETTINGS_PATH,
 ): string | undefined {
-  const candidates = getShellConfigCandidates(shellPath, homeDir);
-  // DMUX_AI_API_KEY wins over OPENROUTER_API_KEY across all files.
-  for (const name of API_KEY_VAR_PRIORITY) {
-    for (const candidate of candidates) {
-      let content: string;
-      try {
-        content = fs.readFileSync(candidate, 'utf-8');
-      } catch {
-        continue; // file missing / unreadable
-      }
-      for (const line of content.split('\n')) {
-        const value = extractVarFromLine(line, name);
-        if (value) return value;
-      }
-    }
-  }
-  return undefined;
+  const projectPath = path.join(cwd, '.dmux', 'settings.json');
+  return (
+    readApiKeyFromSettingsFile(projectPath) ??
+    readApiKeyFromSettingsFile(globalPath)
+  );
 }
 
-let cachedShellConfigApiKey: string | undefined;
-let shellConfigApiKeyScanned = false;
+let cachedSettingsApiKey: string | undefined;
+let settingsApiKeyScanned = false;
 
-function resolveApiKey(): string | undefined {
-  // DMUX_AI_API_KEY takes priority, then fall back to OPENROUTER_API_KEY.
+function resolveApiKey(input: AiConfigInput): string | undefined {
+  // 1) Environment (explicit override): DMUX_AI_API_KEY, then OPENROUTER_API_KEY.
   const fromEnv = process.env.DMUX_AI_API_KEY || process.env.OPENROUTER_API_KEY;
   if (fromEnv) return fromEnv;
 
-  // Env is empty — most commonly because a long-lived tmux server spawned this
-  // dmux with a stale environment. Recover from the shell rc dmux persists to.
-  if (!shellConfigApiKeyScanned) {
-    shellConfigApiKeyScanned = true;
-    const homeDir = process.env.HOME || os.homedir();
-    if (homeDir) {
-      try {
-        cachedShellConfigApiKey = readApiKeyFromShellConfigSync(
-          homeDir,
-          process.env.SHELL,
-        );
-      } catch {
-        cachedShellConfigApiKey = undefined;
-      }
+  // 2) Explicit input (a caller that already loaded merged settings).
+  if (input.aiApiKey) return input.aiApiKey;
+
+  // 3) Settings files on disk. Read once and cache — this is the path that
+  // survives a stale tmux server environment.
+  if (!settingsApiKeyScanned) {
+    settingsApiKeyScanned = true;
+    try {
+      cachedSettingsApiKey = readApiKeyFromSettingsSync(process.cwd());
+    } catch {
+      cachedSettingsApiKey = undefined;
     }
   }
-  return cachedShellConfigApiKey;
+  return cachedSettingsApiKey;
 }
 
 /**
@@ -218,7 +185,7 @@ export function getAiConfig(input: AiConfigInput = {}): AiConfig {
   const provider = resolveProvider(input);
   const modelStack = resolveModelStack(provider, input);
   const baseUrl = resolveBaseUrl(provider, input);
-  const apiKey = resolveApiKey();
+  const apiKey = resolveApiKey(input);
   const model = modelStack[0] || '';
 
   return {
