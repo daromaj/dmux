@@ -1,11 +1,13 @@
 import fs from "fs/promises"
 import path from "path"
+import os from "os"
 import {
   launchNodePopupNonBlocking,
   POPUP_POSITIONING,
   type PopupOptions as TmuxPopupOptions,
   type PopupResult,
 } from "../utils/popup.js"
+import { getAiConfig } from "../utils/aiConfig.js"
 import { StateManager } from "../shared/StateManager.js"
 import { LogService } from "./LogService.js"
 import { TmuxService } from "./TmuxService.js"
@@ -356,6 +358,77 @@ export class PopupManager {
     }
 
     return normalized
+  }
+
+  /**
+   * Launch the quake-mode assistant as a top drawer (tmux popup, full width,
+   * ~50% height). Runs in its own process and drives the underlying panes; the
+   * control pane is left untouched. Resolves when the drawer closes.
+   */
+  async launchQuakePopup(): Promise<void> {
+    if (!this.checkPopupSupport()) return
+
+    const projectRoot = this.config.projectRoot
+    const tmux = TmuxService.getInstance()
+    let clientWidth = this.config.terminalWidth
+    let clientHeight = this.config.terminalHeight
+    try {
+      const dims = tmux.getTerminalDimensionsSync()
+      if (dims?.width) clientWidth = dims.width
+      if (dims?.height) clientHeight = dims.height
+    } catch {
+      // fall back to config dims
+    }
+    const drawerHeight = Math.max(10, Math.floor(clientHeight / 2))
+
+    let ai: ReturnType<typeof getAiConfig> | undefined
+    try {
+      const settings = this.getSettingsManager(projectRoot).getSettings()
+      ai = getAiConfig({
+        aiProvider: settings.aiProvider,
+        aiModel: settings.aiModel,
+        aiBaseUrl: settings.aiBaseUrl,
+      })
+    } catch {
+      ai = getAiConfig({})
+    }
+
+    const data = {
+      projectRoot,
+      controlPaneId: this.config.controlPaneId,
+      panesFile: path.join(projectRoot, ".dmux", "dmux.config.json"),
+      ai: ai
+        ? {
+            apiKey: ai.apiKey,
+            baseUrl: ai.baseUrl,
+            model: ai.model,
+            provider: ai.provider,
+          }
+        : undefined,
+    }
+
+    const dataFile = path.join(os.tmpdir(), `dmux-quake-${Date.now()}.json`)
+    await fs.writeFile(dataFile, JSON.stringify(data), "utf-8")
+
+    const scriptPath = resolveDistPath("components", "popups", "quakePopup.js")
+    const handle = launchNodePopupNonBlocking(scriptPath, [dataFile], {
+      centered: false,
+      x: 0,
+      y: 0,
+      width: clientWidth,
+      height: drawerHeight,
+      borderStyle: "rounded",
+      cwd: projectRoot,
+      title: " ⚡ quake ",
+    })
+
+    try {
+      await handle.readyPromise
+    } catch {
+      // If ready signaling fails the popup may still be up; don't block.
+    }
+    // Resolve when the drawer closes so callers can reset their open-state.
+    await handle.resultPromise.catch(() => undefined)
   }
 
   async launchNewPanePopup(

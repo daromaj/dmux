@@ -9,6 +9,8 @@ interface QuakeOverlayProps {
   onClose: () => void;
   /** Accent color (tmux/ink color) for the border. */
   accentColor?: string;
+  /** Draw the Ink border box. Set false when a tmux popup border already frames it. */
+  bordered?: boolean;
 }
 
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
@@ -72,7 +74,7 @@ function entriesToLines(entries: QuakeTranscriptEntry[]): RenderLine[] {
  * In-process drop-down chat overlay for the quake assistant. Rendered on top of
  * the control-pane UI while active; subscribes to the service's event stream.
  */
-const QuakeOverlay: React.FC<QuakeOverlayProps> = ({ service, onClose, accentColor }) => {
+const QuakeOverlay: React.FC<QuakeOverlayProps> = ({ service, onClose, accentColor, bordered = true }) => {
   const { stdout } = useStdout();
   const rows = stdout?.rows || 24;
   const [entries, setEntries] = useState<QuakeTranscriptEntry[]>(() => [...service.getEntries()]);
@@ -143,7 +145,13 @@ const QuakeOverlay: React.FC<QuakeOverlayProps> = ({ service, onClose, accentCol
   const visible = allLines.slice(-bodyHeight);
 
   return (
-    <Box flexDirection="column" height={rows} borderStyle="round" borderColor={border} paddingX={1}>
+    <Box
+      flexDirection="column"
+      height={rows}
+      borderStyle={bordered ? 'round' : undefined}
+      borderColor={bordered ? border : undefined}
+      paddingX={1}
+    >
       <Box justifyContent="space-between">
         <Text bold color={border}>
           ⚡ Quake Assistant
