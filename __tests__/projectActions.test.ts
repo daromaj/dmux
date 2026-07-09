@@ -4,6 +4,7 @@ import {
   buildProjectActionLayout,
   buildVisualNavigationRows,
   buildHorizontalNavigationRows,
+  getStripActionItems,
   resolveSelectionAfterPaneClose,
 } from '../src/utils/projectActions.js';
 
@@ -88,6 +89,40 @@ describe('projectActions', () => {
       [4],
       [5, 6, 7],
     ]);
+  });
+
+  it('collapses per-project action hints to one pair in the horizontal strip', () => {
+    const panes: QmuxPane[] = [
+      pane('qmux-1', 'main-pane', '/repo-main'),
+      pane('qmux-2', 'aux-pane', '/repo-aux'),
+    ];
+    const sidebarProjects: SidebarProject[] = [
+      { projectRoot: '/repo-main', projectName: 'repo-main' },
+      { projectRoot: '/repo-aux', projectName: 'repo-aux' },
+    ];
+    const layout = buildProjectActionLayout(
+      panes,
+      sidebarProjects,
+      '/repo-main',
+      'repo-main'
+    );
+
+    expect(layout.multiProjectMode).toBe(true);
+    // Two groups each emit a terminal + new-agent pair (4 raw action items)…
+    expect(
+      layout.actionItems.filter(
+        (a) => a.kind === 'terminal' || a.kind === 'new-agent'
+      )
+    ).toHaveLength(4);
+    // …but the strip shows each kind once, in first-seen order.
+    expect(getStripActionItems(layout).map((a) => a.kind)).toEqual([
+      'terminal',
+      'new-agent',
+    ]);
+    // The horizontal nav action row matches the deduped render exactly.
+    const stripIndices = getStripActionItems(layout).map((a) => a.index);
+    const navRows = buildHorizontalNavigationRows(layout, 4);
+    expect(navRows[navRows.length - 1]).toEqual(stripIndices);
   });
 
   it('emits only the action row when there are no panes (horizontal layout)', () => {

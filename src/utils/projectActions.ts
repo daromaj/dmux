@@ -127,6 +127,36 @@ export function getProjectActionByIndex(
   return actionItems.find((item) => item.index === index);
 }
 
+/**
+ * Deduplicate action items for the compact bottom strip.
+ *
+ * In multi-project mode every project group contributes its own
+ * terminal/new-agent pair. The horizontal strip drops project grouping, so
+ * rendering one pair per project shows the same shortcut hint repeated once per
+ * project. Collapse to the first occurrence of each kind so each shortcut
+ * appears exactly once. Per-project launching still works via the n/t hotkeys,
+ * which target the selected pane's project.
+ */
+export function getStripActionItems(
+  layout: ProjectActionLayout
+): ProjectActionItem[] {
+  const seen = new Set<ProjectActionKind>();
+  const items: ProjectActionItem[] = [];
+  for (const action of layout.actionItems) {
+    if (
+      action.kind !== 'new-agent' &&
+      action.kind !== 'terminal' &&
+      action.kind !== 'project'
+    ) {
+      continue;
+    }
+    if (seen.has(action.kind)) continue;
+    seen.add(action.kind);
+    items.push(action);
+  }
+  return items;
+}
+
 export function resolveSelectionAfterPaneClose(
   panes: QmuxPane[],
   closingPaneId: string,
@@ -308,14 +338,7 @@ export function buildHorizontalNavigationRows(
     rows.push(paneIndices.slice(i, i + cols));
   }
 
-  const actionRow = layout.actionItems
-    .filter(
-      (action) =>
-        action.kind === 'new-agent' ||
-        action.kind === 'terminal' ||
-        action.kind === 'project'
-    )
-    .map((action) => action.index);
+  const actionRow = getStripActionItems(layout).map((action) => action.index);
   if (actionRow.length > 0) {
     rows.push(actionRow);
   }

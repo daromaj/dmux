@@ -11,6 +11,7 @@ import { COLORS } from "../../theme/colors.js"
 import { getQmuxThemeAccent } from "../../theme/colors.js"
 import {
   buildProjectActionLayout,
+  getStripActionItems,
   type ProjectActionItem,
 } from "../../utils/projectActions.js"
 import { isActiveDevSourcePath } from "../../utils/devSource.js"
@@ -91,12 +92,10 @@ const PanesStrip: React.FC<PanesStripProps> = memo(({
     return chunked
   }, [flatPanes, cols])
 
-  const actionItems = actionLayout.actionItems.filter(
-    (action) =>
-      action.kind === "new-agent" ||
-      action.kind === "terminal" ||
-      action.kind === "project"
-  )
+  // Deduplicate by kind so each shortcut hint appears once, even in
+  // multi-project mode (where every group would otherwise emit its own
+  // terminal/new-agent pair). Kept in sync with buildHorizontalNavigationRows.
+  const actionItems = getStripActionItems(actionLayout)
 
   const renderActionLabel = (action: ProjectActionItem) => {
     const isSelected = selectedIndex === action.index

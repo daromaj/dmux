@@ -68,7 +68,10 @@ const PaneCard: React.FC<PaneCardProps> = memo(({
   const apTag = pane.autopilot ? 'ap' : null;
 
   // Keep non-title segments fixed; only slug is allowed to clip.
-  const prefix = selected ? '▸' : ' ';
+  // Selected pane is wrapped as `» name «` for an unmistakable marker; the
+  // leading marker stays width-1 so status icons stay aligned across rows.
+  const prefix = selected ? '»' : ' ';
+  const suffixText = selected ? ' «' : '';
   const statusText = `${status.icon} `;
   const attentionText = pane.needsAttention ? '! ' : '';
   const sourceText = isDevSource ? '★ ' : '';
@@ -76,7 +79,7 @@ const PaneCard: React.FC<PaneCardProps> = memo(({
   const agentText = hasAgent ? ` [${agentTag}]` : '     ';
   const autopilotText = apTag ? ` (${apTag})` : '     ';
   const shellPrefixText = isFileBrowserPane ? ' ' : '';
-  const fixedLeftWidth = stringWidth(prefix + statusText + attentionText + sourceText + shellPrefixText + hiddenText);
+  const fixedLeftWidth = stringWidth(prefix + statusText + attentionText + sourceText + shellPrefixText + hiddenText + suffixText);
   const maxSlugWidth = Math.max(0, LEFT_COLUMN_WIDTH - fixedLeftWidth);
   const slugText = clipToWidth(paneName, maxSlugWidth);
   const projectSelectedColor = projectThemeName
@@ -95,7 +98,7 @@ const PaneCard: React.FC<PaneCardProps> = memo(({
   return (
     <Box width={ROW_WIDTH}>
       <Box width={LEFT_COLUMN_WIDTH}>
-        <Text color={selected ? paneSelectedColor : COLORS.border}>{prefix}</Text>
+        <Text color={selected ? paneSelectedColor : COLORS.border} bold={selected}>{prefix}</Text>
         <Text color={status.color}>{statusText}</Text>
         {pane.needsAttention && (
           <Text color={COLORS.warning}>{attentionText}</Text>
@@ -109,6 +112,9 @@ const PaneCard: React.FC<PaneCardProps> = memo(({
         <Text color={slugColor} bold={selected || isFileBrowserPane}>
           {slugText}
         </Text>
+        {selected && (
+          <Text color={paneSelectedColor} bold>{suffixText}</Text>
+        )}
         {pane.hidden && (
           <Text color="yellow" dimColor>
             {hiddenText}
