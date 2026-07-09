@@ -70,7 +70,8 @@
     "release:major": "bumpp major --commit --push --tag"
   },
   "bin": {
-    "qmux": "./qmux"
+    "qmux": "./qmux",
+    "dmux": "./qmux"
   },
   "dependencies": {
     "chalk": "^5.3.0",

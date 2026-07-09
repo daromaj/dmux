@@ -12,6 +12,14 @@ import { execSync } from 'child_process';
  * from starting. Each step only acts when the legacy path/session exists AND
  * the new path/session does not already exist, which makes repeated calls
  * (across `qmux` invocations) safe no-ops after the first successful run.
+ *
+ * Transition compatibility: after moving state to the new `.qmux` names, we
+ * leave a symlink behind at each old `.dmux` path pointing at the new one.
+ * That keeps anything still referencing the old names working (an older
+ * `dmux` binary, external scripts, muscle memory) and — because writes flow
+ * through the symlink to the same real file — both names share one state
+ * during the transition. The symlink is only created when the new path
+ * exists and no node already occupies the legacy path.
  */
 export interface MigrateDmuxLegacyStateOptions {
   /** Override for os.homedir(), exposed for tests. */
@@ -45,6 +53,7 @@ function migrateHomeGlobalSettingsFile(home: string | undefined): void {
     const legacyPath = path.join(home, '.dmux.global.json');
     const newPath = path.join(home, '.qmux.global.json');
     renameIfLegacyOnly(legacyPath, newPath);
+    ensureBackCompatSymlink(legacyPath, newPath);
   } catch {
     // best-effort
   }
@@ -57,6 +66,7 @@ function migrateHomeDmuxDir(home: string | undefined): void {
     const legacyDir = path.join(home, '.dmux');
     const newDir = path.join(home, '.qmux');
     renameIfLegacyOnly(legacyDir, newDir);
+    ensureBackCompatSymlink(legacyDir, newDir);
   } catch {
     // best-effort
   }
@@ -80,7 +90,11 @@ function migrateProjectDmuxDir(projectRoot: string): void {
       const legacyConfig = path.join(dirToCheck, 'dmux.config.json');
       const newConfig = path.join(dirToCheck, 'qmux.config.json');
       renameIfLegacyOnly(legacyConfig, newConfig);
+      ensureBackCompatSymlink(legacyConfig, newConfig);
     }
+    // Point the old directory name at the new one so `<root>/.dmux/...`
+    // references still resolve into the real `.qmux` directory.
+    ensureBackCompatSymlink(legacyDir, newDir);
   } catch {
     // best-effort
   }
@@ -101,6 +115,7 @@ function migrateProjectHooksDir(projectRoot: string): void {
     if (didRename) {
       rewriteHookScriptsInDir(newDir);
     }
+    ensureBackCompatSymlink(legacyDir, newDir);
   } catch {
     // best-effort
   }
@@ -176,6 +191,40 @@ function renameIfLegacyOnly(legacyPath: string, newPath: string): boolean {
     if (fs.existsSync(newPath)) return false;
     if (!fs.existsSync(legacyPath)) return false;
     fs.renameSync(legacyPath, newPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Leave a backward-compat symlink at `legacyPath` pointing at `newPath`, so
+ * old `.dmux*` references keep resolving to the real `.qmux*` state during the
+ * transition. No-op unless `newPath` exists and nothing already occupies
+ * `legacyPath` (a real file/dir OR an existing symlink, valid or dangling).
+ * The link target is stored relatively (legacy and new always share a parent),
+ * so it survives the parent directory being moved.
+ */
+function ensureBackCompatSymlink(legacyPath: string, newPath: string): void {
+  try {
+    if (!fs.existsSync(newPath)) return;
+    if (pathNodeExists(legacyPath)) return;
+    const target = path.basename(newPath);
+    const type = fs.statSync(newPath).isDirectory() ? 'dir' : 'file';
+    fs.symlinkSync(target, legacyPath, type);
+  } catch {
+    // best-effort: symlinks may be unsupported or racing another process
+  }
+}
+
+/**
+ * True if a filesystem node exists at `p`, including a symlink whose target is
+ * missing. Unlike fs.existsSync (which follows symlinks), this reports the link
+ * node itself so we never try to create a symlink over an existing one.
+ */
+function pathNodeExists(p: string): boolean {
+  try {
+    fs.lstatSync(p);
     return true;
   } catch {
     return false;

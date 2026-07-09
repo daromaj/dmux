@@ -29,8 +29,11 @@ describe('migrateDmuxLegacyState (filesystem parts)', () => {
 
     const newPath = path.join(homeDir, '.qmux.global.json');
     expect(fs.existsSync(newPath)).toBe(true);
-    expect(fs.existsSync(legacyPath)).toBe(false);
+    // Legacy path is left behind as a symlink to the new file (transition compat).
+    expect(fs.lstatSync(legacyPath).isSymbolicLink()).toBe(true);
     expect(JSON.parse(fs.readFileSync(newPath, 'utf8'))).toEqual({ aiProvider: 'openrouter' });
+    // Reading through the legacy symlink resolves to the same content.
+    expect(JSON.parse(fs.readFileSync(legacyPath, 'utf8'))).toEqual({ aiProvider: 'openrouter' });
   });
 
   it('does not overwrite ~/.qmux.global.json when it already exists', () => {
@@ -54,8 +57,10 @@ describe('migrateDmuxLegacyState (filesystem parts)', () => {
     migrateDmuxLegacyState(projectRoot, { homeDir });
 
     const newDir = path.join(homeDir, '.qmux');
-    expect(fs.existsSync(legacyDir)).toBe(false);
+    expect(fs.lstatSync(legacyDir).isSymbolicLink()).toBe(true);
     expect(fs.readFileSync(path.join(newDir, 'native-helper', 'marker.txt'), 'utf8')).toBe('hello');
+    // Old dir path still resolves into the real .qmux dir via the symlink.
+    expect(fs.readFileSync(path.join(legacyDir, 'native-helper', 'marker.txt'), 'utf8')).toBe('hello');
   });
 
   it('skips the home .dmux rename when ~/.qmux already exists', () => {
@@ -83,9 +88,13 @@ describe('migrateDmuxLegacyState (filesystem parts)', () => {
 
     const newDir = path.join(projectRoot, '.qmux');
     const newConfig = path.join(newDir, 'qmux.config.json');
-    expect(fs.existsSync(legacyDir)).toBe(false);
+    expect(fs.lstatSync(legacyDir).isSymbolicLink()).toBe(true);
     expect(fs.existsSync(newConfig)).toBe(true);
     expect(JSON.parse(fs.readFileSync(newConfig, 'utf8'))).toEqual({ panes: [] });
+    // Legacy config filename is also symlinked, so `<root>/.dmux/dmux.config.json`
+    // (old dir name + old file name) still resolves to the real config.
+    const legacyConfigViaOldNames = path.join(legacyDir, 'dmux.config.json');
+    expect(JSON.parse(fs.readFileSync(legacyConfigViaOldNames, 'utf8'))).toEqual({ panes: [] });
   });
 
   it('renames <projectRoot>/.dmux-hooks/ to .qmux-hooks/ and rewrites env vars + paths inside hook scripts', () => {
@@ -101,7 +110,7 @@ describe('migrateDmuxLegacyState (filesystem parts)', () => {
     migrateDmuxLegacyState(projectRoot, { homeDir });
 
     const newHooksDir = path.join(projectRoot, '.qmux-hooks');
-    expect(fs.existsSync(legacyHooksDir)).toBe(false);
+    expect(fs.lstatSync(legacyHooksDir).isSymbolicLink()).toBe(true);
     const rewritten = fs.readFileSync(path.join(newHooksDir, 'worktree_created'), 'utf8');
     expect(rewritten).toContain('$QMUX_WORKTREE_PATH');
     expect(rewritten).toContain('$QMUX_ROOT/.qmux/hooks');
@@ -122,6 +131,35 @@ describe('migrateDmuxLegacyState (filesystem parts)', () => {
     // State from the first run is untouched by the second, no-op run.
     expect(fs.existsSync(path.join(homeDir, '.qmux.global.json'))).toBe(true);
     expect(fs.existsSync(path.join(projectRoot, '.qmux', 'qmux.config.json'))).toBe(true);
+  });
+
+  it('shares one file across old and new names: a write through the legacy symlink lands in the new file', () => {
+    const legacyPath = path.join(homeDir, '.dmux.global.json');
+    const newPath = path.join(homeDir, '.qmux.global.json');
+    fs.writeFileSync(legacyPath, JSON.stringify({ aiProvider: 'openrouter' }));
+
+    migrateDmuxLegacyState(projectRoot, { homeDir });
+
+    // An older `dmux` writing to the legacy path writes through to the real file.
+    fs.writeFileSync(legacyPath, JSON.stringify({ aiProvider: 'deepseek' }));
+    expect(JSON.parse(fs.readFileSync(newPath, 'utf8'))).toEqual({ aiProvider: 'deepseek' });
+  });
+
+  it('creates a back-compat symlink even when the state was already migrated (only .qmux present)', () => {
+    // Simulate a prior migration (by older qmux code) that moved state without
+    // leaving a symlink: only the new names exist, the legacy names are gone.
+    const newGlobal = path.join(homeDir, '.qmux.global.json');
+    fs.writeFileSync(newGlobal, JSON.stringify({ aiProvider: 'openrouter' }));
+    const newDir = path.join(homeDir, '.qmux');
+    fs.mkdirSync(newDir, { recursive: true });
+
+    migrateDmuxLegacyState(projectRoot, { homeDir });
+
+    const legacyGlobal = path.join(homeDir, '.dmux.global.json');
+    const legacyDir = path.join(homeDir, '.dmux');
+    expect(fs.lstatSync(legacyGlobal).isSymbolicLink()).toBe(true);
+    expect(fs.lstatSync(legacyDir).isSymbolicLink()).toBe(true);
+    expect(JSON.parse(fs.readFileSync(legacyGlobal, 'utf8'))).toEqual({ aiProvider: 'openrouter' });
   });
 
   it('never throws even if the project root does not exist', () => {
