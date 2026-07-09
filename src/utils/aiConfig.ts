@@ -15,6 +15,10 @@
  *   aiBaseUrl  - API endpoint URL
  */
 
+import fs from 'fs';
+import os from 'os';
+import { getShellConfigCandidates } from './openRouterApiKeySetup.js';
+
 export interface AiConfig {
   /** Resolved API key (may be undefined if not set) */
   apiKey: string | undefined;
@@ -108,9 +112,102 @@ function resolveBaseUrl(
   return OPENROUTER_DEFAULT_URL;
 }
 
+const API_KEY_VAR_PRIORITY = ['DMUX_AI_API_KEY', 'OPENROUTER_API_KEY'] as const;
+
+/** Strip one layer of matching single/double quotes from a shell value. */
+function unquoteShellValue(raw: string): string {
+  const trimmed = raw.trim();
+  if (
+    trimmed.length >= 2 &&
+    ((trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+      (trimmed.startsWith('"') && trimmed.endsWith('"')))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  // Value may be followed by a trailing comment or extra tokens; keep the first token.
+  return trimmed.split(/\s+/)[0] ?? '';
+}
+
+/** Extract `NAME`'s value from a single shell-config line, or undefined. */
+function extractVarFromLine(line: string, name: string): string | undefined {
+  const stripped = line.trim();
+  if (!stripped || stripped.startsWith('#')) return undefined;
+
+  // POSIX: `export NAME=value` or `NAME=value`
+  const posix = new RegExp(`^(?:export\\s+)?${name}=(.*)$`);
+  const posixMatch = stripped.match(posix);
+  if (posixMatch) {
+    const value = unquoteShellValue(posixMatch[1]);
+    return value.length ? value : undefined;
+  }
+
+  // fish: `set -gx NAME value` / `set -x NAME value`
+  const fish = new RegExp(`^set\\s+(?:-[a-zA-Z]+\\s+)*${name}\\s+(.*)$`);
+  const fishMatch = stripped.match(fish);
+  if (fishMatch) {
+    const value = unquoteShellValue(fishMatch[1]);
+    return value.length ? value : undefined;
+  }
+
+  return undefined;
+}
+
+/**
+ * Recover the API key from the user's shell config files (the same files dmux's
+ * onboarding writes to). This is the fallback for the tmux-stale-environment
+ * case: a dmux process spawned by a long-lived tmux server inherits an
+ * environment without the key even though the shell rc defines it.
+ *
+ * Exported for testing. Synchronous so it can back `resolveApiKey()`.
+ */
+export function readApiKeyFromShellConfigSync(
+  homeDir: string,
+  shellPath: string | undefined,
+): string | undefined {
+  const candidates = getShellConfigCandidates(shellPath, homeDir);
+  // DMUX_AI_API_KEY wins over OPENROUTER_API_KEY across all files.
+  for (const name of API_KEY_VAR_PRIORITY) {
+    for (const candidate of candidates) {
+      let content: string;
+      try {
+        content = fs.readFileSync(candidate, 'utf-8');
+      } catch {
+        continue; // file missing / unreadable
+      }
+      for (const line of content.split('\n')) {
+        const value = extractVarFromLine(line, name);
+        if (value) return value;
+      }
+    }
+  }
+  return undefined;
+}
+
+let cachedShellConfigApiKey: string | undefined;
+let shellConfigApiKeyScanned = false;
+
 function resolveApiKey(): string | undefined {
-  // DMUX_AI_API_KEY takes priority, then fall back to OPENROUTER_API_KEY
-  return process.env.DMUX_AI_API_KEY || process.env.OPENROUTER_API_KEY || undefined;
+  // DMUX_AI_API_KEY takes priority, then fall back to OPENROUTER_API_KEY.
+  const fromEnv = process.env.DMUX_AI_API_KEY || process.env.OPENROUTER_API_KEY;
+  if (fromEnv) return fromEnv;
+
+  // Env is empty — most commonly because a long-lived tmux server spawned this
+  // dmux with a stale environment. Recover from the shell rc dmux persists to.
+  if (!shellConfigApiKeyScanned) {
+    shellConfigApiKeyScanned = true;
+    const homeDir = process.env.HOME || os.homedir();
+    if (homeDir) {
+      try {
+        cachedShellConfigApiKey = readApiKeyFromShellConfigSync(
+          homeDir,
+          process.env.SHELL,
+        );
+      } catch {
+        cachedShellConfigApiKey = undefined;
+      }
+    }
+  }
+  return cachedShellConfigApiKey;
 }
 
 /**
