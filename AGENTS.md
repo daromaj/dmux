@@ -252,6 +252,9 @@ This is a standalone project. `origin` (`daromaj/dmux`) is the only remote.
 
 ## Notes for maintainers
 
+- **Always build `dist/` at the end of a change.** The runtime executes from `dist/index.js`, so
+  source edits do not take effect until compiled. Run `pnpm run build` (or at least `tsc`) as the
+  final step of any task before claiming it done.
 - Keep `pnpm dev` as the default path for qmux development.
 - Treat `dev:watch` as internal machinery behind the default `dev` entrypoint.
 - Keep dev-only controls hidden outside DEV mode.
