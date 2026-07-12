@@ -33,6 +33,7 @@ export interface LayoutConfig {
   MAX_COMFORTABLE_WIDTH: number; // Max pane width for readability (default: 100)
   MIN_COMFORTABLE_HEIGHT: number; // Min pane height (default: 15)
   GRID_COLUMNS?: number; // Manual grid column override (virtual grid); 0/undefined = auto
+  PANE_PRESET?: string; // Preset arrangement id for 2-3 panes; ''/undefined = none
   CONTROL_POSITION: ControlPanePosition; // Where the control pane is anchored (default: 'left')
   CONTROL_HEIGHT: number; // Rows reserved for the control strip in 'bottom' mode
 }
@@ -43,6 +44,7 @@ export const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
   MAX_COMFORTABLE_WIDTH: DEFAULT_MAX_PANE_WIDTH,
   MIN_COMFORTABLE_HEIGHT: 15,
   GRID_COLUMNS: 0,
+  PANE_PRESET: '',
   CONTROL_POSITION: 'left',
   CONTROL_HEIGHT: DEFAULT_CONTROL_PANE_HEIGHT,
 };
@@ -105,6 +107,10 @@ function resolveLayoutConfig(config?: LayoutConfig): LayoutConfig {
     const minPaneWidth = clampMinPaneWidth(settings.minPaneWidth);
     const maxPaneWidth = clampMaxPaneWidth(settings.maxPaneWidth);
     const gridColumns = clampGridColumns(settings.gridColumns);
+    const layoutPreset =
+      typeof settings.layoutPreset === 'string' && settings.layoutPreset !== 'auto'
+        ? settings.layoutPreset
+        : '';
     const placement = getControlPanePlacement(stateProjectRoot || process.cwd());
     let normalizedMinPaneWidth = minPaneWidth;
     let normalizedMaxPaneWidth = maxPaneWidth;
@@ -116,6 +122,7 @@ function resolveLayoutConfig(config?: LayoutConfig): LayoutConfig {
       normalizedMinPaneWidth === DEFAULT_LAYOUT_CONFIG.MIN_COMFORTABLE_WIDTH &&
       normalizedMaxPaneWidth === DEFAULT_LAYOUT_CONFIG.MAX_COMFORTABLE_WIDTH &&
       gridColumns === 0 &&
+      layoutPreset === '' &&
       placement.position === 'left'
     ) {
       return DEFAULT_LAYOUT_CONFIG;
@@ -128,6 +135,7 @@ function resolveLayoutConfig(config?: LayoutConfig): LayoutConfig {
       MIN_COMFORTABLE_WIDTH: normalizedMinPaneWidth,
       MAX_COMFORTABLE_WIDTH: normalizedMaxPaneWidth,
       GRID_COLUMNS: gridColumns,
+      PANE_PRESET: layoutPreset,
       CONTROL_POSITION: placement.position,
       CONTROL_HEIGHT:
         placement.position === 'bottom' ? placement.thickness : DEFAULT_CONTROL_PANE_HEIGHT,
@@ -224,7 +232,13 @@ export async function recalculateAndApplyLayout(
     }
     const realContentPanes = validContentPaneIds;
     const forceLayout = options?.force === true;
-    const disableSpacer = options?.disableSpacer === true;
+    // A preset owns the whole content area (2-3 panes), so a trailing spacer
+    // would break its fixed geometry — suppress it whenever a preset is active.
+    const presetActive =
+      !!effectiveConfig.PANE_PRESET &&
+      realContentPanes.length >= 2 &&
+      realContentPanes.length <= 3;
+    const disableSpacer = options?.disableSpacer === true || presetActive;
 
     // Check if dimensions and pane count have changed since last layout.
     const dimensionsUnchanged =

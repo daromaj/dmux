@@ -82,11 +82,24 @@ basic agentic harness (send keystrokes to panes, read pane output, change layout
   raw tmux geometry is stomped by the layout enforcer and settings have no file watcher).
 - Full-auto: commands run with no confirmation gate. `Esc` aborts the loop. A forensic transcript is
   appended to `<projectRoot>/.qmux/quake-history.jsonl`.
-- Landmarks: `src/services/QuakeAssistantService.ts` (the loop), `src/components/QuakeOverlay.tsx`
-  (overlay UI), `src/hooks/useQuakeAssistant.ts` (wiring + toggle + control-pane grow/restore),
-  `src/utils/quakeSystemPrompt.ts` (the operating manual), `src/utils/aiClient.ts` (reusable
-  OpenAI-compatible streaming client). Wired into `QmuxApp.tsx`. Design spec:
-  `docs/superpowers/specs/2026-07-09-quake-mode-assistant-design.md`.
+- User slash commands (typed in the chat, parsed client-side in `src/utils/quakeSlashCommands.ts`,
+  dispatched via `QuakeAssistantService.handleUserInput` before any LLM call — the model never sees them):
+  - `/new` — clear the conversation (`reset()` zeroes `seq`, aborts any in-flight turn, emits a `reset`
+    event the overlay listens for to wipe the view).
+  - `/loop <prompt>` / `/loop <N> <prompt>` / `/loop until <cond> <prompt>` (or `until "<multi word>"`) —
+    re-run a prompt as full turns until Esc / N times / the reply contains the condition
+    (case-insensitive); `QuakeAssistantService.runLoop`. Hard cap 100 for the unbounded form.
+- Session persistence: the overlay is a throwaway `tmux display-popup` process, so the conversation is
+  kept in a parent-process module singleton (`src/services/quakeSessionStore.ts`, keyed by project root):
+  `PopupManager.launchQuakePopup` seeds it into the popup's data file and writes the returned session
+  (from the popup result file) back. Reopening restores the same conversation; `/new` or an app restart
+  (fresh parent process) clears it.
+- Landmarks: `src/services/QuakeAssistantService.ts` (the loop + slash dispatch + `runLoop`),
+  `src/components/QuakeOverlay.tsx` (overlay UI + footer palette), `src/hooks/useQuakeAssistant.ts`
+  (wiring + toggle + control-pane grow/restore), `src/utils/quakeSlashCommands.ts` (slash parser),
+  `src/services/quakeSessionStore.ts` (cross-open persistence), `src/utils/quakeSystemPrompt.ts` (the
+  operating manual), `src/utils/aiClient.ts` (reusable OpenAI-compatible streaming client). Wired into
+  `QmuxApp.tsx`. Design spec: `docs/superpowers/specs/2026-07-09-quake-mode-assistant-design.md`.
 
 ## Adding a new agent to the registry
 

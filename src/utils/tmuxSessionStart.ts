@@ -15,19 +15,28 @@ function formatTmuxError(action: string, result: ReturnType<typeof spawnSync>): 
 export function startDetachedTmuxSession(options: {
   sessionName: string;
   startDirectory: string;
-  command: string;
+  /**
+   * Pane command to run in the new session. When omitted (e.g. `qmux --quick`),
+   * tmux launches the session's default shell instead — a bare tmux session
+   * with no qmux control pane.
+   */
+  command?: string;
 }): void {
+  const args = [
+    'new-session',
+    '-d',
+    '-s',
+    options.sessionName,
+    '-c',
+    options.startDirectory,
+  ];
+  if (options.command !== undefined) {
+    args.push(options.command);
+  }
+
   const result = spawnSync(
     'tmux',
-    [
-      'new-session',
-      '-d',
-      '-s',
-      options.sessionName,
-      '-c',
-      options.startDirectory,
-      options.command,
-    ],
+    args,
     {
       encoding: 'utf-8',
       stdio: 'pipe',

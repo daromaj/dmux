@@ -1,6 +1,6 @@
 import { LogService } from '../services/LogService.js';
 import { TmuxService } from '../services/TmuxService.js';
-import { generateSidebarGridLayout } from '../utils/tmux.js';
+import { generateSidebarGridLayout, generatePresetLayout } from '../utils/tmux.js';
 import type { LayoutConfig } from '../utils/layoutManager.js';
 import type { LayoutConfiguration } from './LayoutCalculator.js';
 
@@ -86,19 +86,37 @@ export class TmuxLayoutApplier {
     }
 
     try {
-      // Always use custom layout string generation - unified approach for all cases
+      // Prefer a fixed preset arrangement when one is active and the pane count
+      // fits (2-3). generatePresetLayout returns null on a count mismatch, so we
+      // fall back to the adaptive grid generator below.
       // Use the calculated window dimensions, not current tmux dimensions (may be stale)
-      const layoutString = generateSidebarGridLayout(
-        controlPaneId,
-        contentPaneIds,
-        this.config.SIDEBAR_WIDTH,
-        layout.windowWidth,
-        terminalHeight,
-        layout.cols,
-        this.config.MAX_COMFORTABLE_WIDTH,
-        this.config.CONTROL_POSITION,
-        this.config.CONTROL_HEIGHT
-      );
+      const presetString =
+        this.config.PANE_PRESET && numContentPanes >= 2 && numContentPanes <= 3
+          ? generatePresetLayout(
+              this.config.PANE_PRESET,
+              controlPaneId,
+              contentPaneIds,
+              this.config.SIDEBAR_WIDTH,
+              layout.windowWidth,
+              terminalHeight,
+              this.config.CONTROL_POSITION,
+              this.config.CONTROL_HEIGHT
+            )
+          : null;
+
+      const layoutString =
+        presetString ??
+        generateSidebarGridLayout(
+          controlPaneId,
+          contentPaneIds,
+          this.config.SIDEBAR_WIDTH,
+          layout.windowWidth,
+          terminalHeight,
+          layout.cols,
+          this.config.MAX_COMFORTABLE_WIDTH,
+          this.config.CONTROL_POSITION,
+          this.config.CONTROL_HEIGHT
+        );
 
       if (layoutString) {
         // Log pane state right before applying layout

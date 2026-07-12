@@ -5,10 +5,12 @@ import {
 } from '../utils/quakeSystemPrompt.js';
 import { extractCommands, hasCommands } from '../utils/quakeCommands.js';
 import { runControlBlock } from '../utils/quakeControlVerbs.js';
+import { parseSlashCommand } from '../utils/quakeSlashCommands.js';
 import type {
   ChatCompletionOptions,
   QuakeControlHandlers,
   QuakeMessage,
+  QuakeSessionState,
   QuakeTranscriptEntry,
   QuakeWorkspaceContext,
 } from '../utils/quakeTypes.js';
@@ -26,11 +28,14 @@ import type {
  *   'entry' (QuakeTranscriptEntry)      a new transcript entry was added
  *   'append' ({ seq, delta })           streaming token appended to an entry
  *   'busy' (boolean)                    loop running / idle (input gating + spinner)
+ *   'reset' ()                          history/entries cleared (UI should wipe)
  */
 
 const MAX_STEPS_DEFAULT = 25;
 const SHELL_TIMEOUT_MS = 120_000;
 const OUTPUT_MAX_LINES = 40;
+/** Hard cap for an unbounded `/loop <prompt>` so it can't spin forever. */
+const LOOP_HARD_CAP = 100;
 
 export type QuakeShellRunner = (
   command: string,
@@ -51,6 +56,8 @@ export interface QuakeAssistantDeps {
   /** Forensic transcript path (JSONL). Optional; append is best-effort. */
   transcriptPath?: string;
   maxSteps?: number;
+  /** Prior conversation to seed into history/entries/seq at construction. */
+  initialSession?: QuakeSessionState;
 }
 
 function truncateOutput(text: string): string {
@@ -66,6 +73,8 @@ export class QuakeAssistantService extends EventEmitter {
   private seq = 0;
   private abortController: AbortController | null = null;
   private busy = false;
+  /** Set by abort(); read by runLoop to stop between iterations. */
+  private loopAborted = false;
   private readonly deps: QuakeAssistantDeps;
   private readonly maxSteps: number;
 
@@ -73,6 +82,9 @@ export class QuakeAssistantService extends EventEmitter {
     super();
     this.deps = deps;
     this.maxSteps = deps.maxSteps ?? MAX_STEPS_DEFAULT;
+    if (deps.initialSession) {
+      this.restoreSession(deps.initialSession);
+    }
   }
 
   isBusy(): boolean {
@@ -83,13 +95,34 @@ export class QuakeAssistantService extends EventEmitter {
     return this.entries;
   }
 
+  /** LLM-facing message history (includes fed-back command results). */
+  getHistory(): QuakeMessage[] {
+    return this.history;
+  }
+
+  /** Current monotonic entry counter (highest seq assigned so far). */
+  getSeq(): number {
+    return this.seq;
+  }
+
+  /** Seed prior conversation state (before first render / mid-lifecycle). */
+  restoreSession(session: QuakeSessionState): void {
+    this.history = [...session.history];
+    this.entries = [...session.entries];
+    this.seq = session.seq;
+  }
+
   reset(): void {
+    this.abort();
     this.history = [];
     this.entries = [];
+    this.seq = 0;
+    this.emit('reset');
   }
 
   /** Esc: abort the running loop (in-flight model request + loop continuation). */
   abort(): void {
+    this.loopAborted = true;
     if (this.abortController) {
       this.abortController.abort();
     }
@@ -127,6 +160,80 @@ export class QuakeAssistantService extends EventEmitter {
   private setBusy(value: boolean): void {
     this.busy = value;
     this.emit('busy', value);
+  }
+
+  /**
+   * Top-level dispatch for a submitted input line. Slash commands are handled
+   * here; everything else falls through to the normal chat turn.
+   */
+  async handleUserInput(text: string): Promise<void> {
+    const parsed = parseSlashCommand(text);
+    switch (parsed.kind) {
+      case 'new':
+        this.reset();
+        this.pushEntry('info', 'Started a new session.');
+        return;
+      case 'loop':
+        await this.runLoop(parsed.prompt, {
+          times: parsed.times,
+          until: parsed.until,
+        });
+        return;
+      case 'unknown':
+        this.pushEntry(
+          'info',
+          parsed.message ?? `Unknown command: /${parsed.name}`,
+        );
+        return;
+      case 'none':
+      default:
+        await this.sendUserMessage(text);
+        return;
+    }
+  }
+
+  /**
+   * Repeat a prompt as full chat turns. Stops when: the count is reached, Esc
+   * aborted the run, or (until-mode) the latest assistant reply contains the
+   * condition (case-insensitive). Unbounded loops are capped at LOOP_HARD_CAP.
+   */
+  async runLoop(
+    prompt: string,
+    opts: { times?: number; until?: string } = {},
+  ): Promise<void> {
+    const trimmed = prompt.trim();
+    if (!trimmed) return;
+
+    this.loopAborted = false;
+    const bounded = typeof opts.times === 'number' && opts.times > 0;
+    const max = bounded ? (opts.times as number) : LOOP_HARD_CAP;
+
+    for (let i = 0; i < max; i++) {
+      if (this.loopAborted) break;
+
+      const label = bounded ? `Loop ${i + 1}/${opts.times}…` : `Loop ${i + 1}…`;
+      this.pushEntry('info', label);
+
+      await this.sendUserMessage(trimmed);
+      if (this.loopAborted) break;
+
+      if (opts.until) {
+        const lastAssistant = [...this.entries]
+          .reverse()
+          .find((e) => e.kind === 'assistant');
+        if (
+          lastAssistant &&
+          lastAssistant.text.toLowerCase().includes(opts.until.toLowerCase())
+        ) {
+          this.pushEntry('info', `Loop stopped: reply matched "${opts.until}".`);
+          break;
+        }
+      }
+
+      if (!bounded && i === max - 1) {
+        this.pushEntry('info', `Loop stopped after ${max} iterations (cap).`);
+      }
+    }
   }
 
   /**

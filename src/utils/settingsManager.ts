@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { homedir } from 'os';
-import type { QmuxSettings, SettingsScope, EffectiveSettingsScope, SettingDefinition } from '../types.js';
+import type { QmuxSettings, SettingsScope, EffectiveSettingsScope, SettingDefinition, LayoutPresetId } from '../types.js';
+import { LAYOUT_PRESET_IDS } from '../types.js';
 import {
   DEFAULT_MIN_PANE_WIDTH,
   DEFAULT_MAX_PANE_WIDTH,
@@ -161,6 +162,14 @@ function sanitizeLoadedSettings(value: unknown): QmuxSettings {
     parsed.gridColumns <= 4
   ) {
     sanitized.gridColumns = parsed.gridColumns;
+  }
+
+  if (
+    typeof parsed.layoutPreset === 'string' &&
+    (parsed.layoutPreset === '' ||
+      LAYOUT_PRESET_IDS.includes(parsed.layoutPreset as LayoutPresetId))
+  ) {
+    sanitized.layoutPreset = parsed.layoutPreset;
   }
 
   if (parsed.controlPanePosition === 'left' || parsed.controlPanePosition === 'bottom') {
@@ -449,6 +458,22 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
       { value: '2', label: '2 columns' },
       { value: '3', label: '3 columns' },
       { value: '4', label: '4 columns' },
+    ],
+  },
+  {
+    key: 'layoutPreset',
+    label: 'Panel Arrangement',
+    description:
+      'Preset arrangement for 2-3 content panes. Overrides grid columns. Auto uses the adaptive grid.',
+    type: 'select',
+    options: [
+      { value: '', label: 'Auto (adaptive grid)' },
+      { value: 'side-by-side', label: '2 panes: Side by side' },
+      { value: 'stacked', label: '2 panes: Stacked' },
+      { value: 'main-left', label: '3 panes: Main left' },
+      { value: 'main-right', label: '3 panes: Main right' },
+      { value: 'main-top', label: '3 panes: Main top' },
+      { value: 'main-bottom', label: '3 panes: Main bottom' },
     ],
   },
   {
@@ -773,6 +798,20 @@ export class SettingsManager {
         throw new Error('Invalid gridColumns: expected an integer between 0 and 4');
       }
       value = numericValue as QmuxSettings[K];
+    }
+
+    // Preset arrangement: accept a known id or an empty string / 'auto' (both
+    // normalized to '' meaning "no preset").
+    if (key === 'layoutPreset') {
+      const raw = typeof value === 'string' ? value : '';
+      const normalized = raw === 'auto' ? '' : raw;
+      if (
+        normalized !== '' &&
+        !LAYOUT_PRESET_IDS.includes(normalized as LayoutPresetId)
+      ) {
+        throw new Error(`Invalid layoutPreset: "${raw}"`);
+      }
+      value = normalized as QmuxSettings[K];
     }
 
     if (key === 'controlPanePosition') {

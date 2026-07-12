@@ -10,6 +10,7 @@ import { SettingsManager } from '../../utils/settingsManager.js';
 import { isQmuxThemeName } from '../../theme/themePalette.js';
 import type {
   QuakeControlHandlers,
+  QuakeSessionState,
   QuakeWorkspaceContext,
 } from '../../utils/quakeTypes.js';
 
@@ -35,6 +36,8 @@ interface QuakePopupData {
     model?: string;
     provider?: string;
   };
+  /** Prior conversation to restore (written by the parent from its session store). */
+  session?: QuakeSessionState;
 }
 
 const resultFile = process.argv[2];
@@ -145,13 +148,24 @@ const service = new QuakeAssistantService({
     }),
   complete: (opts) => callChatCompletion(opts),
   transcriptPath: `${data.projectRoot}/.qmux/quake-history.jsonl`,
+  initialSession: data.session,
 });
 
 const QuakePopupApp: React.FC = () => {
   const { exit } = useApp();
   const handleClose = () => {
     try {
-      fs.writeFileSync(resultFile, JSON.stringify({ success: true, cancelled: true }));
+      // Serialize whatever is current so the parent can restore it on reopen.
+      // (A /new-then-close naturally persists an empty conversation.)
+      const session: QuakeSessionState = {
+        history: service.getHistory(),
+        entries: service.getEntries(),
+        seq: service.getSeq(),
+      };
+      fs.writeFileSync(
+        resultFile,
+        JSON.stringify({ success: true, cancelled: true, data: { session } }),
+      );
     } catch {
       // best-effort
     }

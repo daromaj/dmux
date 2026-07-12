@@ -133,14 +133,17 @@ const QuakeOverlay: React.FC<QuakeOverlayProps> = ({ service, onClose, accentCol
       );
     };
     const onBusy = (value: boolean) => setBusy(value);
+    const onReset = () => setEntries([]);
 
     service.on('entry', onEntry);
     service.on('append', onAppend);
     service.on('busy', onBusy);
+    service.on('reset', onReset);
     return () => {
       service.off('entry', onEntry);
       service.off('append', onAppend);
       service.off('busy', onBusy);
+      service.off('reset', onReset);
     };
   }, [service]);
 
@@ -205,7 +208,7 @@ const QuakeOverlay: React.FC<QuakeOverlayProps> = ({ service, onClose, accentCol
     setInput('');
     if (text.trim()) {
       setIsDocked(true);
-      void service.sendUserMessage(text);
+      void service.handleUserInput(text);
     }
   };
 
@@ -268,7 +271,7 @@ const QuakeOverlay: React.FC<QuakeOverlayProps> = ({ service, onClose, accentCol
 
       <Box justifyContent="space-between">
         <Text dimColor>
-          Enter send · Esc {busy ? 'abort' : 'close'} · Ctrl+\ toggle
+          Enter send · Esc {busy ? 'abort' : 'close'} · Ctrl+\ toggle · /new /loop
         </Text>
         {maxScroll > 0 && (
           <Text dimColor>

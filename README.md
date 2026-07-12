@@ -40,11 +40,14 @@ npm link   # exposes `qmux` on your PATH
 
 ```bash
 cd /path/to/your/project
-qmux        # start fresh — a clean single pane
-qmux -c     # continue — reopen your last session
+qmux         # start fresh — a clean single pane
+qmux -c      # continue — reopen your last session
+qmux --quick # bare tmux session, no sidebar/control TUI — just tmux + keybindings
 ```
 
 `qmux` always starts from scratch: if an old session for this project is still around, it's torn down and replaced with a clean one. `qmux -c` (continue) reopens the last session instead — live panes reattach; panes lost to a killed tmux server come back with fresh agent sessions.
+
+`qmux --quick` skips the qmux control pane entirely: it just creates (or reattaches to) the project's tmux session and drops you into a plain shell, relying only on your tmux keybindings. Run it from a normal shell, not from inside tmux.
 
 Press `n` for an agent pane or `t` for a plain terminal. The pane opens **in the project directory** and launches the agent — no worktree, no branch juggling. What the agent does with git is entirely up to the agent.
 

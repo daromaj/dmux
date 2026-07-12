@@ -118,3 +118,22 @@ export interface QuakeTranscriptEntry {
   /** Monotonic id for keying in the UI. */
   seq: number;
 }
+
+/* ------------------------------------------------------------------ *
+ * Session persistence (src/services/quakeSessionStore.ts)
+ * ------------------------------------------------------------------ */
+
+/**
+ * A serializable snapshot of a quake conversation. The quake overlay runs as a
+ * short-lived child process (tmux display-popup), so this snapshot travels via
+ * the popup data/result files and is held by a parent-side module singleton
+ * (quakeSessionStore) keyed by project root. It naturally clears on app restart.
+ */
+export interface QuakeSessionState {
+  /** LLM-facing message history (includes "Command results:" feedback turns). */
+  history: QuakeMessage[];
+  /** UI transcript entries. */
+  entries: QuakeTranscriptEntry[];
+  /** Monotonic entry counter, so restored entries keep unique keys. */
+  seq: number;
+}

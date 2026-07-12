@@ -38,6 +38,8 @@ import {
   type NotificationSoundId,
 } from "../utils/notificationSounds.js"
 import { resolveDistPath } from "../utils/runtimePaths.js"
+import { getSession, setSession } from "./quakeSessionStore.js"
+import type { QuakeSessionState } from "../utils/quakeTypes.js"
 import { getPaneProjectRoot } from "../utils/paneProject.js"
 import { getPaneDisplayName } from "../utils/paneTitle.js"
 import type { TrackProjectActivity } from "../types/activity.js"
@@ -406,6 +408,10 @@ export class PopupManager {
             provider: ai.provider,
           }
         : undefined,
+      // Restore the prior conversation for this project, if any. Held in a
+      // parent-side singleton so it survives popup teardown but clears on
+      // app restart. `/new` inside the popup clears it (persisted on close).
+      session: getSession(projectRoot) ?? undefined,
     }
 
     const dataFile = path.join(os.tmpdir(), `qmux-quake-${Date.now()}.json`)
@@ -429,7 +435,13 @@ export class PopupManager {
       // If ready signaling fails the popup may still be up; don't block.
     }
     // Resolve when the drawer closes so callers can reset their open-state.
-    await handle.resultPromise.catch(() => undefined)
+    // Capture the returned session snapshot so the next open restores it.
+    const result = await handle.resultPromise.catch(() => undefined)
+    const session = (result?.data as { session?: QuakeSessionState } | undefined)
+      ?.session
+    if (session) {
+      setSession(projectRoot, session)
+    }
   }
 
   async launchNewPanePopup(

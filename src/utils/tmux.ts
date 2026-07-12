@@ -369,6 +369,141 @@ export const generateSidebarGridLayout = (
 };
 
 /**
+ * Generates a custom tmux layout string for a fixed "preset" arrangement of
+ * 2 or 3 content panes, wrapped by the sidebar/control strip exactly like
+ * {@link generateSidebarGridLayout}.
+ *
+ * Presets (content-area trees, all ABSOLUTE coordinates):
+ *  - 2 panes: 'side-by-side' ({} of two equal-width leaves),
+ *             'stacked'      ([] of two equal-height leaves)
+ *  - 3 panes: 'main-left'    ({ mainLeaf | [top,bottom] }),
+ *             'main-right'   ({ [top,bottom] | mainLeaf }),
+ *             'main-top'     ([ topLeaf, {left,right} ]),
+ *             'main-bottom'  ([ {left,right}, bottomLeaf ])
+ *
+ * Returns null when the preset id does not match the given pane count (or is
+ * unknown / 'auto'), so the caller can fall back to the grid generator.
+ *
+ * NOTE: tmux select-layout fills cells by pane INDEX in listing order and
+ * ignores the embedded pane-ids, so — like the grid generator — the ids we
+ * write are structural only. In 'left' mode the sidebar is listed first (so
+ * the control pane lands there); in 'bottom' mode the caller swaps the control
+ * pane into the bottom strip after applying (see TmuxLayoutApplier).
+ */
+export const generatePresetLayout = (
+  preset: string,
+  controlPaneId: string,
+  contentPanes: string[],
+  sidebarWidth: number,
+  windowWidth: number,
+  windowHeight: number,
+  position: 'left' | 'bottom' = 'left',
+  controlHeight: number = 0
+): string | null => {
+  const n = contentPanes.length;
+  const twoPane = preset === 'side-by-side' || preset === 'stacked';
+  const threePane =
+    preset === 'main-left' ||
+    preset === 'main-right' ||
+    preset === 'main-top' ||
+    preset === 'main-bottom';
+
+  // Reject mismatched pane counts / unknown presets so the caller falls back.
+  if (twoPane && n !== 2) return null;
+  if (threePane && n !== 3) return null;
+  if (!twoPane && !threePane) return null;
+
+  const isBottom = position === 'bottom';
+
+  // Same content-area box math as generateSidebarGridLayout.
+  const contentWidth = isBottom ? windowWidth : windowWidth - sidebarWidth - 1;
+  const contentStartX = isBottom ? 0 : sidebarWidth + 1;
+  const contentAreaHeight = isBottom ? windowHeight - controlHeight - 1 : windowHeight;
+
+  if (contentWidth <= 0 || contentAreaHeight <= 0) return null;
+
+  const sidebarId = controlPaneId.replace('%', '');
+  const ids = contentPanes.map(id => id.replace('%', ''));
+
+  // Split a length into two parts with a 1-cell border between them; the FIRST
+  // part gets the rounding remainder (matches tmux's own distribution).
+  const splitTwo = (total: number, firstFraction = 0.5): [number, number] => {
+    const avail = total - 1; // reserve the border
+    const first = Math.round(avail * firstFraction);
+    return [first, avail - first];
+  };
+
+  const leaf = (w: number, h: number, x: number, y: number, id: string) =>
+    `${w}x${h},${x},${y},${id}`;
+
+  // Build the content-area container tree (rooted at contentStartX,0).
+  let contentArea: string;
+
+  if (preset === 'side-by-side') {
+    const [w1, w2] = splitTwo(contentWidth);
+    const l1 = leaf(w1, contentAreaHeight, contentStartX, 0, ids[0]);
+    const x2 = contentStartX + w1 + 1;
+    const l2 = leaf(w2, contentAreaHeight, x2, 0, ids[1]);
+    contentArea = `${contentWidth}x${contentAreaHeight},${contentStartX},0{${l1},${l2}}`;
+  } else if (preset === 'stacked') {
+    const [h1, h2] = splitTwo(contentAreaHeight);
+    const l1 = leaf(contentWidth, h1, contentStartX, 0, ids[0]);
+    const y2 = h1 + 1;
+    const l2 = leaf(contentWidth, h2, contentStartX, y2, ids[1]);
+    contentArea = `${contentWidth}x${contentAreaHeight},${contentStartX},0[${l1},${l2}]`;
+  } else if (preset === 'main-left' || preset === 'main-right') {
+    // Horizontal split: a full-height main column (~60% width) beside a
+    // vertically-stacked pair (~40% width).
+    const [mainW, sideW] = splitTwo(contentWidth, 0.6);
+    const [topH, botH] = splitTwo(contentAreaHeight);
+
+    const mainIsLeft = preset === 'main-left';
+    const mainX = mainIsLeft ? contentStartX : contentStartX + sideW + 1;
+    const sideX = mainIsLeft ? contentStartX + mainW + 1 : contentStartX;
+
+    const mainLeaf = leaf(mainW, contentAreaHeight, mainX, 0, ids[0]);
+    const stackTop = leaf(sideW, topH, sideX, 0, ids[1]);
+    const stackBot = leaf(sideW, botH, sideX, topH + 1, ids[2]);
+    const stack = `${sideW}x${contentAreaHeight},${sideX},0[${stackTop},${stackBot}]`;
+
+    const children = mainIsLeft ? `${mainLeaf},${stack}` : `${stack},${mainLeaf}`;
+    contentArea = `${contentWidth}x${contentAreaHeight},${contentStartX},0{${children}}`;
+  } else {
+    // main-top / main-bottom: vertical split of a full-width main row (~60%
+    // height) and a side-by-side pair row (~40% height).
+    const mainIsTop = preset === 'main-top';
+    const [mainH, sideH] = splitTwo(contentAreaHeight, 0.6);
+    const [w1, w2] = splitTwo(contentWidth);
+
+    const mainY = mainIsTop ? 0 : sideH + 1;
+    const sideY = mainIsTop ? mainH + 1 : 0;
+
+    const mainLeaf = leaf(contentWidth, mainH, contentStartX, mainY, ids[0]);
+    const rowLeft = leaf(w1, sideH, contentStartX, sideY, ids[1]);
+    const rowRightX = contentStartX + w1 + 1;
+    const rowRight = leaf(w2, sideH, rowRightX, sideY, ids[2]);
+    const row = `${contentWidth}x${sideH},${contentStartX},${sideY}{${rowLeft},${rowRight}}`;
+
+    const children = mainIsTop ? `${mainLeaf},${row}` : `${row},${mainLeaf}`;
+    contentArea = `${contentWidth}x${contentAreaHeight},${contentStartX},0[${children}]`;
+  }
+
+  // Wrap with the sidebar (left) or control strip (bottom) at the root, exactly
+  // like generateSidebarGridLayout.
+  let layoutWithoutChecksum: string;
+  if (isBottom) {
+    const control = `${windowWidth}x${controlHeight},0,${contentAreaHeight + 1},${sidebarId}`;
+    layoutWithoutChecksum = `${windowWidth}x${windowHeight},0,0[${contentArea},${control}]`;
+  } else {
+    const sidebar = `${sidebarWidth}x${windowHeight},0,0,${sidebarId}`;
+    layoutWithoutChecksum = `${windowWidth}x${windowHeight},0,0{${sidebar},${contentArea}}`;
+  }
+
+  const checksum = calculateLayoutChecksum(layoutWithoutChecksum);
+  return `${checksum},${layoutWithoutChecksum}`;
+};
+
+/**
  * Calculates optimal number of columns for pane layout based on dimensions
  * @param numPanes Number of panes to arrange
  * @param contentWidth Available width for content panes

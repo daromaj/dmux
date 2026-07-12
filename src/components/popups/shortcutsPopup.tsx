@@ -57,6 +57,7 @@ export const ShortcutsPopupApp: React.FC<ShortcutsPopupAppProps> = ({
     { key: 'r', description: 'Reopen closed worktree' },
     { key: '[', description: 'Collapse/expand the sidebar' },
     { key: 'g', description: 'Grid columns (virtual grid: auto/1/2/3/4)' },
+    { key: 'G', description: 'Rearrange panels (2-3 panes: preset layout)' },
     { key: 'Shift+↑↓', description: 'Move selected pane up/down (reorder)' },
     { key: 'Ctrl+↑↓←→', description: 'Resize selected pane' },
     ...(isDevMode

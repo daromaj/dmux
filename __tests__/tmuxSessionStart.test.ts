@@ -45,6 +45,25 @@ describe('tmux session startup', () => {
     );
   });
 
+  it('omits the pane command so tmux launches the default shell (--quick)', () => {
+    spawnSyncMock.mockReturnValue({ status: 0, stderr: '' });
+
+    startDetachedTmuxSession({
+      sessionName: 'qmux-quick',
+      startDirectory: '/repo',
+      // no command → bare shell session
+    });
+
+    expect(spawnSyncMock).toHaveBeenCalledWith(
+      'tmux',
+      ['new-session', '-d', '-s', 'qmux-quick', '-c', '/repo'],
+      {
+        encoding: 'utf-8',
+        stdio: 'pipe',
+      }
+    );
+  });
+
   it('attaches to the target session through tmux arguments', () => {
     spawnSyncMock.mockReturnValue({ status: 0 });
 

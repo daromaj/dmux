@@ -85,6 +85,10 @@ function isFilesOnlyMode(): boolean {
   return process.argv.slice(2).includes('--files-only');
 }
 
+function isQuickMode(): boolean {
+  return process.argv.slice(2).includes('--quick');
+}
+
 function getArgValue(flag: string): string | null {
   const args = process.argv.slice(2);
   const flagIndex = args.indexOf(flag);
@@ -213,6 +217,9 @@ class Qmux {
     const continueSession = process.argv
       .slice(2)
       .some((arg) => arg === '-c' || arg === '--continue');
+    // `qmux --quick` starts a bare tmux session (no sidebar/control TUI), relying
+    // only on tmux keybindings. Must be launched from a plain shell, not inside tmux.
+    const quickMode = isQuickMode();
     const currentTmuxSessionName = inTmux
       ? this.getCurrentTmuxSessionName()
       : null;
@@ -221,6 +228,16 @@ class Qmux {
     if (inTmux) {
       ensureTmuxRuntimeCompatibility(sessionNameForCurrentTmux);
       this.setSessionPathEnvironment(sessionNameForCurrentTmux);
+    }
+
+    // --quick creates a bare tmux session and attaches to it. Run from inside an
+    // existing tmux session there is nothing to create, so bail with guidance
+    // rather than spawning a control pane (which quick mode is meant to avoid).
+    if (quickMode && inTmux) {
+      console.log(
+        'qmux --quick starts a bare tmux session; run it from a normal shell, not inside tmux.'
+      );
+      return;
     }
 
     // Running qmux from another project while already inside a qmux session:
@@ -326,8 +343,13 @@ class Qmux {
         // Expected - session doesn't exist, create new one
         // Start qmux as the pane command instead of typing a long startup
         // command into a shell before that shell has finished initializing.
-        let qmuxCommand: string;
-        if (isDev) {
+        let qmuxCommand: string | undefined;
+        if (quickMode) {
+          // --quick: no control pane / sidebar TUI. Leave the pane command
+          // undefined so tmux launches the default shell; the session keeps
+          // only its tmux keybindings.
+          qmuxCommand = undefined;
+        } else if (isDev) {
           qmuxCommand = buildDevWatchCommand(devDirectory);
         } else {
           // Propagate continue mode so the control pane restores the last session.

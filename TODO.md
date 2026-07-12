@@ -2,38 +2,19 @@
 
 > Based on personal workflow needs. Quick hacks first, proper features later.
 
-## Bugs
-
-- [x] Quake mode: we need to use word wrap on the assitant response... right now it's single line and truncated; the chat area should be scrollable
-
-- [x] Quake mode: I want to be able to see thinking tokens from the model
-
-- [x] after rebranding the welcome page / screen should have qmux ascii art - today it's dmux
-
-- [x] in project selection [p] if I press down to second project on the list, I'm not able to select the first project - up arrow doesn't select/highlight it
-
 ## Pending
 
-- [x] Quake mode: peak-hours indicator — a colored badge in the Quake overlay header shows 🔴 PEAK
-      (inside a window), 🟡 approaching (within 60 min), or 🟢 off-peak, with a live countdown to the
-      next boundary. Windows are UTC 01:00–04:00 and 06:00–10:00. Logic in `src/utils/peakHours.ts`
-      (`getPeakInfo`/`formatPeakBadge`, unit-tested), refreshed every 30s in `QuakeOverlay.tsx`.
-
-- [ ] WHEN we have 2,3 panels we should have some shortcuts to rearrange them for exmaple 1 left, 2 right on top of each other, or side by side horizontally or vertically
-
-- [x] **New project creates two control entries** — starting a new project showed two entries in the
-      control pane. Root cause: `groupPanesByProject` always injects the session's fallback project as
-      a group even with zero panes, so opening a terminal in a *different* project flipped the layout
-      into multi-project mode and rendered a phantom header + action row for the empty fallback project.
-      Fix (`src/utils/projectActions.ts`, `buildProjectActionLayout`): drop the phantom fallback group
-      (empty and not explicitly pinned to the sidebar) before computing `multiProjectMode`, guarded so a
-      genuinely empty single-project session still shows its one shared action row. Regression-tested.
-
-- [ ] **Collapse / hide-unhide control pane** — a toggle that fully hides the control pane and gives
-      its space back to the content panes, then restores it. Extends the existing `[` sidebar
-      collapse (which only shrinks the left sidebar width) into a real show/hide, and must also work
-      in **bottom** mode (reclaim the bottom strip's rows). Decide: reuse `[`, add a distinct key,
-      and whether the hidden state persists across restarts.
+- [x] **Rearrange panels dialog** — with 2 or 3 content panes, `G` (Shift+G, pairs with `g` grid) opens a
+      "Rearrange Panels" chooser. 2-pane presets: `side-by-side`, `stacked`. 3-pane presets: `main-left`
+      (1 left + 2 stacked right), `main-right`, `main-top` (1 top + 2 below), `main-bottom`. Applied as a
+      hand-built custom tmux layout string (`generatePresetLayout` in `src/utils/tmux.ts`, reusing the
+      checksum + content-area math from `generateSidebarGridLayout`), persisted as `layoutPreset` in
+      settings so it's sticky across resizes/restarts (mirrors the `gridColumns` model). Preset and grid
+      are mutually exclusive — choosing one clears the other. Spacer suppressed while a preset is active.
+      `auto` clears the preset. Files: `src/utils/tmux.ts`, `src/layout/TmuxLayoutApplier.ts`,
+      `src/utils/layoutManager.ts`, `src/types.ts`, `src/utils/settingsManager.ts`,
+      `src/hooks/useInputHandling.ts` (`handleRearrangeChange`), `shortcutsPopup.tsx`. Unit-tested
+      (`__tests__/presetLayout.test.ts`, 10 tests). Live tmux smoke test still recommended.
 
 - [~] **Quake-mode assistant** (`Ctrl+\``) — IMPLEMENTED (pending live tmux smoke test). A top-drawer
       chat that talks to the app's configured LLM
@@ -57,19 +38,59 @@
       - **Needs live verification:** the `Ctrl+\`` key encoding (defensive matching for `key.ctrl+\``,
         raw `\x1c`, and the `Ctrl+b` `` ` `` chord — confirm which fires in your terminal) and that the
         top drawer appears at ~50% height with visible input in real tmux.
-- [ ] **`/loop` command** — bind a repeatable action to run against the LLM agent on demand/interval
-      (re-invoke the same prompt/step N times or until a condition). Overlaps with the assistant
-      above; decide whether `/loop` is a slash command inside the quake chat or a standalone control.
-- [ ] **`/new` command** — start a fresh qmux session from the assistant/command surface (parity with
-      plain `qmux` scratch-start). Sketch a slash-command palette (`/new`, `/loop`, …) that the quake
-      assistant and/or the main TUI both expose.
+- [x] **`/loop` command for the AI Assistant** — a slash command typed in the quake chat (decided:
+      lives in the chat, not a standalone control). Forms: `/loop <prompt>` (repeat until Esc, hard cap
+      100), `/loop <N> <prompt>` (N times), `/loop until <cond> <prompt>` / `/loop until "<multi word>"
+      <prompt>` (stop when the assistant's reply contains the condition, case-insensitive). Each
+      iteration re-runs the full turn via `sendUserMessage`, emits a `Loop i/N…` info line, and is
+      abort-aware between iterations. Parser: `src/utils/quakeSlashCommands.ts`; orchestration:
+      `QuakeAssistantService.runLoop`/`handleUserInput`. Palette surfaced in the overlay footer.
+      Unit-tested (`quakeSlashCommands.test.ts` + `quakeAssistantSession.test.ts`, 30 tests).
+- [x] **`/new` command + assistant session persistence** — `/new` (slash command in the quake chat)
+      clears the conversation: `QuakeAssistantService.reset()` now also zeroes `seq`, aborts any
+      in-flight turn, and emits a `reset` event the overlay uses to wipe the view. Persistence: since the
+      quake overlay is a throwaway `tmux display-popup` process, the conversation now survives close→reopen
+      via a parent-process module singleton (`src/services/quakeSessionStore.ts`) keyed by project root —
+      seeded into the popup via its data file and written back from the result file
+      (`PopupManager.launchQuakePopup`). So reopening shows the same session; `/new` or an app restart
+      (fresh parent process) starts empty. Slash-command palette (`/new` `/loop`) shown in the overlay
+      footer for discoverability.
 
-- [ ] **`qmux --quick`** — start with no sidebar TUI, just a tmux session + keybindings
-- [ ] **Session restore** — `qmux --resume` reopens last session
-- [ ] **Multi-monitor** — spawn panes in different tmux windows
-- [ ] **Log tailing** — built-in log viewer pane (tail -f with search)
+- [x] **`qmux --quick`** — starts a bare tmux session with no sidebar/control TUI: the `!inTmux` create
+      path leaves the pane command undefined so tmux launches the default shell instead of re-invoking
+      `qmux`, so the whole control-pane/welcome-pane branch is bypassed by construction. Scratch/continue
+      session semantics still respected; running it from inside tmux prints guidance and exits. Global
+      `~/.tmux.conf` keybindings still apply (they're process-independent). Files: `src/index.ts`
+      (`isQuickMode`, quick branch), `src/utils/tmuxSessionStart.ts` (optional `command`). Unit-tested;
+      documented in README. Live tmux smoke test still recommended.
+- [x] **Session restore** — `qmux -c` reopens last session. Already fully implemented (see the
+      "`qmux` = scratch, `qmux -c` = continue" entry below): live panes reattach, panes lost to a killed
+      server are recreated (agent + shell) with fresh agent sessions. This line was a stale duplicate.
+
+## Bugs
+
+- [x] Quake mode: we need to use word wrap on the assitant response... right now it's single line and truncated; the chat area should be scrollable
+
+- [x] Quake mode: I want to be able to see thinking tokens from the model
+
+- [x] after rebranding the welcome page / screen should have qmux ascii art - today it's dmux
+
+- [x] in project selection [p] if I press down to second project on the list, I'm not able to select the first project - up arrow doesn't select/highlight it
 
 ## Done ✓
+
+- [x] Quake mode: peak-hours indicator — a colored badge in the Quake overlay header shows 🔴 PEAK
+      (inside a window), 🟡 approaching (within 60 min), or 🟢 off-peak, with a live countdown to the
+      next boundary. Windows are UTC 01:00–04:00 and 06:00–10:00. Logic in `src/utils/peakHours.ts`
+      (`getPeakInfo`/`formatPeakBadge`, unit-tested), refreshed every 30s in `QuakeOverlay.tsx`.
+
+- [x] **New project creates two control entries** — starting a new project showed two entries in the
+      control pane. Root cause: `groupPanesByProject` always injects the session's fallback project as
+      a group even with zero panes, so opening a terminal in a *different* project flipped the layout
+      into multi-project mode and rendered a phantom header + action row for the empty fallback project.
+      Fix (`src/utils/projectActions.ts`, `buildProjectActionLayout`): drop the phantom fallback group
+      (empty and not explicitly pinned to the sidebar) before computing `multiProjectMode`, guarded so a
+      genuinely empty single-project session still shows its one shared action row. Regression-tested.
 
 - [x] **Rebrand dmux → qmux + de-fork + drop auto-update** — renamed the whole project from `dmux`
       to `qmux` ("quake-mode tmux"). Removed every reference to the upstream/official repos and all

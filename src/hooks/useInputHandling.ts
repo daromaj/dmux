@@ -22,7 +22,7 @@ import {
   getResumableBranches,
   type ResumableBranchCandidate,
 } from "../utils/resumeBranches.js"
-import { enforceControlPaneSize } from "../utils/tmux.js"
+import { enforceControlPaneSize, getContentPaneIds } from "../utils/tmux.js"
 import { SIDEBAR_WIDTH } from "../utils/layoutManager.js"
 import { suggestCommand } from "../utils/commands.js"
 import type { PopupManager } from "../services/PopupManager.js"
@@ -849,11 +849,14 @@ export function useInputHandling(params: UseInputHandlingParams) {
     if (chosen === null || chosen === undefined) return
 
     try {
-      new SettingsManager(activeProjectRoot).updateSetting(
+      const settingsManager = new SettingsManager(activeProjectRoot)
+      settingsManager.updateSetting(
         "gridColumns",
         parseInt(chosen, 10) as any,
         "global"
       )
+      // Grid and preset are mutually exclusive; choosing a grid clears the preset.
+      settingsManager.updateSetting("layoutPreset", "" as any, "global")
       refreshQmuxSettings(activeProjectRoot)
       queueLayoutRefresh()
       const label = chosen === "0" ? "auto" : `${chosen} column${chosen === "1" ? "" : "s"}`
@@ -861,6 +864,70 @@ export function useInputHandling(params: UseInputHandlingParams) {
       setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
     } catch (error: any) {
       setStatusMessage(`Failed to set grid: ${error?.message || String(error)}`)
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_LONG)
+    }
+  }
+
+  // Rearrange 2-3 content panes into a fixed preset arrangement (or back to auto).
+  const handleRearrangeChange = async () => {
+    if (!controlPaneId) return
+    const count = getContentPaneIds(controlPaneId).length
+    if (count < 2 || count > 3) {
+      setStatusMessage("Rearrange needs exactly 2 or 3 content panes")
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
+      return
+    }
+
+    const activeProjectRoot = getActiveProjectRoot()
+    const current = new SettingsManager(activeProjectRoot).getSettings().layoutPreset ?? ""
+    const presets =
+      count === 2
+        ? [
+            { id: "side-by-side", label: "Side by side" },
+            { id: "stacked", label: "Stacked" },
+          ]
+        : [
+            { id: "main-left", label: "Main left + 2 stacked right" },
+            { id: "main-right", label: "2 stacked left + main right" },
+            { id: "main-top", label: "Main top + 2 side by side below" },
+            { id: "main-bottom", label: "2 side by side above + main bottom" },
+          ]
+
+    const choices = [
+      ...presets.map((p) => ({
+        id: p.id,
+        label: p.label,
+        description: p.id === current ? "Current" : undefined,
+      })),
+      {
+        id: "auto",
+        label: "Auto (adaptive grid)",
+        description: current === "" ? "Current" : undefined,
+      },
+    ]
+
+    const chosen = await popupManager.launchChoicePopup(
+      "Rearrange Panels",
+      `Choose an arrangement for ${count} panes`,
+      choices
+    )
+    if (chosen === null || chosen === undefined) return
+
+    try {
+      const settingsManager = new SettingsManager(activeProjectRoot)
+      const value = chosen === "auto" ? "" : chosen
+      settingsManager.updateSetting("layoutPreset", value as any, "global")
+      // Preset and grid are mutually exclusive; choosing a preset clears the grid.
+      settingsManager.updateSetting("gridColumns", 0 as any, "global")
+      refreshQmuxSettings(activeProjectRoot)
+      queueLayoutRefresh()
+      const chosenPreset = presets.find((p) => p.id === chosen)
+      setStatusMessage(
+        chosen === "auto" ? "Arrangement: auto" : `Arrangement: ${chosenPreset?.label ?? chosen}`
+      )
+      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
+    } catch (error: any) {
+      setStatusMessage(`Failed to set arrangement: ${error?.message || String(error)}`)
       setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_LONG)
     }
   }
@@ -1768,6 +1835,10 @@ export function useInputHandling(params: UseInputHandlingParams) {
     } else if (input === "g") {
       // Change virtual grid column count
       await handleGridColumnsChange()
+      return
+    } else if (input === "G") {
+      // Rearrange 2-3 content panes into a preset arrangement (Shift+G)
+      await handleRearrangeChange()
       return
     } else if (input === "l") {
       // Open logs popup

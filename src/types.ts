@@ -14,6 +14,18 @@ export type QmuxThemeName =
 // Agent status with new analyzing state
 export type AgentStatus = 'idle' | 'analyzing' | 'waiting' | 'working';
 
+// Preset panel arrangements offered by the "Rearrange Panels" picker.
+// 2-pane presets: side-by-side / stacked. 3-pane presets: main-* variants.
+export const LAYOUT_PRESET_IDS = [
+  'side-by-side',
+  'stacked',
+  'main-left',
+  'main-right',
+  'main-top',
+  'main-bottom',
+] as const;
+export type LayoutPresetId = (typeof LAYOUT_PRESET_IDS)[number];
+
 export interface OptionChoice {
   action: string;
   keys: string[];
@@ -146,6 +158,9 @@ export interface QmuxSettings {
   maxPaneWidth?: number;
   // Virtual grid: fixed number of columns for content panes (0/undefined = auto-adaptive)
   gridColumns?: number;
+  // Preset panel arrangement for 2-3 content panes (see LAYOUT_PRESET_IDS).
+  // When set, it overrides gridColumns/auto grid; ''/'auto' = no preset (grid/auto).
+  layoutPreset?: string;
   // Where the control pane (sidebar) is anchored: 'left' (fixed-width sidebar, default)
   // or 'bottom' (full-width fixed-height strip across the bottom)
   controlPanePosition?: 'left' | 'bottom';
