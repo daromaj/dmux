@@ -343,14 +343,13 @@ export function useInputHandling(params: UseInputHandlingParams) {
   }
 
   const openFileBrowserInWorktree = async (selectedPane: QmuxPane) => {
-    if (!selectedPane.worktreePath) {
-      setStatusMessage("Cannot open file browser: this pane has no worktree")
-      setTimeout(() => setStatusMessage(""), STATUS_MESSAGE_DURATION_SHORT)
-      return
-    }
+    // Prefer the pane's worktree, but fall back to its project root so the
+    // file browser also works for shell/control panes that have no worktree.
+    const targetProjectRoot = getPaneProjectRoot(selectedPane, projectRoot)
+    const targetPath = selectedPane.worktreePath || targetProjectRoot
 
     const existingBrowserPane = panes.find((pane) =>
-      pane.browserPath === selectedPane.worktreePath && !pane.hidden
+      pane.browserPath === targetPath && !pane.hidden
     )
 
     if (existingBrowserPane) {
@@ -365,7 +364,6 @@ export function useInputHandling(params: UseInputHandlingParams) {
       return
     }
 
-    const targetProjectRoot = getPaneProjectRoot(selectedPane, projectRoot)
     const targetProjectName = path.basename(targetProjectRoot)
 
     try {
@@ -374,13 +372,13 @@ export function useInputHandling(params: UseInputHandlingParams) {
 
       const tmuxService = TmuxService.getInstance()
       const newPaneId = await tmuxService.splitPane({
-        cwd: selectedPane.worktreePath,
+        cwd: targetPath,
         command: buildFilesOnlyCommand(projectRoot),
       })
 
       await new Promise((resolve) => setTimeout(resolve, ANIMATION_DELAY))
 
-      const slugBase = `files-${path.basename(selectedPane.worktreePath)}`
+      const slugBase = `files-${path.basename(targetPath)}`
       let slug = slugBase
       let suffix = 2
       while (panes.some((pane) => pane.slug === slug)) {
@@ -398,7 +396,7 @@ export function useInputHandling(params: UseInputHandlingParams) {
         colorTheme: resolveProjectColorTheme(targetProjectRoot, sidebarProjects),
         type: "shell",
         shellType: "fb",
-        browserPath: selectedPane.worktreePath,
+        browserPath: targetPath,
       }
 
       await tmuxService.setPaneTitle(newPaneId, slug)
