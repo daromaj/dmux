@@ -17,4 +17,5 @@ export {
   openInEditor,
   toggleAutopilot,
   toggleGoalMode,
+  toggleMonitor,
 } from './implementations/index.js';

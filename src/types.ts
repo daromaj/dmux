@@ -89,6 +89,9 @@ export interface QmuxPane {
   agentSummary?: string;
   // Autopilot mode - automatically accept options when no risk detected
   autopilot?: boolean;
+  // Monitor mode - periodic watchdog: recover a crashed agent (relaunch) and
+  // nudge a stalled one; stops when the task finishes. Distinct from `autopilot`.
+  monitor?: boolean;
   // Goal mode - launch supported agents with a session goal command
   goalMode?: boolean;
   // Error message if pane analyzer encounters issues
@@ -180,6 +183,12 @@ export interface QmuxSettings {
   // machine-wide and never committed. Read as a fallback when env vars are absent
   // (e.g. a qmux process spawned by a tmux server with a stale environment).
   aiApiKey?: string;
+  // Monitor mode: minutes between watchdog ticks for monitored panes (clamped 1..120, default 15)
+  monitorIntervalMinutes?: number;
+  // Monitor mode: max agent relaunches before giving up on a crash-looping pane (clamped 1..20)
+  monitorMaxRelaunches?: number;
+  // Monitor mode: max consecutive "continue" nudges before giving up on a stalled pane (clamped 1..20)
+  monitorMaxNudges?: number;
 }
 
 export interface NewPaneInput {

@@ -87,6 +87,9 @@ export async function executeAction(
     case 'toggle_goal_mode':
       return actions.toggleGoalMode(pane, context);
 
+    case 'toggle_monitor':
+      return actions.toggleMonitor(pane, context);
+
     case 'run_test':
     case 'run_dev':
     case 'open_output':

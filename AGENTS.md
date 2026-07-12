@@ -101,6 +101,47 @@ basic agentic harness (send keystrokes to panes, read pane output, change layout
   operating manual), `src/utils/aiClient.ts` (reusable OpenAI-compatible streaming client). Wired into
   `QmuxApp.tsx`. Design spec: `docs/superpowers/specs/2026-07-09-quake-mode-assistant-design.md`.
 
+## Pane Monitor (watchdog mode)
+
+A per-pane, opt-in slow watchdog that keeps unattended agent panes alive. Every N minutes (default 15,
+`monitorIntervalMinutes`, clamped 1..120) it sweeps panes with `monitor` enabled and, per pane, classifies
+then acts.
+
+**Do not confuse Monitor with `autopilot`.** They are two separate features:
+
+- `autopilot` (pre-existing): reactive, runs on the 1s `PaneWorker` poll via `StatusDetector.handleAutopilot`;
+  auto-accepts a *safe* option dialog (no risk detected). It answers prompts.
+- `monitor` (this feature): proactive, slow standalone timer; it *recovers crashes and un-sticks stalls* and
+  never blind-answers a genuine yes/no dialog.
+
+Both can be on for one pane; the pane-list right column shows compact flags `(a)`/`(m)`/`(am)`.
+
+Per-tick state machine (pure core, fully unit-tested):
+
+1. Bare shell prompt (agent crashed/exited) → relaunch the agent (`buildAgentResumeOrLaunchCommand`, e.g.
+   `claude --continue`) via `send-keys`. Capped at `monitorMaxRelaunches` (default 2) → stop + notify.
+2. Working (`in_progress`) → do nothing, reset caps.
+3. Idle + stalled → send a `continue` nudge. Capped at `monitorMaxNudges` (default 3) → stop + notify.
+4. Idle + finished → disable `monitor` on the pane + notify "done".
+5. Option dialog → notify only (never auto-answer).
+6. Ambiguous finished-vs-stalled → stop + notify (bias toward doing nothing over doing it wrong).
+
+Landmarks:
+
+- `src/utils/monitorPolicy.ts`: pure `decideMonitorAction` (the risk logic) + settings clamps. No IO.
+- `src/utils/monitorClassify.ts`: `isShellCommand` (shell pre-check) + `parseFinishedVerdict` +
+  `FINISHED_JUDGE_SYSTEM_PROMPT` (the one-word finished/stalled/unsure judgment).
+- `src/services/PaneMonitorService.ts`: thin injected-IO orchestrator (`PaneMonitorService`, fully testable)
+  plus `createPaneMonitorService` which wires the real tmux/PaneAnalyzer/LLM/notification/persistence layers.
+- `src/actions/implementations/toggleMonitorAction.ts` + `TOGGLE_MONITOR` (registry-driven menu action).
+- `QmuxApp.tsx`: creates the service once and drives `start()`/`stop()`; reads panes/settings live.
+- Forensic log: `<projectRoot>/.qmux/monitor.jsonl` (one line per tick, best-effort no-throw).
+- Tests: `__tests__/monitorPolicy.test.ts`, `monitorClassify.test.ts`, `paneMonitorService.test.ts`.
+
+Classification reuses `PaneAnalyzer.analyzePane` (states `in_progress`/`option_dialog`/`open_prompt`); the
+finished-vs-stalled judgment is a second focused LLM call via `callChatCompletion`. Notifications route through
+`QmuxFocusService.sendAttentionNotification`, gated by `getPaneAttentionSurface` (skipped when fully focused).
+
 ## Adding a new agent to the registry
 
 The agent registry is centralized in `src/utils/agentLaunch.ts`.

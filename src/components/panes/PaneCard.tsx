@@ -65,7 +65,9 @@ const PaneCard: React.FC<PaneCardProps> = memo(({
   const agentTag = pane.type === 'shell'
     ? (pane.shellType || 'sh').substring(0, 2)
     : pane.agent ? getAgentShortLabel(pane.agent) : null;
-  const apTag = pane.autopilot ? 'ap' : null;
+  // Compact per-pane mode flags fit the tight 5-char right slot: 'a' = autopilot,
+  // 'm' = monitor (watchdog). Both -> 'am'.
+  const flagTag = [pane.autopilot ? 'a' : '', pane.monitor ? 'm' : ''].join('') || null;
 
   // Keep non-title segments fixed; only slug is allowed to clip.
   // Selected pane is wrapped as `» name «` for an unmistakable marker; the
@@ -77,7 +79,7 @@ const PaneCard: React.FC<PaneCardProps> = memo(({
   const sourceText = isDevSource ? '★ ' : '';
   const hiddenText = pane.hidden ? ' (hidden)' : '';
   const agentText = hasAgent ? ` [${agentTag}]` : '     ';
-  const autopilotText = apTag ? ` (${apTag})` : '     ';
+  const flagText = flagTag ? ` (${flagTag})` : '     ';
   const shellPrefixText = isFileBrowserPane ? ' ' : '';
   const fixedLeftWidth = stringWidth(prefix + statusText + attentionText + sourceText + shellPrefixText + hiddenText + suffixText);
   const maxSlugWidth = Math.max(0, LEFT_COLUMN_WIDTH - fixedLeftWidth);
@@ -126,9 +128,9 @@ const PaneCard: React.FC<PaneCardProps> = memo(({
           ? <Text color={shellTagColor}>{agentText}</Text>
           : <Text>{agentText}</Text>
         }
-        {apTag
-          ? <Text color={COLORS.success}>{autopilotText}</Text>
-          : <Text>{autopilotText}</Text>
+        {flagTag
+          ? <Text color={COLORS.success}>{flagText}</Text>
+          : <Text>{flagText}</Text>
         }
       </Box>
     </Box>
@@ -144,6 +146,7 @@ const PaneCard: React.FC<PaneCardProps> = memo(({
     prevProps.pane.testStatus === nextProps.pane.testStatus &&
     prevProps.pane.devStatus === nextProps.pane.devStatus &&
     prevProps.pane.autopilot === nextProps.pane.autopilot &&
+    prevProps.pane.monitor === nextProps.pane.monitor &&
     prevProps.pane.hidden === nextProps.pane.hidden &&
     prevProps.pane.type === nextProps.pane.type &&
     prevProps.pane.shellType === nextProps.pane.shellType &&

@@ -42,6 +42,13 @@ import {
   QmuxAttentionService,
   type PaneAttentionChangedEvent,
 } from "./services/QmuxAttentionService.js"
+import { createPaneMonitorService } from "./services/PaneMonitorService.js"
+import { PaneAnalyzer } from "./services/PaneAnalyzer.js"
+import {
+  clampMonitorIntervalMinutes,
+  clampMonitorMaxRelaunches,
+  clampMonitorMaxNudges,
+} from "./utils/monitorPolicy.js"
 import { reopenWorktree } from "./utils/reopenWorktree.js"
 import {
   resumeBranchWorkspace,
@@ -282,6 +289,51 @@ const QmuxApp: React.FC<QmuxAppProps> = ({
   // Keep a ref to the latest panes so interval callbacks can read current state
   // (including rebound paneIds) without re-subscribing every render.
   panesRef.current = panes
+
+  // Keep the latest savePanes so the monitor's disable-on-stop callback (created
+  // once) always writes through the current persistence closure.
+  const savePanesRef = useRef(savePanes)
+  savePanesRef.current = savePanes
+
+  // Pane Monitor (watchdog): periodic sweep that recovers crashed agents and
+  // nudges stalled ones for panes with `monitor` enabled. Created once; reads
+  // panes/settings live so it never needs re-creating.
+  const [monitorService] = useState(() =>
+    createPaneMonitorService({
+      projectRoot: sessionProjectRoot,
+      analyzer: new PaneAnalyzer(),
+      tmux: TmuxService.getInstance(),
+      focusService,
+      getPanes: () => panesRef.current,
+      disableMonitor: async (paneId) => {
+        const updated = panesRef.current.map((p) =>
+          p.id === paneId ? { ...p, monitor: false } : p
+        )
+        await savePanesRef.current(updated)
+      },
+      getCaps: () => {
+        const s = new SettingsManager(sessionProjectRoot).getSettings()
+        return {
+          maxRelaunches: clampMonitorMaxRelaunches(s.monitorMaxRelaunches),
+          maxNudges: clampMonitorMaxNudges(s.monitorMaxNudges),
+        }
+      },
+      notificationsEnabled: () =>
+        new SettingsManager(sessionProjectRoot).getSettings().enableNotifications !== false,
+    })
+  )
+
+  useEffect(() => {
+    monitorService.start(
+      () =>
+        clampMonitorIntervalMinutes(
+          new SettingsManager(sessionProjectRoot).getSettings().monitorIntervalMinutes
+        ) * 60_000
+    )
+    return () => {
+      monitorService.stop()
+    }
+  }, [monitorService, sessionProjectRoot])
 
   // Check for tmux hooks preference on startup
   useEffect(() => {

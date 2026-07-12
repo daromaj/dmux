@@ -4,45 +4,41 @@
 
 ## Pending
 
-- [ ] **Pane Auto-Pilot (monitor mode)** — per-pane opt-in watchdog that recovers crashed agents and
+- [x] **Pane Monitor (watchdog mode)** — per-pane opt-in watchdog that recovers crashed agents and
       un-sticks stalled ones unattended. Motivation: Claude Code crashes intermittently and leaves a dead
-      shell, or an agent stalls mid-task; auto-pilot notices and remediates so long runs don't silently die.
-      - **Toggle:** per-pane, opt-in, multiple panes allowed. Menu action `🤖 Toggle Auto-Pilot` (+ hotkey),
-        mirroring the existing `🎯 Toggle Goal Mode` wiring. Persist the flag on `QmuxPane` (e.g.
-        `autoPilot?: boolean`); pane list shows an `[auto]`/🤖 marker + last state/action. Never targets the
-        control pane or the quake overlay.
-      - **Cadence:** its own slow timer, default **15 min**, configurable (`autoPilotIntervalMinutes`) — kept
-        separate from and slower than the frequent attention poll to limit token spend and premature nudges.
-      - **Per-tick state machine** (capture pane → classify → act):
-        1. **Bare shell prompt** (agent exited/crashed → dropped to a shell): run the recovery command
-           `ccc` (= `cc -c`, `claude --continue`) via `send-keys`. Capped at K relaunches per pane
-           (crash-loop guard) → then stop + notify.
-        2. **Agent working** (`in_progress`): do nothing.
-        3. **Agent idle/stalled** (`open_prompt`) **and task NOT finished**: send a small `continue` nudge.
-           Capped at N consecutive nudges → then stop + notify (no infinite "continue" spam / token burn).
+      shell, or an agent stalls mid-task; the monitor notices and remediates so long runs don't silently die.
+      Named **Monitor** (`QmuxPane.monitor`), deliberately distinct from the pre-existing **autopilot**
+      feature (reactive auto-accept of safe option dialogs on the 1s poll).
+      - **Toggle:** per-pane, opt-in, multiple panes allowed. Menu action `👁 Toggle Monitor` (registry-driven,
+        `requires: { agent: true }`), mirroring `🎯 Toggle Goal Mode`. Pane list right column shows compact
+        flags `(a)`/`(m)`/`(am)` for autopilot/monitor. Never targets the control pane or quake overlay.
+      - **Cadence:** its own slow timer, default **15 min**, configurable (`monitorIntervalMinutes`, clamped
+        1..120) — separate from and slower than the frequent attention poll to limit token spend / premature
+        nudges. Interval is re-read each tick so a settings change takes effect without restart.
+      - **Per-tick state machine** (classify → decide → act), pure core in `src/utils/monitorPolicy.ts`:
+        1. **Bare shell prompt** (agent exited/crashed): relaunch via `buildAgentResumeOrLaunchCommand`
+           (e.g. `claude --continue`) + `send-keys`. Capped at `monitorMaxRelaunches` (default 2) → stop + notify.
+        2. **Agent working** (`in_progress`): do nothing + reset caps.
+        3. **Agent idle/stalled** (`open_prompt`, not finished): send a `continue` nudge. Capped at
+           `monitorMaxNudges` (default 3) → stop + notify.
         4. **Agent finished its task**: auto-disable monitoring on that pane + notify "done".
-        5. **Waiting on a yes/no** (`option_dialog`): notify only — do NOT blind-answer a genuine prompt.
-      - **Hardest bit — "finished" vs "just stalled":** both present as idle (`open_prompt`). Needs an LLM
-        judgment (reuse `PaneAnalyzer`'s summary stage or a dedicated classify prompt: "task complete /
-        awaiting new instructions" vs "paused mid-task"). When ambiguous, default to **stop + notify**, not
-        nudge — bias toward doing nothing over doing the wrong thing.
-      - **Autonomy = auto-recover with capped nudges** (decided): remediation fires unattended, but every
-        action type is capped and, once a cap is hit, monitoring stops and the user is notified. Stop
-        conditions: task finished, any cap hit, or user toggles off.
-      - **Reuse, don't rebuild:** classification via `src/services/PaneAnalyzer.ts` (already 3-stage LLM,
-        states `in_progress`/`open_prompt`/`option_dialog`) + `StatusDetector.ts`; notifications via
-        `QmuxAttentionService.ts`; LLM via `src/utils/aiConfig.ts`. Auto-pilot is the **action layer** on top
-        of infra that already polls + classifies panes for notifications. Add a lightweight shell-vs-agent
-        pre-check (heuristic on captured content — bare prompt line, no agent TUI chrome) since PaneAnalyzer
-        assumes an agent pane. Distinct from quake `/loop` (which drives the quake chat LLM, not agent panes).
-      - **Forensic log:** append every auto-action to `.qmux/autopilot.jsonl` (mirrors `quake-history.jsonl`).
-      - **Landmarks (planned):** new `src/services/PaneAutoPilotService.ts` (scheduler + policy + caps + log);
-        `src/types.ts` (`QmuxPane.autoPilot`, settings `autoPilotIntervalMinutes` + caps); `settingsManager.ts`;
-        `src/actions/types.ts` + `src/actions/implementations/*` + `src/hooks/useInputHandling.ts` (toggle +
-        hotkey); `src/components/panes/*` (marker); `QmuxApp.tsx` (timer lifecycle, like the other status
-        intervals). On `qmux -c` restore, decide whether auto-pilot re-arms (agent sessions come back fresh).
-      - **Open question:** the finished-vs-stalled prompt is the make-or-break; worth iterating on real
-        transcripts. Caps (K relaunches, N nudges) and interval default need real-world tuning.
+        5. **Waiting on a yes/no** (`option_dialog`): notify only — never blind-answer a genuine prompt.
+      - **"finished" vs "just stalled":** both present as idle. A dedicated one-word LLM judgment
+        (`FINISHED_JUDGE_SYSTEM_PROMPT` → `parseFinishedVerdict` in `src/utils/monitorClassify.ts`). When
+        ambiguous, default to **stop + notify**, not nudge — bias toward doing nothing over doing it wrong.
+      - **Reuse, not rebuild:** shell-vs-agent pre-check via `TmuxService.getPaneCurrentCommand` +
+        `isShellCommand`; agent-state classify via `PaneAnalyzer.analyzePane`; notifications via
+        `QmuxFocusService.sendAttentionNotification` gated by `getPaneAttentionSurface`; LLM via `aiClient`.
+      - **Forensic log:** every action appended to `.qmux/monitor.jsonl` (mirrors `quake-history.jsonl`).
+      - **Landmarks (built):** `src/services/PaneMonitorService.ts` (thin injected-IO orchestrator +
+        `createPaneMonitorService` real wiring); `src/utils/monitorPolicy.ts` (pure `decideMonitorAction` +
+        clamps, TDD); `src/utils/monitorClassify.ts` (shell + finished-verdict parsing, TDD); `src/types.ts`
+        (`QmuxPane.monitor`, settings `monitorIntervalMinutes`/`monitorMaxRelaunches`/`monitorMaxNudges`);
+        `settingsManager.ts` (sanitize + validate + SETTING_DEFINITIONS); `src/actions/*` (`TOGGLE_MONITOR` +
+        `toggleMonitorAction`); `PaneCard.tsx` (flags marker); `QmuxApp.tsx` (service lifecycle). Tests:
+        `monitorPolicy`, `monitorClassify`, `paneMonitorService`.
+      - **Open question (deferred):** the finished-vs-stalled prompt is the make-or-break; worth iterating on
+        real transcripts. Caps (relaunches, nudges) and interval default need real-world tuning.
 
 - [x] **Rearrange panels dialog** — with 2 or 3 content panes, `G` (Shift+G, pairs with `g` grid) opens a
       "Rearrange Panels" chooser. 2-pane presets: `side-by-side`, `stacked`. 3-pane presets: `main-left`

@@ -127,6 +127,7 @@ export enum PaneAction {
   OPEN_IN_EDITOR = 'open_in_editor',
   TOGGLE_AUTOPILOT = 'toggle_autopilot',
   TOGGLE_GOAL_MODE = 'toggle_goal_mode',
+  TOGGLE_MONITOR = 'toggle_monitor',
   SET_PANE_COLOR = 'set_pane_color',
   SET_AGENT = 'set_agent',
   MOVE_PANE_UP = 'move_pane_up',
@@ -277,6 +278,13 @@ export const ACTION_REGISTRY: Record<PaneAction, ActionMetadata> = {
     label: 'Toggle Goal Mode',
     description: 'Enable/disable session goal command on next agent launch',
     icon: '🎯',
+    requires: { agent: true },
+  },
+  [PaneAction.TOGGLE_MONITOR]: {
+    id: PaneAction.TOGGLE_MONITOR,
+    label: 'Toggle Monitor',
+    description: 'Enable/disable the periodic watchdog (recover crashes, nudge stalls)',
+    icon: '👁',
     requires: { agent: true },
   },
   [PaneAction.SET_PANE_COLOR]: {

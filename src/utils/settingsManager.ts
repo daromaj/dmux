@@ -37,6 +37,14 @@ import {
   MIN_CONTROL_PANE_HEIGHT,
   MAX_CONTROL_PANE_HEIGHT,
 } from './controlPanePlacement.js';
+import {
+  clampMonitorIntervalMinutes,
+  clampMonitorMaxRelaunches,
+  clampMonitorMaxNudges,
+  DEFAULT_MONITOR_INTERVAL_MINUTES,
+  DEFAULT_MONITOR_MAX_RELAUNCHES,
+  DEFAULT_MONITOR_MAX_NUDGES,
+} from './monitorPolicy.js';
 
 const GLOBAL_SETTINGS_PATH = join(homedir(), '.qmux.global.json');
 const TEAM_DEFAULTS_FILENAME = '.qmux.defaults.json';
@@ -214,6 +222,27 @@ function sanitizeLoadedSettings(value: unknown): QmuxSettings {
     sanitized.aiApiKey = parsed.aiApiKey;
   }
 
+  if (
+    typeof parsed.monitorIntervalMinutes === 'number' &&
+    Number.isFinite(parsed.monitorIntervalMinutes)
+  ) {
+    sanitized.monitorIntervalMinutes = clampMonitorIntervalMinutes(parsed.monitorIntervalMinutes);
+  }
+
+  if (
+    typeof parsed.monitorMaxRelaunches === 'number' &&
+    Number.isFinite(parsed.monitorMaxRelaunches)
+  ) {
+    sanitized.monitorMaxRelaunches = clampMonitorMaxRelaunches(parsed.monitorMaxRelaunches);
+  }
+
+  if (
+    typeof parsed.monitorMaxNudges === 'number' &&
+    Number.isFinite(parsed.monitorMaxNudges)
+  ) {
+    sanitized.monitorMaxNudges = clampMonitorMaxNudges(parsed.monitorMaxNudges);
+  }
+
   return sanitized;
 }
 
@@ -254,6 +283,9 @@ const DEFAULT_SETTINGS: QmuxSettings = {
   favoriteCommands: ['cc', 'cc -c', 'pi', 'pi -c'],
   language: 'en',
   colorTheme: DEFAULT_QMUX_THEME,
+  monitorIntervalMinutes: DEFAULT_MONITOR_INTERVAL_MINUTES,
+  monitorMaxRelaunches: DEFAULT_MONITOR_MAX_RELAUNCHES,
+  monitorMaxNudges: DEFAULT_MONITOR_MAX_NUDGES,
 };
 
 const AGENT_OPTIONS = getAgentDefinitions().map((agent) => ({
@@ -498,6 +530,43 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
       { value: '12', label: '12 rows (default)' },
       { value: '16', label: '16 rows' },
       { value: '20', label: '20 rows' },
+    ],
+  },
+  {
+    key: 'monitorIntervalMinutes',
+    label: 'Monitor Interval',
+    description: 'Minutes between watchdog checks for monitored panes (recovers crashed agents, nudges stalled ones).',
+    type: 'select',
+    options: [
+      { value: '5', label: '5 minutes' },
+      { value: '10', label: '10 minutes' },
+      { value: '15', label: '15 minutes (default)' },
+      { value: '30', label: '30 minutes' },
+      { value: '60', label: '60 minutes' },
+    ],
+  },
+  {
+    key: 'monitorMaxRelaunches',
+    label: 'Monitor Relaunch Cap',
+    description: 'Max times the monitor relaunches a crashed agent before giving up (crash-loop guard).',
+    type: 'select',
+    options: [
+      { value: '1', label: '1' },
+      { value: '2', label: '2 (default)' },
+      { value: '3', label: '3' },
+      { value: '5', label: '5' },
+    ],
+  },
+  {
+    key: 'monitorMaxNudges',
+    label: 'Monitor Nudge Cap',
+    description: 'Max consecutive "continue" nudges the monitor sends a stalled agent before giving up.',
+    type: 'select',
+    options: [
+      { value: '2', label: '2' },
+      { value: '3', label: '3 (default)' },
+      { value: '5', label: '5' },
+      { value: '10', label: '10' },
     ],
   },
   {
@@ -834,6 +903,30 @@ export class SettingsManager {
         );
       }
       value = numericValue as QmuxSettings[K];
+    }
+
+    // Monitor-mode numeric settings: accept a string (from a select UI) or number,
+    // clamp to their valid range.
+    if (key === 'monitorIntervalMinutes') {
+      const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
+      if (typeof numericValue !== 'number' || !Number.isFinite(numericValue)) {
+        throw new Error('Invalid monitorIntervalMinutes: expected a number');
+      }
+      value = clampMonitorIntervalMinutes(numericValue) as QmuxSettings[K];
+    }
+    if (key === 'monitorMaxRelaunches') {
+      const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
+      if (typeof numericValue !== 'number' || !Number.isFinite(numericValue)) {
+        throw new Error('Invalid monitorMaxRelaunches: expected a number');
+      }
+      value = clampMonitorMaxRelaunches(numericValue) as QmuxSettings[K];
+    }
+    if (key === 'monitorMaxNudges') {
+      const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
+      if (typeof numericValue !== 'number' || !Number.isFinite(numericValue)) {
+        throw new Error('Invalid monitorMaxNudges: expected a number');
+      }
+      value = clampMonitorMaxNudges(numericValue) as QmuxSettings[K];
     }
 
     // Pane width settings are always stored globally, regardless of requested scope.
