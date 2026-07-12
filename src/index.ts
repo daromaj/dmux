@@ -17,13 +17,13 @@ import { LogService } from './services/LogService.js';
 import { TmuxService } from './services/TmuxService.js';
 import {
   applyTmuxThemeToSession,
-  createWelcomePane,
+  createStartupTerminalPane,
   destroyWelcomePane,
 } from './utils/welcomePane.js';
 import { SIDEBAR_WIDTH } from './utils/layoutManager.js';
 import { getControlPanePlacement } from './utils/controlPanePlacement.js';
 import { validateSystemRequirements, printValidationResults } from './utils/systemCheck.js';
-import { getUntrackedPanes } from './utils/shellPaneDetection.js';
+import { detectShellType, getUntrackedPanes } from './utils/shellPaneDetection.js';
 import { runFirstRunOnboardingIfNeeded } from './utils/onboarding.js';
 import { atomicWriteJson } from './utils/atomicWrite.js';
 import { buildDevWatchCommand, buildDevWatchRespawnCommand } from './utils/devWatchCommand.js';
@@ -642,46 +642,46 @@ class Qmux {
           await fs.writeFile(this.panesFile, JSON.stringify(config, null, 2));
         }
       } else if (controlPaneId && !hasAnyPanes) {
-        if (!hasValidWelcomePane) {
-          // Create new welcome pane
-          const welcomePaneId = await createWelcomePane(controlPaneId, this.projectRoot);
-          if (welcomePaneId) {
-            config.welcomePaneId = welcomePaneId;
-            config.lastUpdated = new Date().toISOString();
-            await fs.writeFile(this.panesFile, JSON.stringify(config, null, 2));
-            LogService.getInstance().info(`Created welcome pane: ${welcomePaneId}`, 'Setup');
-          }
-        } else {
-          // Welcome pane exists from previous session - fix the layout
-          LogService.getInstance().debug('Welcome pane exists, applying correct layout', 'Setup');
+        // Fresh launch with no panes: open a real, usable terminal in the
+        // project dir as the default pane. This replaces the old decorative
+        // ASCII "welcome" placeholder — it is tracked as a normal shell pane so
+        // the rest of the pane/layout machinery treats it like any other pane.
 
-          // Apply correct layout anchoring the control pane along its edge.
-          // Use "latest" mode so window auto-follows terminal size.
-          // Batch layout commands into a single tmux call for better performance.
-          const welcomePlacement = getControlPanePlacement(this.projectRoot);
-          if (welcomePlacement.position === 'bottom') {
-            // main-horizontal makes the main pane (index 0 = control) the LARGE
-            // top pane, so size the main pane to the content height, then swap
-            // the control pane down into the thin bottom strip.
-            const termHeight = tmuxService.getTerminalDimensionsSync().height;
-            const contentHeight = Math.max(1, termHeight - welcomePlacement.thickness - 1);
-            execSync(`tmux set-window-option window-size latest \\; set-window-option main-pane-height ${contentHeight} \\; select-layout main-horizontal`, { stdio: 'pipe' });
-            const positions = tmuxService.getPanePositionsSync();
-            if (positions.length >= 2) {
-              const bottomPane = positions.reduce((lowest, p) => (p.top > lowest.top ? p : lowest));
-              if (bottomPane.paneId && bottomPane.paneId !== controlPaneId) {
-                tmuxService.swapPaneSync(controlPaneId, bottomPane.paneId);
-              }
-            }
-            // Pin the strip to an exact height (main-horizontal won't clamp it).
-            tmuxService.resizePaneSync(controlPaneId, { height: welcomePlacement.thickness });
-          } else {
-            execSync(`tmux set-window-option window-size latest \\; set-window-option main-pane-width ${SIDEBAR_WIDTH} \\; select-layout main-vertical`, { stdio: 'pipe' });
+        // Tear down any lingering ASCII welcome pane from an older session/version.
+        if (hasValidWelcomePane && config.welcomePaneId) {
+          await destroyWelcomePane(config.welcomePaneId);
+          config.welcomePaneId = undefined;
+        }
+
+        const startupPaneId = await createStartupTerminalPane(controlPaneId, this.projectRoot);
+        if (startupPaneId) {
+          const slug = 'shell-1';
+          try {
+            await tmuxService.setPaneTitle(startupPaneId, slug);
+          } catch {
+            // Ignore title errors; rebinding falls back to the pane ID.
           }
-          await tmuxService.refreshClient();
+          const shellType = await detectShellType(startupPaneId);
+          const shellPane: QmuxPane = {
+            id: 'qmux-1',
+            slug,
+            prompt: '',
+            paneId: startupPaneId,
+            projectRoot: this.projectRoot,
+            projectName: this.projectName,
+            type: 'shell',
+            shellType,
+          };
+          // This branch only runs when no panes are live, so any entries left in
+          // config.panes are stale/dead (session was killed between runs). Reset
+          // rather than append to avoid duplicate shell-1/qmux-1 title collisions.
+          config.panes = [shellPane];
+          config.lastUpdated = new Date().toISOString();
+          await fs.writeFile(this.panesFile, JSON.stringify(config, null, 2));
+          LogService.getInstance().info(`Created default terminal pane: ${startupPaneId}`, 'Setup');
         }
       } else if (hasValidWelcomePane && hasAnyPanes) {
-        // If welcome pane exists but there are other panes, destroy it
+        // If a welcome pane lingered but there are other panes, destroy it
         LogService.getInstance().info('Destroying welcome pane because other panes exist', 'Setup');
         await destroyWelcomePane(config.welcomePaneId);
         config.welcomePaneId = undefined;

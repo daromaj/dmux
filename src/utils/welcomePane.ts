@@ -61,53 +61,100 @@ export async function createWelcomePane(
     // Give the script time to start
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    // Welcome pane uses full terminal dimensions
-    // CRITICAL: Use main-vertical layout to lock sidebar at fixed width
-    try {
-      const dimensions = await tmuxService.getTerminalDimensions();
-
-      // Apply the edge-anchored layout FIRST (this locks the control-pane thickness)
-      const placement = getControlPanePlacement(cwd);
-      if (placement.position === 'bottom') {
-        // Bottom mode: the control strip is pinned at the bottom and the welcome
-        // pane fills the top. main-horizontal makes the main pane (index 0 =
-        // control) the LARGE top pane, so size the main pane to the content
-        // height, then swap the control pane down into the thin bottom strip.
-        const contentHeight = Math.max(1, dimensions.height - placement.thickness - 1);
-        execSync(`tmux set-window-option main-pane-height ${contentHeight}`, { stdio: 'pipe' });
-        execSync(`tmux select-layout main-horizontal`, { stdio: 'pipe' });
-        const positions = tmuxService.getPanePositionsSync();
-        if (positions.length >= 2) {
-          const bottomPane = positions.reduce((lowest, p) => (p.top > lowest.top ? p : lowest));
-          if (bottomPane.paneId && bottomPane.paneId !== controlPaneId) {
-            tmuxService.swapPaneSync(controlPaneId, bottomPane.paneId);
-          }
-        }
-        // Pin the strip to an exact height. main-horizontal / main-pane-height
-        // does NOT reliably clamp the control pane (client vs window height
-        // mismatch lets it balloon well past thickness), so pin it explicitly.
-        tmuxService.resizePaneSync(controlPaneId, { height: placement.thickness });
-      } else {
-        execSync(`tmux set-window-option main-pane-width ${SIDEBAR_WIDTH}`, { stdio: 'pipe' });
-        execSync(`tmux select-layout main-vertical`, { stdio: 'pipe' });
-      }
-
-      // Refresh to apply layout changes
-      await tmuxService.refreshClient();
-    } catch (error) {
-      // Silently ignore layout errors
-    }
-
-    // Switch focus back to the control pane (qmux sidebar)
-    try {
-      execSync(`tmux select-pane -t '${controlPaneId}'`, { stdio: 'pipe' });
-    } catch {
-      // Ignore if focus switch fails
-    }
+    await anchorContentPaneLayout(controlPaneId, cwd);
 
     return welcomePaneId;
   } catch (error) {
     logService.error('Failed to create welcome pane', 'WelcomePane', undefined, error instanceof Error ? error : undefined);
+    return undefined;
+  }
+}
+
+/**
+ * Applies the edge-anchored control-pane layout (sidebar/bottom-strip) so the
+ * content pane fills the rest of the window, then returns focus to the control
+ * pane. Shared by the welcome pane and the default startup terminal pane.
+ */
+export async function anchorContentPaneLayout(
+  controlPaneId: string,
+  cwd?: string
+): Promise<void> {
+  const tmuxService = TmuxService.getInstance();
+
+  // CRITICAL: Use main-vertical layout to lock sidebar at fixed width
+  try {
+    const dimensions = await tmuxService.getTerminalDimensions();
+
+    // Apply the edge-anchored layout FIRST (this locks the control-pane thickness)
+    const placement = getControlPanePlacement(cwd);
+    if (placement.position === 'bottom') {
+      // Bottom mode: the control strip is pinned at the bottom and the content
+      // pane fills the top. main-horizontal makes the main pane (index 0 =
+      // control) the LARGE top pane, so size the main pane to the content
+      // height, then swap the control pane down into the thin bottom strip.
+      const contentHeight = Math.max(1, dimensions.height - placement.thickness - 1);
+      execSync(`tmux set-window-option main-pane-height ${contentHeight}`, { stdio: 'pipe' });
+      execSync(`tmux select-layout main-horizontal`, { stdio: 'pipe' });
+      const positions = tmuxService.getPanePositionsSync();
+      if (positions.length >= 2) {
+        const bottomPane = positions.reduce((lowest, p) => (p.top > lowest.top ? p : lowest));
+        if (bottomPane.paneId && bottomPane.paneId !== controlPaneId) {
+          tmuxService.swapPaneSync(controlPaneId, bottomPane.paneId);
+        }
+      }
+      // Pin the strip to an exact height. main-horizontal / main-pane-height
+      // does NOT reliably clamp the control pane (client vs window height
+      // mismatch lets it balloon well past thickness), so pin it explicitly.
+      tmuxService.resizePaneSync(controlPaneId, { height: placement.thickness });
+    } else {
+      execSync(`tmux set-window-option main-pane-width ${SIDEBAR_WIDTH}`, { stdio: 'pipe' });
+      execSync(`tmux select-layout main-vertical`, { stdio: 'pipe' });
+    }
+
+    // Refresh to apply layout changes
+    await tmuxService.refreshClient();
+  } catch (error) {
+    // Silently ignore layout errors
+  }
+
+  // Switch focus back to the control pane (qmux sidebar)
+  try {
+    execSync(`tmux select-pane -t '${controlPaneId}'`, { stdio: 'pipe' });
+  } catch {
+    // Ignore if focus switch fails
+  }
+}
+
+/**
+ * Creates the default startup terminal pane: a real, usable shell in `cwd`,
+ * placed next to the control pane and laid out the same way the welcome pane
+ * was. Unlike the welcome pane this is a normal interactive shell (no ASCII
+ * art, no "Welcome" title) meant to be tracked as a `type: 'shell'` qmux pane.
+ *
+ * @returns The new pane's tmux ID, or undefined if creation failed.
+ */
+export async function createStartupTerminalPane(
+  controlPaneId: string,
+  cwd?: string
+): Promise<string | undefined> {
+  const logService = LogService.getInstance();
+  const tmuxService = TmuxService.getInstance();
+
+  try {
+    const paneId = await tmuxService.splitPane({ targetPane: controlPaneId, cwd });
+    if (!paneId) {
+      logService.error('Failed to create startup terminal pane: no pane ID returned', 'WelcomePane');
+      return undefined;
+    }
+
+    // Let the shell initialize before we reshuffle the layout.
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    await anchorContentPaneLayout(controlPaneId, cwd);
+
+    return paneId;
+  } catch (error) {
+    logService.error('Failed to create startup terminal pane', 'WelcomePane', undefined, error instanceof Error ? error : undefined);
     return undefined;
   }
 }
